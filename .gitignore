@@ -1,0 +1,10 @@
+*.asv
+**/slurm*
+**/*.jpg
+**/*.fig
+**/*.pdf
+**/*.nii
+**/*.mat
+data/
+freesurfer/freesurfer_holmesQC/step4_qdec/output/
+analysis/output/

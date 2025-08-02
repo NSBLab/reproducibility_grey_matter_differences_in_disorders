@@ -1,0 +1,7 @@
+dataDir = '/projects/kg98/trangc/VBM/data';
+dataset = 'ASRB';
+sub = 'sub-101001';
+
+
+ymap = squeeze(load_mgh(fullfile(dataDir, dataset, 'derivatives','freesurfer','qdec', '4_BRIS_thick_smooth10_lh_sex_age_test', 'y.mgh')))';
+y1 = squeeze(load_mgh(fullfile(dataDir, dataset, 'derivatives','freesurfer',sub, 'surf', 'lh.thickness.fwhm10.fsaverage.mgh')))';

@@ -1,0 +1,1202 @@
+#!/bin/bash
+# Copyright 2021 David Farrell
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+JP_NL='
+'
+JP_CR=''
+JP_TAB='	'
+IFS="$JP_TAB" # tokens are tab delimited
+JP_SEP=$'\t\n'
+JP_STACKSIZE=0
+JP_HISTORY=".history"
+
+jp_error () {
+  JP_ERROR=${1/"'$JP_NL'"/"''"}
+  echo "Error: $JP_ERROR at line $JP_LINE, column $JP_IDX" >&2
+  return 1
+}
+
+jp_debug () {
+  if [ "${1:0:3}" = "jp_" ]&&[ "$1" != "${FUNCNAME[1]}" ];then
+    [ $JP_DEBUG_SKIP ] && [ "$1" != "jp_next_arg" ]&&return
+    JP_DEBUG_SKIP=
+    echo "$1" >&2
+    jp_dump
+    while read -s -n 1 key;do
+      case "$key" in
+        "s") break;;
+        "n") JP_DEBUG_SKIP=1;break;;
+        "q") trap '' DEBUG;break;;
+          *) echo "$key has no effect, try one of: s, n, q"
+      esac
+    done < /dev/tty
+  fi
+}
+
+jp_dump () {
+  local stack="$JP_STACK" i=1 out= label='TOS'
+  while :;do
+    out="${stack%%$JP_SEP*}"
+    [ "$out" ] || out='(empty)'
+    stack="${stack#*$JP_SEP}"
+    echo -en "$label\t" >&2
+    for t in $out;do
+      echo -nE "$t" >&2
+    done
+    echo >&2
+    (( i++ ))
+    (( i > JP_STACKSIZE )) && break
+    printf -v label "%3d" "$i" >&2
+  done
+  echo '---' >&2
+}
+
+# BEGIN PARSE FUNCTIONS
+jp_readline () {
+  JP_IDX=0 JP_BUF_MAXLEN=0 JP_LINE=1
+  if [ $JP_INPUT ];then
+    IFS=$'\n' read -r JP_BUF
+    JP_BUF_MAXLEN="${#JP_BUF}"
+  fi
+  return 0
+}
+
+jp_chomp () {
+  if [ $JP_BUF_MAXLEN -eq 0 ];then
+    JP_C=''
+  elif [ $JP_IDX -lt $JP_BUF_MAXLEN ];then
+    JP_C="${JP_BUF:$JP_IDX:1}"
+    JP_IDX=$(( JP_IDX + 1 ))
+  elif [ $JP_IDX -eq $JP_BUF_MAXLEN ];then
+    JP_C=$'\n'
+    JP_IDX=$(( JP_IDX + 1 ))
+  else
+    JP_IDX=0
+    JP_LINE=$(( JP_LINE + 1 ))
+    jp_readline
+    jp_chomp
+  fi
+}
+
+jp_drop_ws () {
+  while :;do
+    case "$JP_C" in
+      " ") jp_chomp;;
+      "$JP_NL") jp_chomp;;
+      "$JP_CR") jp_chomp;;
+      "$JP_TAB") jp_chomp;;
+      *) break;;
+    esac
+  done
+}
+
+jp_expect () {
+  if [ "$JP_C" != "$1" ];then
+    local msg
+    printf -v msg "expected %q but saw %q" "$1" "$JP_C"
+    jp_error "$msg" || return
+  fi
+}
+
+jp_array () {
+  JP_TOKENS+="[	"
+  jp_chomp
+  jp_drop_ws
+  if [ "$JP_C" != ']' ];then
+    jp_read_next || return
+    while :;do
+      [ "$JP_C" != '' ] || jp_error "unterminated array: didn't find ]" || return
+      jp_drop_ws
+      if [ "$JP_C" = ']' ];then
+        break
+      elif [ "$JP_C" = ',' ];then
+        JP_TOKENS+=",	"
+        jp_chomp
+        jp_drop_ws
+        jp_read_next || return
+      else
+        jp_error "expected , or ] but saw '$JP_C'" || return
+      fi
+    done
+  fi
+  JP_TOKENS+="]	"
+  jp_chomp
+}
+
+jp_object () {
+  JP_TOKENS+="{	"
+  jp_chomp
+  jp_drop_ws
+  if [ "$JP_C" != '}' ];then
+    jp_expect '"' || return
+    jp_string
+    jp_drop_ws
+    jp_expect ":" || return
+    JP_TOKENS+=":	"
+    jp_chomp
+    jp_drop_ws
+    jp_read_next || return
+    while :;do
+      [ "$JP_C" != '' ] || jp_error "unterminated object: didn't find }" return
+      jp_drop_ws
+      if [ "$JP_C" = '}' ];then
+        break
+      elif [ "$JP_C" = ',' ];then
+        JP_TOKENS+=",	"
+        jp_chomp
+        jp_drop_ws
+        jp_expect '"' || return
+        jp_string
+        jp_drop_ws
+        jp_expect ":" || return
+        JP_TOKENS+=":	"
+        jp_chomp
+        jp_drop_ws
+        jp_read_next || return
+      else
+        jp_error "expected , or } but saw $JP_C" || return
+      fi
+    done
+  fi
+  JP_TOKENS+="}	"
+  jp_chomp
+}
+
+jp_number () {
+  local num="$JP_C" seendot= seenexp=
+  jp_chomp
+  if [ "$num" = '-' ];then # negative number
+    [[ "$JP_C" == [[:digit:]] ]] || jp_error "minus not followed by digit: $num$JP_C" || return
+    if [ "$JP_C" = '0' ];then
+      num="$num$JP_C"
+      jp_chomp
+      [[ "$JP_C" != [[:digit:]] ]] || jp_error "number starts with zero: $num$JP_C" || return
+    fi
+  elif [ "$num" = '0' ];then
+    [[ $JP_C != [[:digit:]] ]] || jp_error "number starts with zero: $num$JP_C" || return
+  fi
+  while :;do
+    if [[ "$JP_C" == [[:digit:]] ]];then
+      num="$num$JP_C"
+    elif [ "$JP_C" = . ];then
+      if [ "$seendot" ];then
+        jp_error "number has too many dots in it: $num$JP_C" || return
+      elif [ "$seenexp" ];then
+        jp_error "exponents cannot contain dots: $num$JP_C" || return
+      else
+        num="$num$JP_C"
+        seendot=1
+        jp_chomp
+        [[ "$JP_C" == [[:digit:]] ]] || jp_error "dot not followed by digit: $num$JP_C" || return
+        continue
+      fi
+    elif [[ $JP_C == [Ee] ]];then
+      if [ $seenexp ];then
+        jp_error "number has too many Es in it: $num$JP_C" || return
+      fi
+      seenexp=1
+      num="$num$JP_C"
+      jp_chomp
+      if [[ $JP_C == [+-] ]];then
+        num="$num$JP_C"
+        jp_chomp
+      fi
+      if [[ $JP_C != [[:digit:]] ]];then
+        jp_error "a number must follow an exponent or sign: $num$JP_C" || return
+      fi
+      num="$num$JP_C"
+    else
+      JP_TOKENS+="$num	"
+      break
+    fi
+    jp_chomp
+  done
+  lastchar=${num:$(( ${#num}-1 )):1}
+  [[ "$lastchar" != [Ee.+-] ]] || jp_error "invalid number $num ($lastchar)" || return
+}
+
+jp_string () {
+  local str= start_line="$JP_LINE"
+  while :;do
+    [ "$JP_C" != '' ] || jp_error "unterminated string: didn't find \"" || return
+    jp_chomp
+    if [ "$JP_LINE" -gt "$start_line" ];then
+      jp_error "unescaped newline in string" || return
+    elif [ "$JP_C" = $'\t' ];then
+      jp_error "unescaped tab in string" || return
+    elif [ "$JP_C" = $'\\' ];then # handle escapes
+      str="$str$JP_C"
+      jp_chomp
+      if [ "$JP_C" = u ];then # unicode
+        local esc="u"
+        for i in 1 2 3 4;do
+          jp_chomp
+          [[ "$JP_C" == [0-9A-Fa-f] ]] || jp_error "invalid Unicode escape sequence \\$esc$JP_C" || return
+          esc+="$JP_C"
+        done
+        JP_C="$esc"
+      elif [[ "$JP_C" != [bfnrt\"$'\\'/] ]];then
+        jp_error "invalid escape sequence in string: \\$JP_C" || return
+      fi
+    elif [ "$JP_C" = '"' ];then
+      JP_TOKENS+="\"$str\"	"
+      break
+    fi
+    str+="$JP_C"
+  done
+  jp_chomp
+}
+
+jp_null () {
+  jp_chomp
+  if [ "$JP_C" = "u" ];then
+    jp_chomp
+    if [ "$JP_C" = "l" ];then
+      jp_chomp
+      if [ "$JP_C" = "l" ];then
+        JP_TOKENS+="null	"
+        jp_chomp
+        return
+      fi
+    fi
+  fi
+  jp_error "expected 'null' but saw '$JP_C'" || return
+}
+
+jp_bool_true () {
+  jp_chomp
+  if [ "$JP_C" = "r" ];then
+    jp_chomp
+    if [ "$JP_C" = "u" ];then
+      jp_chomp
+      if [ "$JP_C" = "e" ];then
+        JP_TOKENS+="true	"
+        jp_chomp
+        return
+      fi
+    fi
+  fi
+  jp_error "expected 'true' but saw '$JP_C'" || return
+}
+
+jp_bool_false () {
+  jp_chomp
+  if [ "$JP_C" = "a" ];then
+    jp_chomp
+    if [ "$JP_C" = "l" ];then
+      jp_chomp
+      if [ "$JP_C" = "s" ];then
+        jp_chomp
+        if [ "$JP_C" = "e" ];then
+          JP_TOKENS+="false	"
+          jp_chomp
+          return
+        fi
+      fi
+    fi
+  fi
+  jp_error "expected 'false' but saw '$JP_C'" || return
+}
+
+jp_read_next () {
+  case "$JP_C" in
+    [[:digit:]-]) jp_number;;
+    '"') jp_string;;
+    'n') jp_null;;
+    't') jp_bool_true;;
+    'f') jp_bool_false;;
+    '[') jp_array;;
+    '{') jp_object;;
+    *) jp_error "expected 0-9, \", 't', 'f', '[', or '{' but got: '$JP_C'"
+  esac
+}
+
+jp_parse_json () {
+  JP_TOKENS=
+  jp_chomp
+  jp_drop_ws
+  jp_read_next || return
+  while [[ "$JP_C" == [[:blank:]] ]];do
+    jp_chomp
+  done
+  [ "$JP_C" = $'\n' ] || jp_error "expected '\n' but saw $JP_C" || return
+}
+
+jp_detect_nullbyte () {
+  local buf=
+  IFS= read -rd '' buf
+  [ -z "$buf" ] || jp_error "received input after null byte" || return
+}
+# END PARSE FUNCTIONS
+
+# BEGIN TRANSFORM FUNCTIONS
+jp_push () {
+  JP_STACK="$1"$'\n'"$JP_STACK" # \n delimited
+  JP_STACKSIZE=$(( JP_STACKSIZE + 1 ))
+  return 0
+}
+
+jp_pop () {
+  if [ $JP_STACKSIZE -eq 0 ];then
+    jp_error "cannot pop an empty stack" || return
+  elif [ $JP_STACKSIZE -eq 1 ];then
+    JP_OUT="${JP_STACK:0:-2}"
+    JP_STACK=
+  else
+    JP_OUT="${JP_STACK%%$JP_SEP*}"
+    JP_STACK="${JP_STACK#*$JP_SEP}"
+  fi
+  JP_STACKSIZE=$(( JP_STACKSIZE - 1 ))
+}
+
+jp_dup () {
+  [ $JP_STACKSIZE -gt 0 ] || jp_error "dup needs one item on the stack" || return
+  jp_pop
+  jp_push "$JP_OUT	"
+  jp_push "$JP_OUT	"
+}
+
+jp_over () {
+  [ $JP_STACKSIZE -gt 1 ] || jp_error 'over needs two items on the stack' || return
+  jp_swap
+  jp_dup
+  jp_pop
+  local over_buf="$JP_OUT"
+  jp_swap
+  jp_push "$over_buf	"
+}
+
+jp_swap () {
+  [ $JP_STACKSIZE -gt 1 ] || jp_error 'swap needs two items on the stack' || return
+  jp_pop
+  local swap_buf="$JP_OUT"
+  jp_pop
+  jp_push "$swap_buf	"
+  jp_push "$JP_OUT	"
+}
+
+jp_rot () {
+  [ $JP_STACKSIZE -gt 2 ] || jp_error 'rot needs three items on the stack' || return
+  jp_pop
+  local rot_buf="$JP_OUT"
+  jp_swap
+  jp_push "$rot_buf	"
+  jp_swap
+}
+
+jp_uniq () {
+  if jp__is_obj;then
+    jp_pop || return
+    if [ "${#JP_OUT}" -eq 3 ];then
+      jp_push "$JP_OUT	"
+      return
+    fi
+    local flipflop=0 nestcnt=0 keys="" skip= rv="{	" sep=
+    for t in ${JP_OUT:2:-2};do
+      if [ $flipflop -eq 0 ];then # key
+        if [[ "$keys" =~ "$t" ]];then
+          skip=1
+        else
+          keys+="$t"
+          rv+="$sep$t	"
+          sep=",	"
+        fi
+        flipflop=$(( flipflop + 1 ))
+      elif [ $flipflop -eq 1 ];then # :
+        flipflop=$(( flipflop + 1 ))
+        [ $skip ] || rv+="$t	"
+      elif [ $flipflop -eq 2 ];then # val
+        [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+        [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+        if [ $nestcnt -eq 0 ];then
+          flipflop=$(( flipflop + 1 ))
+        fi
+        [ $skip ] || rv+="$t	"
+      else # ,
+        flipflop=0
+        skip=
+      fi
+    done
+    jp_push "$rv}	"
+  else
+    jp_error "uniq only works on objects" || return
+  fi
+}
+
+jp_k () {
+  if jp__is_obj;then
+    jp_pop || return
+    if [ "${#JP_OUT}" -eq 3 ];then
+      jp_error "k doesn't work on an empty object" || return
+    fi
+    for t in ${JP_OUT:2:-2};do
+      jp_push "$t	"
+      break
+    done
+  else
+    jp_error "k only works on objects" || return
+  fi
+}
+
+jp_v () {
+  if jp__is_obj;then
+    jp_pop || return
+    if [ "${#JP_OUT}" -eq 3 ];then
+      jp_error "v doesn't work on an empty object" || return
+    fi
+    local flipflop=0 nestcnt=0 rv=
+    for t in ${JP_OUT:2:-2};do
+      if [ $flipflop -eq 0 ];then # key
+        flipflop=$(( flipflop + 1 ))
+      elif [ $flipflop -eq 1 ];then # :
+        flipflop=$(( flipflop + 1 ))
+      else #v
+        [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+        [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+        rv+="$t	"
+        if [ $nestcnt -eq 0 ];then
+          jp_push "$rv"
+          return
+        fi
+      fi
+    done
+  else
+    jp_error "v only works on objects" || return
+  fi
+}
+
+jp_len () {
+  if jp__is_arr;then
+    jp_pop || return
+    local nestcnt=0 i=0
+    if [ "${#JP_OUT}" -gt 3 ];then
+      for t in ${JP_OUT:2:-2};do
+        [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+        [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+        [ $nestcnt -eq 0 ]&&[ "$t" != ',' ]&&(( i++ ))
+      done
+    fi
+    jp_push "$i	"
+  else
+    jp_error "len only works on arrays" || return
+  fi
+}
+
+jp_h () {
+  if jp__is_arr;then
+    jp_pop || return
+    if [ "${#JP_OUT}" -eq 3 ];then
+      jp_error "h doesn't work on an empty array" || return
+    fi
+    local nestcnt=0 rv=
+    for t in ${JP_OUT:2:-2};do
+      [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+      [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+      rv+="$t	"
+      if [ $nestcnt -eq 0 ];then
+        jp_push "$rv"
+        return
+      fi
+    done
+  else
+    jp_error "h only works on arrays" || return
+  fi
+}
+
+jp_t () {
+  if jp__is_arr;then
+    jp_pop || return
+    if [ "${#JP_OUT}" -eq 3 ];then
+      jp_error "t doesn't work on an empty array" || return
+    fi
+    local nestcnt=0 rv='[	' i=0
+    for t in ${JP_OUT:2:-2};do
+      [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+      [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+      (( i > 1 )) && rv+="$t	"
+      [ $nestcnt -eq 0 ] && (( i++ ))
+    done
+    jp_push "$rv]	"
+  else
+    jp_error "t only works on arrays" || return
+  fi
+}
+
+jp_concat () {
+  local accum
+  if jp__is_str;then
+    jp_pop || return
+    accum="\"${JP_OUT:1:$(("${#JP_OUT}"-2))}"
+    jp__is_str || jp_error "concat expected a string but saw '${JP_STACK:0:1}'" || return
+    jp_pop || return
+    accum+="${JP_OUT:1:$(("${#JP_OUT}"-2))}\"	"
+  else
+    if jp__is_arr;then
+      jp_pop || return
+      jp__is_arr || jp_error "concat expected an array but saw '${JP_STACK:0:1}'" || return
+    elif jp__is_obj;then
+      jp_pop || return
+      jp__is_obj || jp_error "concat expected an object but saw '${JP_STACK:0:1}'" || return
+    else
+      jp_error "can only concat strings, arrays or objects" || return
+    fi
+    accum="${JP_OUT:0:-1}"
+    jp_pop || return
+    if [ "${#accum}" -eq 2 ];then # empty
+      accum="$JP_OUT	"
+    elif [ "${#JP_OUT}" -eq 3 ];then # empty
+      accum+="${JP_OUT:2:1}	"
+    else
+      accum+=",${JP_OUT:1}	"
+    fi
+  fi
+  jp_push "$accum"
+}
+
+jp_collect () {
+  local accum="[	"
+  local sep
+  while [ $JP_STACKSIZE -gt 0 ];do
+    jp_pop || return
+    accum+="$sep$JP_OUT	"
+    sep=",	"
+  done
+  jp_push "$accum]	"
+}
+
+jp__test () {
+  local op_name="$1" num_op="$2" str_op="$3" right=
+  if jp__is_str;then
+    jp_pop || return
+    right="$JP_OUT"
+    if [ -z "$str_op" ];then
+      jp_error "$op_name does not work on strings" || return
+    elif jp__is_str;then
+      jp_pop || return
+      if [ "$JP_OUT" $str_op "$right" ];then
+        jp_push "true	"
+      else
+        jp_push "false	"
+      fi
+      return
+    fi
+  elif jp__is_int;then
+    jp_pop || return
+    right="$JP_OUT"
+    if jp__is_int;then
+      jp_pop || return
+      if [ $JP_OUT $num_op $right ];then
+        jp_push "true	"
+      else
+        jp_push "false	"
+      fi
+      return
+    fi
+  fi
+  jp_error "$op_name only works on pairs of strings or integers" || return
+}
+
+jp_count () {
+  jp_push "$JP_STACKSIZE	"
+}
+
+jp_is_obj () {
+  if jp__is_obj;then
+    jp_push 'true	'
+  else
+    jp_push 'false	'
+  fi
+}
+
+jp_is_arr () {
+  if jp__is_arr;then
+    jp_push 'true	'
+  else
+    jp_push 'false	'
+  fi
+
+}
+
+jp_is_bool () {
+  if jp__is_bool;then
+    jp_push 'true	'
+  else
+    jp_push 'false	'
+  fi
+}
+
+jp_is_str () {
+  if jp__is_str;then
+    jp_push 'true	'
+  else
+    jp_push 'false	'
+  fi
+}
+
+jp_is_num () {
+  if jp__is_num;then
+    jp_push 'true	'
+  else
+    jp_push 'false	'
+  fi
+}
+
+jp_is_null () {
+  if jp__is_null;then
+    jp_push 'true	'
+  else
+    jp_push 'false	'
+  fi
+}
+
+jp__is_obj () {
+  [ -n "$JP_STACK" ]&&[ "${JP_STACK:0:1}" = '{' ]
+}
+
+jp__is_arr () {
+  [ -n "$JP_STACK" ]&&[ "${JP_STACK:0:1}" = '[' ]
+}
+
+jp__is_bool () {
+  jp__is_false || jp__is_true
+}
+
+jp__is_false () {
+  [ -n "$JP_STACK" ]&&[ "${JP_STACK:0:1}" = 'f' ]
+}
+
+jp__is_true () {
+  [ -n "$JP_STACK" ]&&[ "${JP_STACK:0:1}" = 't' ]
+}
+
+jp__is_str () {
+  [ -n "$JP_STACK" ]&&[ "${JP_STACK:0:1}" = '"' ]
+}
+
+jp__is_num () {
+  [ -n "$JP_STACK" ]&&[[ ${JP_STACK:0:1} =~ [[:digit:]-] ]]
+}
+
+jp__is_int () {
+  [ -n "$JP_STACK" ]&&[[ "${JP_STACK%%$'\t\n'*}" =~ ^-?[0-9]+$ ]]
+}
+
+jp__is_null () {
+  [ -n "$JP_STACK" ]&&[ "${JP_STACK:0:1}" = 'n' ]
+}
+
+jp_eq () {
+  jp__test "eq" "-eq" "="
+}
+
+jp_ne () {
+  jp__test "ne" "-ne" "!="
+}
+
+jp_gt () {
+  jp__test "gt" "-gt" ">"
+}
+
+jp_ge () {
+  jp__test "ge" "-ge" ""
+}
+
+jp_lt () {
+  jp__test "lt" "-lt" "<"
+}
+
+jp_le () {
+  jp__test "le" "-le" ""
+}
+
+jp_match () {
+  if ! jp__is_str;then
+    jp_error "match requires a string as a pattern" || return
+  fi
+  jp_pop || return
+  local operand="${JP_OUT:1:$(( ${#JP_OUT} -2 ))}"
+  if jp__is_str;then # remove "
+    jp_pop || return
+    if [[ "${JP_OUT:1:$(( ${#JP_OUT} -2 ))}" =~ $operand ]];then
+      jp_push "true	"
+    else
+      jp_push "false	"
+    fi
+  elif jp__is_num;then
+    jp_pop || return
+    if [[ $JP_OUT =~ $operand ]];then
+      jp_push "true	"
+    else
+      jp_push "false	"
+    fi
+  else
+    jp_error "match only matches strings and nums" || return
+  fi
+}
+
+jp__skip_next () {
+  jp_next_arg || return
+  if [ "$JP_ARG" = '.do' ];then
+    local last_skip=$JP_SKIP
+    JP_SKIP=1
+    jp_eval "$JP_ARG" || return
+    JP_SKIP=$last_skip
+  fi
+}
+
+jp_if () {
+  if jp__is_false;then
+    jp_pop || return
+    jp__skip_next || return
+    jp_peek_arg
+    if [ "$JP_PEEK" = '.else' ];then
+      jp_next_arg || return
+    fi
+  elif jp__is_true;then
+    jp_pop || return
+    jp_next_arg || return
+    jp_eval "$JP_ARG"
+    jp_peek_arg
+    if [ "$JP_PEEK" = '.else' ];then
+      jp_next_arg || return
+      jp__skip_next || return
+    fi
+  else
+    jp_error "if requires a bool" || return
+  fi
+}
+
+jp_else () {
+  jp_error "else can only be used with if" || return
+}
+
+jp_do () {
+  jp_next_arg || return
+  while [ "$JP_ARG" != ".done" ];do
+    [ $JP_SKIP ] || jp_eval "$JP_ARG" || return
+    jp_next_arg || return
+  done
+}
+
+jp_done () {
+  jp_error "done can only be used with do" || return
+}
+
+jp_map () {
+  if jp__is_obj;then
+    jp_pop || return
+    if [ "${#JP_OUT}" -gt 3 ];then
+      local obj="$JP_OUT" flipflop=0 nestcnt=0 args_idx=$JP_ARGS_IDX accum
+      for t in ${obj:2:-2};do
+        if [ $flipflop -eq 0 ];then # key
+          accum="{	$t	:	"
+          flipflop=$(( flipflop + 1 ))
+        elif [ $flipflop -eq 1 ];then # :
+          flipflop=$(( flipflop + 1 ))
+        elif [ $flipflop -eq 2 ];then # val
+          accum+="$t	"
+          [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+          [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+          if [ $nestcnt -eq 0 ];then
+            flipflop=$(( flipflop + 1 ))
+            jp_push "$accum}	"
+            accum=
+            JP_ARGS_IDX=$args_idx
+            jp_next_arg || return
+            jp_eval "$JP_ARG" || return
+          fi
+        else # ,
+          flipflop=0
+        fi
+      done
+    else
+      jp__skip_next
+    fi
+  elif jp__is_arr;then
+    jp_pop || return
+    if [ "${#JP_OUT}" -gt 3 ];then
+      local nestcnt=0 args_idx=$JP_ARGS_IDX accum
+      for t in ${JP_OUT:2:-2};do
+        if [ $nestcnt -gt 0 ] || [ "$t" != ',' ];then
+          accum+="$t	"
+          [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+          [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+          if [ $nestcnt -eq 0 ];then
+            jp_push "$accum"
+            accum=
+            JP_ARGS_IDX=$args_idx
+            jp_next_arg || return
+            jp_eval "$JP_ARG" || return
+          fi
+        fi
+      done
+    else
+      jp__skip_next
+    fi
+  else
+    jp_error "can only map objects or arrays" || return
+  fi
+}
+
+jp_cons () {
+  jp_pop || return
+  local val="$JP_OUT"
+  jp__is_arr || jp_error "can only cons a value to an array" || return
+  jp_pop || return
+  if [ "${#JP_OUT}" -eq 3 ];then # empty
+    jp_push "[	$val	]	"
+  else
+    jp_push "[	$val	,	${JP_OUT:2}	"
+  fi
+}
+
+jp_def () {
+  jp_next_arg || return
+  [ "${JP_ARG:0:1}" = '.' ] || jp_error "can only def names beginning with ." || return
+  local name="jp_${JP_ARG:1}" args argc=1 nestcnt=0
+  jp_next_arg || return
+  args+="'$JP_ARG'	"
+  if [ "$JP_ARG" = '.do' ];then
+    (( nestcnt++ ))
+    while [ $nestcnt -gt 0 ];do
+      jp_next_arg || return
+      args+="'$JP_ARG'	"
+      ((argc++))
+      [ "$JP_ARG" = '.do' ] && ((nestcnt++))
+      [ "$JP_ARG" = '.done' ] && ((nestcnt--))
+    done
+  fi
+  type -t $name &>/dev/null && return # don't redefine functions
+  eval $"$name () { JP_ARGS_LEN=\$((JP_ARGS_LEN+$argc-1));((JP_ARGS_IDX--));JP_ARGS=(\${JP_ARGS[@]:0:\$JP_ARGS_IDX} $args \${JP_ARGS[@]:\$((JP_ARGS_IDX+1))}); jp_next_arg || return;jp_eval \"\$JP_ARG\" || return; }"
+}
+
+jp_q () {
+  JP_QUOTE=1
+}
+
+jp_nq () {
+  JP_QUOTE=
+}
+
+jp_ex () {
+  jp__is_int || jp_error "ex requires an arg count as an integer" || return
+  jp_pop || return
+  [ $JP_OUT -gt 0 ] || jp_error "ex arg count must be positive" || return
+  local argc=$JP_OUT args=
+  while (( argc-- ));do
+    jp_pop || return
+    args="${JP_OUT:1:-1} $args"
+  done
+  while IFS= read -r;do
+    jp_eval "\"$REPLY\""
+  done < <(eval ${args[@]})
+}
+
+jp_fromstr () {
+  jp__is_str || jp_error "fromstr requires a string arg" || return
+  jp_pop || return
+  jp_eval "${JP_OUT:1:-1}" # strip quotes
+}
+
+jp_pair () {
+  jp__is_str || jp_error "pair requires a string arg" || return
+  jp_pop || return
+  local k="$JP_OUT"
+  jp_pop || return
+  jp_push "{	$k	:	$JP_OUT	}	"
+}
+
+jp_idx () {
+  if jp__is_int;then
+    jp_pop || return
+    if jp__is_arr;then
+      [ $JP_OUT -ge 0 ] || jp_error "idx must be positive" || return
+      local i=$JP_OUT j=0
+      jp_pop || return
+      if [ "${#JP_OUT}" -gt 3 ];then
+        local nestcnt=0 accum
+        for t in ${JP_OUT:2:-2};do
+          [ $nestcnt -eq 0 ]&&[ "$t" = ',' ]&& continue
+          [ "$i" -eq "$j" ] && accum+="$t	"
+          [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+          [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+          [ $nestcnt -eq 0 ]&&(( j++ ))
+          (( j > i )) && break
+        done
+        [ -n "$accum" ] && jp_push "$accum"
+      fi
+      return
+    fi
+  fi
+  jp_error "idx requires an int and an array" || return
+}
+
+jp_keyval () {
+  if jp__is_str;then
+    jp_pop || return
+    if jp__is_obj;then
+      local k="$JP_OUT"
+      jp_pop || return
+      if [ "${#JP_OUT}" -gt 3 ];then
+        local obj="$JP_OUT" flipflop=0 nestcnt=0 accum match
+        for t in ${obj:2:-2};do
+          if [ $flipflop -eq 0 ];then # key
+            [ "$k" = "$t" ] && match=1
+            flipflop=$(( flipflop + 1 ))
+          elif [ $flipflop -eq 1 ];then # :
+            flipflop=$(( flipflop + 1 ))
+          elif [ $flipflop -eq 2 ];then # val
+            [ -n "$match" ] && accum+="$t	"
+            [[ $t == [\[{] ]] && nestcnt=$(( nestcnt + 1 ))
+            [[ $t == [\]}] ]] && nestcnt=$(( nestcnt - 1 ))
+            if [ $nestcnt -eq 0 ];then
+              flipflop=$(( flipflop + 1 ))
+              [ -n "$match" ] && break
+            fi
+          else # ,
+            flipflop=0
+          fi
+        done
+        [ -n "$match" ] && jp_push "$accum"
+      fi
+      return
+    fi
+  fi
+  jp_error "keyval requires a string and an object" || return
+}
+# END TRANSFORM FUNCTIONS
+
+# BEGIN PRINT FUNCTIONS
+jp_prettyprint () {
+  while [ $JP_STACKSIZE -gt 0 ];do
+    jp_pop || return
+    local indentlen=${#JP_INDENT}
+    local indent=
+    local linebuf=
+    for token in $JP_OUT;do
+      case $token in
+        [\[{]) if [ "${linebuf: -1}" = '[' ];then
+                 echo -E "$linebuf"
+                 linebuf="$indent$token"
+               elif [[ "$linebuf" == *[^[:blank:]]* ]];then
+                 linebuf="$linebuf$token"
+               else
+                 linebuf="$indent$token"
+               fi
+               indent="$indent$JP_INDENT"
+               ;;
+        [\]}]) [[ -n "$indent" ]] && indent="${indent:$indentlen}"
+               if [[ "$linebuf" == *[^[:blank:]] ]];then
+                 if [[ "${linebuf:$((${#linebuf}-1)):1}" == [\[{] ]];then
+                   linebuf="$linebuf$token"
+                 else
+                   echo -E "$linebuf"
+                   linebuf="$indent$token"
+                 fi
+               else
+                 linebuf="$indent$token"
+               fi
+               ;;
+          ',') echo -E "$linebuf,"
+               linebuf="$indent";;
+          ':') linebuf="$linebuf: ";;
+            *) if [[ "$linebuf" == *[^[:blank:]] ]];then
+                 echo -E "$linebuf"
+                 linebuf="$indent$token"
+               else
+                  linebuf="$linebuf$token"
+               fi
+      esac
+    done
+    [[ "$linebuf" == *[^[:blank:]]* ]] && echo -E "$linebuf"
+  done
+}
+
+jp_plainprint () {
+  while [ $JP_STACKSIZE -gt 0 ];do
+    jp_pop || return
+    for t in $JP_OUT;do
+      echo -nE "$t"
+    done
+    echo
+  done
+}
+# END PRINT FUNCTIONS
+
+# BEGIN MAIN
+jp_next_arg () {
+  (( JP_ARGS_IDX < JP_ARGS_LEN )) || jp_error "ran out of args" || return
+  JP_ARG="${JP_ARGS[$((JP_ARGS_IDX))]}"
+  (( JP_ARGS_IDX++ ))
+  return 0
+}
+
+jp_peek_arg () {
+  JP_PEEK="${JP_ARGS[$((JP_ARGS_IDX))]}"
+}
+
+jp_eval () {
+  case "$1" in
+    [.]*) # transformation command
+          eval "jp_${1#.}" || return;;
+       *) # json to parse
+          if [ $JP_QUOTE ] && [ ${1:0:1} != '"' ];then
+            set -- "\"$1\""
+          fi
+          JP_IDX=0
+          JP_LINE=1
+          JP_BUF="$1"
+          JP_BUF_MAXLEN="${#JP_BUF}"
+          jp_parse_json || return
+          jp_push "$JP_TOKENS";;
+  esac
+}
+
+jp_run () {
+  JP_STACKSIZE=0
+  # parse
+  if [ $JP_INPUT ];then
+    jp_parse_json || return
+    jp_push "$JP_TOKENS"
+  fi
+
+  # transform
+  if [ $JP_DEBUG ];then
+    echo -e "DEBUG: \033[1ms\033[0m:step, \033[1mn\033[0m:next arg, \033[1mq\033[0m:quit"
+    trap 'jp_debug "${BASH_COMMAND%% *}"' DEBUG
+    set -T
+  fi
+  local in_idx="$JP_IDX" in_line="$JP_LINE" # save stdin parse state
+  JP_LINE=1
+  while (( JP_ARGS_IDX < JP_ARGS_LEN ));do
+    jp_next_arg || return
+    jp_eval "$JP_ARG" || return
+  done
+  JP_IDX="$in_idx" # restore stdin parse state
+  JP_LINE="$in_line"
+  [ $JP_DEBUG ]&&trap '' DEBUG
+
+  # print
+  [ $JP_SILENT ] && return 0
+  if [ $JP_PRETTY ];then
+    jp_prettyprint
+  else
+    jp_plainprint
+  fi
+  return 0
+}
+
+jp_load_macros () {
+  [ -f "$1" ] || jp_error "cannot find macro file: $1" || return
+  [ -r "$1" ] || jp_error "cannot open macro file for reading: $1" || return
+  JP_LINE=1
+  while IFS= read -r;do
+    jp_macro_to_args "$REPLY" || return
+    JP_ARGS_LEN=${#JP_ARGS[@]}
+    JP_ARGS_IDX=0
+    jp_next_arg || return
+    jp_eval "$JP_ARG" || return
+    (( JP_LINE++ ))
+  done < "$1"
+}
+
+# this silly function is needed to avoid splitting strings on whitespace
+jp_macro_to_args () {
+  local del=" " quo='"' esc="\\" len="${#1}" idx=0 cnt=0 word=
+  JP_ARGS=()
+  while (( idx <= len ));do
+    c="${1:$idx:1}"
+    (( idx++ ))
+    if [ $cnt -eq 0 ];then
+      if [ -z "$c" ] || [ "$c" = "$del" ];then
+        if [ -n "$word" ];then
+          JP_ARGS+=("$word")
+          word=
+        fi
+        continue
+      elif [ "$c" = "$quo" ];then
+        (( cnt++ ))
+      fi
+    elif [ -z "$c" ];then
+      jp_error "found unterminated string in macro: col:$idx, $1" || return
+    elif [ "$c" = "$quo" ];then
+      [ "${word: -1}" != "$esc" ] && (( cnt-- ))
+    fi
+    word+="$c"
+  done
+}
+
+jp_main () {
+  JP_INDENT="  "          # 2 space indent default
+  [ -t 1 ] && JP_PRETTY=1 # default to pretty for a tty
+  [ -t 0 ] || JP_INPUT=1  # read input if being piped
+  while getopts "dh:HpPrsi:m:" opt;do
+    case "$opt" in
+      'd') JP_DEBUG=1;;
+      'h') JP_HISTORY="$OPTARG";;
+      'H') JP_HISTORY=;;
+      'p') JP_PRETTY=1;;
+      'P') JP_PRETTY=;;
+      'i') JP_INDENT="$OPTARG";;
+      'r') JP_REPL=1;;
+      's') JP_SILENT=1;;
+      'm') jp_load_macros "$OPTARG" || return
+    esac
+  done
+  shift $((OPTIND-1)) # reset options processing
+  if [ $JP_REPL ];then
+    jp_repl
+    exit
+  fi
+  [ $JP_INPUT ] && jp_readline
+  while :;do
+    JP_ARGS=("$@")
+    JP_ARGS_LEN=${#JP_ARGS[@]}
+    JP_ARGS_IDX=0
+    jp_run || return
+    if [ $JP_INPUT ];then
+      jp_readline && [ $JP_BUF_MAXLEN -eq 0 ] && break # no more input
+    else
+      break
+    fi
+  done
+  return 0
+}
+
+jp_repl () {
+  history -r "$JP_HISTORY"
+  local msg="Welcome to the jp REPL. Type commands and ENTER to evaluate, q quits."
+  JP_ERROR="$msg"
+  jp_redraw
+  while IFS= read -e -p '> ' -r;do
+    if [ "$REPLY" = 'q' ];then
+      echo -ne "\e[H\e[JGoodbye.\n"
+      break
+    fi
+    jp_macro_to_args "$REPLY" || return
+    JP_ARGS_LEN=${#JP_ARGS[@]}
+    JP_ARGS_IDX=0
+    while (( JP_ARGS_IDX < JP_ARGS_LEN ));do
+      jp_next_arg || break
+      jp_eval "$JP_ARG" || break
+    done
+    [ "${JP_ERROR:0:7}" = 'Welcome' ]&&history -s "$REPLY"
+    jp_redraw
+    JP_ERROR="$msg"
+  done
+  history -w "$JP_HISTORY"
+}
+
+jp_redraw () {
+  echo -en '\e[H\e[J\e[3H'
+  jp_dump
+  echo -en "\e[H$JP_ERROR\n"
+}
+
+[ "$0" = "$BASH_SOURCE" ] && jp_main "$@"
+# END MAIN
+# vim: set ft=sh:

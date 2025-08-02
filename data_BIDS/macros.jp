@@ -1,0 +1,18 @@
+.def .exists .do false .rot .map .do .k .rot .swap .over .eq .rot .or .done .swap .pop .done
+.def .not .do .if false .else true .done
+.def .and .do .if .do .if true .else false .done .else .do .pop false .done .done
+.def .or .do .if .do .pop true .done .else .do .if true .else false .done .done
+.def .revarr .do [] .swap .map .cons .done
+.def .revobj .do {} .swap .map .concat .done
+.def .rev .do .is_obj .if .revobj .else .revarr .done
+.def .empty .do .count 0 .eq .done
+.def .ltarr .do [] .rot .rot .swap .map .do .over .over .swap .lt .if .do .rot .swap .cons .swap .done .else .pop .done .pop .revarr .done
+.def .gtarr .do [] .rot .rot .swap .map .do .over .over .swap .gt .if .do .rot .swap .cons .swap .done .else .pop .done .pop .revarr .done
+.def .eqarr .do [] .rot .rot .swap .map .do .over .over .swap .eq .if .do .rot .swap .cons .swap .done .else .pop .done .pop .done
+.def .ht .do .dup .t .swap .h .done
+.def .sort .do .dup .len 1 .gt .if .do .dup .dup .ht .dup [] .swap .cons .rot .rot .gtarr .sort .swap .concat .swap .ht .eqarr .concat .swap .ht .ltarr .sort .concat .done .done
+.def .ab .do .over .over .gt .if .swap .pop .done
+.def .updateobj .do {} .swap .rot .map .do .over .k .over .k .eq .if .do .pop .dup .done .rot .concat .swap .done .pop .done
+.def .upsertobj .do .concat .uniq .done
+.def .deleteobj .do {} .swap .rot .map .do .over .over .k .eq .if .pop .else .do .rot .concat .swap .done .done .pop .done
+.def .filterobj .do {} .swap .rot .map .do .over .over .k .ne .if .pop .else .do .rot .concat .swap .done .done .pop .done

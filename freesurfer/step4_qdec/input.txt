@@ -1,0 +1,2 @@
+/projects/kg98/trangc/VBM/data/ASRB/derivatives/freesurfer/sub-101001/surf/lh.thickness.fwhm10.fsaverage.mgh
+/projects/kg98/trangc/VBM/data/ASRB/derivatives/freesurfer/sub-101002/surf/lh.thickness.fwhm10.fsaverage.mgh
