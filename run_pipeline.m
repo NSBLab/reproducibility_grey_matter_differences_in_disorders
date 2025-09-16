@@ -276,7 +276,8 @@ function success = run_vbm_cat12_step1b(config)
 fprintf('=== VBM CAT12 STEP 1B: QC REPORT CONCATENATION ===\n');
 vbm_dir = config.data_directories.VBM;
 step1_dir = fullfile(vbm_dir, 'preprocessing', 'step1_CAT12');
-qc_script = fullfile(step1_dir, 'cat12_qcReport_concat.sh');
+% Use the step1b script name
+qc_script = fullfile(step1_dir, 'step1b_cat12_qcReport_concat.sh');
 if ~exist(qc_script, 'file')
     fprintf('  Warning: QC concat script not found: %s\n', qc_script);
     success = false;
