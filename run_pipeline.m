@@ -247,7 +247,7 @@ function success = run_vbm_cat12(config)
 fprintf('=== VBM CAT12 PREPROCESSING ===\n');
 vbm_dir = config.data_directories.VBM;
 step1_dir = fullfile(vbm_dir, 'preprocessing', 'step1_CAT12');
-cat12_script = fullfile(step1_dir, 'CAT12_preprocessing_send.sh');
+cat12_script = fullfile(step1_dir, 'step1a_CAT12_preprocessing_send.sh');
 if exist(cat12_script, 'file')
     fprintf('  Running CAT12 preprocessing...\n');
     try
@@ -257,7 +257,7 @@ if exist(cat12_script, 'file')
         system(['bash ', cat12_script]);
         % After preprocessing submissions, run QC report concatenation
         try
-            qc_script = fullfile(step1_dir, 'cat12_qcReport_concat.sh');
+            qc_script = fullfile(step1_dir, 'step1b_cat12_qcReport_concat.sh');
             if exist(qc_script, 'file')
                 fprintf('  Running CAT12 QC report concatenation...\n');
                 system(['bash ', qc_script]);

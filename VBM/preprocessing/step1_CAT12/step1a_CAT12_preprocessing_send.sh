@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Read the configuration file to get enabled datasets (resolve relative to this script)
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-CONFIG_FILE="$SCRIPT_DIR/../../config_hpc.json"
+export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+CONFIG_FILE="$SCRIPT_DIR/../../../config_hpc.json"
 
 # Check if config file exists
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -102,7 +102,7 @@ while IFS= read -r DATASET; do
             export DATASET="$DATASET"
             
             # Submit SLURM job
-            sbatch --job-name=CAT_${DATASET}_${SUBJECT} CAT12_preprocessing.sh
+            sbatch --job-name=CAT_${DATASET}_${SUBJECT} $SCRIPT_DIR/CAT12_preprocessing.sh
         else
             echo "CAT12 report already exists for subject $SUBJECT, skipping..."
         fi
