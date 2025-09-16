@@ -177,7 +177,9 @@ end
 function success = run_organize_bids(config)
 fprintf('=== ORGANIZE BIDS STAGE ===\n');
 enabled_datasets = get_enabled_datasets(config);
-data_bids_dir = config.data_directories.data_BIDS;
+% Resolve data_BIDS directory relative to this file if it's a relative path
+project_root = fileparts(mfilename('fullpath'));
+data_bids_dir = resolve_relative_path(project_root, config.data_directories.data_BIDS);
 
 for i = 1:length(enabled_datasets)
     dataset_name = enabled_datasets{i};
@@ -220,6 +222,22 @@ for k = 1:numel(dataset_names)
     if isfield(ds, 'enabled') && logical(ds.enabled)
         enabled_datasets{end+1} = name_k; %#ok<AGROW>
     end
+end
+end
+
+function absPath = resolve_relative_path(baseDir, pathStr)
+% If pathStr is absolute, return as-is; otherwise resolve relative to baseDir
+if ispc
+    % Windows absolute path starts with drive letter like C:\ or \\
+    isAbs = ~isempty(regexp(pathStr, '^[A-Za-z]:\\|^\\\\', 'once'));
+else
+    % Unix absolute path starts with /
+    isAbs = startsWith(pathStr, filesep);
+end
+if isAbs
+    absPath = pathStr;
+else
+    absPath = fullfile(baseDir, pathStr);
 end
 end
 

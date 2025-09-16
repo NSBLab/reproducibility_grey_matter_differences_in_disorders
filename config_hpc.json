@@ -1,23 +1,25 @@
 {
     "data_directories": {
-      "dataset_root": "C:\\Users\\tcao0011\\VBM\\multiple_dataset",
-      "data": ".\\data",
-      "data_BIDS": ".\\data_BIDS",
-      "VBM": ".\\VBM",
-      "SBM": ".\\SBM",
-      "utils": ".\\utils"
+      "dataset_root": "/projects/kg98/trangc/VBM/data_exemplar",
+      "data": "./data",
+      "data_BIDS": "./data_BIDS",
+      "VBM": "./VBM",
+      "SBM": "./SBM",
+      "utils": "./utils"
     },
     
     "datasets": {
       "Myelin": {
-        "path": "${dataset_root}\\Myelin",
+        "path": "${dataset_root}/Myelin",
         "bids_script": "BIDS_Myelin.m",
+        "vbm_extract_script": "extract_sub_Myelin.m",
         "enabled": true,
         "longitudinal": true
       },
       "RD": {
-        "path": "${dataset_root}\\RD",
+        "path": "${dataset_root}/RD",
         "bids_script": "BIDS_RD.m",
+        "vbm_extract_script": "extract_sub_RD.m",
         "enabled": true,
         "longitudinal": false
       }
@@ -25,7 +27,6 @@
     
     "pipeline_stages": {
       "organize_bids": { "enabled": true, "description": "Convert datasets to BIDS format" },
-      "organize_extract": { "enabled": true, "description": "Extract subjects from BIDS datasets" },
       "VBM_CAT12": { "enabled": true, "description": "VBM CAT12 preprocessing" },
       "VBM_extract_subjects": { "enabled": true, "description": "VBM extract subjects" },
       "VBM_smoothing": { "enabled": true, "description": "VBM smoothing" },
@@ -53,8 +54,8 @@
     },
     
     "output_directories": {
-      "results": "C:\\Users\\tcao0011\\VBM\\results",
-      "figures": "C:\\Users\\tcao0011\\VBM\\figures",
+      "results": "${dataset_root}/results",
+      "figures": "${dataset_root}/figures",
       "temp": ".\\temp"
     },
     
@@ -85,7 +86,7 @@
     },
     
     "software_paths": {
-      "matlab": "C:\\Program Files\\MATLAB\\R2023b\\bin\\matlab.exe",
+      "matlab": "usr/local/bin/matlab",
       "freesurfer": "",
       "cat12": ""
     }

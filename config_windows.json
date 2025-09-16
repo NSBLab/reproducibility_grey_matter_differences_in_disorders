@@ -1,6 +1,6 @@
 {
     "data_directories": {
-      "dataset_root": "C:\\Users\\tcao0011\\VBM\\multiple_dataset",
+      "dataset_root": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data",
       "data": ".\\data",
       "data_BIDS": ".\\data_BIDS",
       "VBM": ".\\VBM",
@@ -53,8 +53,8 @@
     },
     
     "output_directories": {
-      "results": "C:\\Users\\tcao0011\\VBM\\results",
-      "figures": "C:\\Users\\tcao0011\\VBM\\figures",
+      "results": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data\\results",
+      "figures": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data\\figures",
       "temp": ".\\temp"
     },
     
