@@ -10,16 +10,17 @@ for dataset in `cat "$DATA_ROOT/dataset_list_VBM.txt"`; do
 
 	for sub in `cat subject_use.txt`; do
 
-		if [ -z "$ses" ]
-		then
-			filename=$sub
-			address=${sub}
-		else
-			ls "$DATA_ROOT/$dataset/${sub}" > temp.txt #list all the sessions
-			ses=$(sed '1q;d' temp.txt) #choose the first session
+		# Auto-detect session directories for this subject (do not rely on external $ses)
+		first_ses_dir=$(find "$DATA_ROOT/$dataset/${sub}" -maxdepth 1 -type d -name "ses-*" | head -1)
+		if [ -n "$first_ses_dir" ]; then
+			ses=$(basename "$first_ses_dir")
 			address=${sub}/${ses}
 			echo $address
 			filename=${sub}_${ses}
+		else
+			unset ses
+			filename=$sub
+			address=${sub}
 		fi
 
 		cd "$DATA_ROOT/$dataset/${address}/anat/" || continue
