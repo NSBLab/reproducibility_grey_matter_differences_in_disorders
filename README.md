@@ -16,27 +16,72 @@ In this package, we provide the codes that were used to obtain the results in th
 
 ## Installation
 
-Download the repository. Change the config.json to point to 
+1) Download/clone this repository.
+2) Choose and edit a config file to match your environment:
+   - `config_windows.json` (Windows)
+   - `config_hpc.json` (HPC/cluster)
+   - `config.json` (WSL/Linux example)
+   Ensure `data_directories.dataset_root` points to the folder containing your datasets (e.g., `.../multiple_dataset`).
+3) Optionally copy your chosen config to `config.json` or keep it as-is; the pipeline accepts a config struct and internal scripts read relative to their own locations.
 
-Read the comments and documentation within each code for details.
+Read the comments in the config for details on paths, stages, and datasets.
 
 ## Data
-
-Due to the file size exceeding the limit allowed by GitHub, you will need to fill the `data/` directories with data that you can download from this [OSF repository](https://osf.io/huz4e/). The total file size is 2 GB. 
 
 Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/1.0.0) and [RD](https://openneuro.org/datasets/ds002748/versions/1.0.5) that are openly available from openneuro.org and put them in `data/` with folder name `Myelin` and `RD`, respectively. Please consult the link for detailed information about access, licensing, and terms and conditions of usage.
 
 ## Usage
 
+### Run the pipeline from MATLAB
+
+Open MATLAB in the repo root and run:
+
+```matlab
+run_pipeline('full');
+```
+
+This uses the configuration file to:
+- Organize enabled datasets into BIDS
+- Run VBM CAT12 preprocessing (step1)
+- Continue with later VBM stages if enabled
+
+You can also run specific stages, e.g.:
+
+```matlab
+run_pipeline('VBM_CAT12');
+```
+
 ### Organising downloaded data into BIDS format
 
-run BIDS_<studyname> to copy files into BIDS format, extract files, and get the subjects with age between 18 and 60.
-
-run first part of extract_sub_<studyname>.m (upto write useFolder) to get the list of subjects that can be used, i.e., adult (age 18-60) in a site that has at least 20HC and 20P.
+The pipeline calls `data_BIDS/BIDS_<Dataset>.m` for each enabled dataset in the config. These scripts read `dataset_root` from the config and write per-dataset `subject_use.txt` under `<dataset_root>/<Dataset>/`.
 
 ### SBM
 
 ### VBM
+
+#### step1 preprocessing (VBM/CAT12)
+- The CAT12 step is launched by the pipeline via `VBM/preprocessing/step1_CAT12/CAT12_preprocessing_send.sh`.
+- It reads the config, determines enabled datasets, writes the list to `<dataset_root>/dataset_list_VBM.txt`, and submits one job per subject.
+- The environment variable `DATA_ROOT` is set automatically by the pipeline so downstream shell scripts can find your data.
+- After submissions, the QC concatenation script `VBM/preprocessing/step1_CAT12/cat12_qcReport_concat.sh` is run automatically to aggregate CAT12 QC values per dataset.
+
+Manual usage (optional):
+```bash
+cd VBM/preprocessing/step1_CAT12
+chmod +x CAT12_preprocessing_send.sh CAT12_preprocessing.sh cat12_qcReport_concat.sh
+./CAT12_preprocessing_send.sh
+# To manually re-run QC aggregation (DATA_ROOT must be set):
+DATA_ROOT=/path/to/multiple_dataset ./cat12_qcReport_concat.sh
+```
+#### step2
+
+#### step3
+## run glm model
+run combine_metadata.m 
+smooth maps by run run_smooth_TIV_send.sh
+run make_mask.m (need to load VPM), one mask for all psychosis and one mask for AD. Threshold masking: At each voxel, if a value in any of the images falls below the threshold (0.2), then that voxel is excluded from the analysis.
+.run glm_func.m from runGLM_batch.m by runGLM_send.sh, check runGLM_batch.m (use the same mask created for psychosis (or AD))
+
 
 ## Compatibility
 
@@ -55,17 +100,11 @@ Please contact trang.cao@monash.edu if you need any further details.
 
 
 
-## preprocessing
-run preprocessing/CAT12_preprocessing_send.sh for each dataset, require unzip file .nii
 
-run cat12_qcReport_concat.sh to combine CAT12 reports
-run extract_sub_<dataset>.m to get demo info
 
-## run glm model
-run combine_metadata.m 
-smooth maps by run run_smooth_TIV_send.sh
-run make_mask.m (need to load VPM), one mask for all psychosis and one mask for AD. Threshold masking: At each voxel, if a value in any of the images falls below the threshold (0.2), then that voxel is excluded from the analysis.
-.run glm_func.m from runGLM_batch.m by runGLM_send.sh, check runGLM_batch.m (use the same mask created for psychosis (or AD))
+
+
+
 
 to run combat:
 run combat_input.m  or run COMBATprepareInputs_sbatch.sh, check the list of dataset

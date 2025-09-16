@@ -1,7 +1,8 @@
 % List of open inputs
 % CAT12: Segmentation: Volumes - cfg_files
 nrun = X; % enter the number of runs here
-jobfile = {'/home/trangc/kg98/trangc/VBM/code/preprocessing/CAT12_preprocessing_job.m'};
+scriptDir = fileparts(mfilename('fullpath'));
+jobfile = {fullfile(scriptDir, 'CAT12_preprocessing_job.m')};
 jobs = repmat(jobfile, 1, nrun);
 inputs = cell(1, nrun);
 for crun = 1:nrun

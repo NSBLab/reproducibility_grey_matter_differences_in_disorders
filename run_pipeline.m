@@ -90,8 +90,6 @@ function success = run_single_stage(stage, config)
 switch stage
     case 'organize_bids'
         success = run_organize_bids(config);
-    case 'organize_extract'
-        success = run_organize_extract(config);
     case 'VBM_CAT12'
         success = run_vbm_cat12(config);
     case 'VBM_extract_subjects'
@@ -176,8 +174,6 @@ if isfield(config, 'data_directories') && isfield(config.data_directories, 'data
 end
 end
 
-% --- Example step functions below. You should expand/modify these as needed ---
-
 function success = run_organize_bids(config)
 fprintf('=== ORGANIZE BIDS STAGE ===\n');
 enabled_datasets = get_enabled_datasets(config);
@@ -211,18 +207,6 @@ end
 success = true;
 end
 
-function enabled_datasets = get_enabled_datasets(config)
-enabled_datasets = {};
-dataset_names = fieldnames(config.datasets);
-for i = 1:length(dataset_names)
-    dataset_name = dataset_names{i};
-    dataset_config = config.datasets.(dataset_name);
-    if isfield(dataset_config, 'enabled') && dataset_config.enabled
-        enabled_datasets{end+1} = dataset_name;
-    end
-end
-end
-
 % --- VBM steps ---
 
 function success = run_vbm_cat12(config)
@@ -233,7 +217,22 @@ cat12_script = fullfile(step1_dir, 'CAT12_preprocessing_send.sh');
 if exist(cat12_script, 'file')
     fprintf('  Running CAT12 preprocessing...\n');
     try
+        % Pass DATA_ROOT to shell so downstream scripts can read it
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
         system(['bash ', cat12_script]);
+        % After preprocessing submissions, run QC report concatenation
+        try
+            qc_script = fullfile(step1_dir, 'cat12_qcReport_concat.sh');
+            if exist(qc_script, 'file')
+                fprintf('  Running CAT12 QC report concatenation...\n');
+                system(['bash ', qc_script]);
+            else
+                fprintf('  Warning: QC concat script not found: %s\n', qc_script);
+            end
+        catch ME2
+            fprintf('  Warning: CAT12 QC concat step failed: %s\n', ME2.message);
+        end
     catch ME
         fprintf('  Error running CAT12 preprocessing: %s\n', ME.message);
         success = false;
@@ -241,6 +240,39 @@ if exist(cat12_script, 'file')
     end
 else
     fprintf('  Warning: CAT12 script not found: %s\n', cat12_script);
+end
+success = true;
+end
+
+function enabled_datasets = run_vbm_extract_subjects(config)
+fprintf('=== VBM EXTRACT SUBJECTS STAGE ===\n');
+enabled_datasets = get_enabled_datasets(config);
+data_bids_dir = config.data_directories.data_BIDS;
+
+for i = 1:length(enabled_datasets)
+    dataset_name = enabled_datasets{i};
+    dataset_config = config.datasets.(dataset_name);
+    extract_script = fullfile(data_bids_dir, dataset_config.vbm_extract_script);
+    
+    if exist(extract_script, 'file')
+        fprintf('  Running vbm_extract_subjects script: %s\n', extract_script);
+        try
+            % Get the function name from the script file
+            [script_dir, func_name, ~] = fileparts(extract_script);
+            
+            % Add directory to path, call function, then remove
+            addpath(script_dir);
+            feval(func_name, config);
+            rmpath(script_dir);
+            
+        catch ME
+            fprintf('  Error running vbm_extract_subjects script: %s\n', ME.message);
+            success = false;
+            return;
+        end
+    else
+        fprintf('  Warning: vbm_extract_subjects script not found: %s\n', extract_script);
+    end
 end
 success = true;
 end
