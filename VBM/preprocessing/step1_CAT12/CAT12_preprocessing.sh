@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=0-0:10:00
+#SBATCH --time=0-4:00:00
 #SBATCH --account=kg98
 #SBATCH --job-name=CAT12_Preprocessing
 #SBATCH --cpus-per-task=1

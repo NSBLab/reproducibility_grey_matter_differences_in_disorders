@@ -251,7 +251,7 @@ fprintf('=== VBM CAT12 STEP 1A: SUBMIT PREPROCESSING JOBS ===\n');
 vbm_dir = config.data_directories.VBM;
 step1_dir = fullfile(vbm_dir, 'preprocessing', 'step1_CAT12');
 % Support original filename
-cat12_script = fullfile(step1_dir, 'CAT12_preprocessing_send.sh');
+cat12_script = fullfile(step1_dir, 'step1a_CAT12_preprocessing_send.sh');
 if ~exist(cat12_script, 'file')
     fprintf('  Warning: CAT12 send script not found: %s\n', cat12_script);
     success = false;

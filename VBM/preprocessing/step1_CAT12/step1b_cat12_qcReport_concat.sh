@@ -4,7 +4,6 @@ if [ -z "$DATA_ROOT" ]; then echo "Error: DATA_ROOT not set"; exit 1; fi
 
 for dataset in `cat "$DATA_ROOT/dataset_list_VBM.txt"`; do
 
-	#dataset=Specificity
 	echo ${dataset}
 	cd "$DATA_ROOT/$dataset/" || continue
 
@@ -14,6 +13,7 @@ for dataset in `cat "$DATA_ROOT/dataset_list_VBM.txt"`; do
 		first_ses_dir=$(find "$DATA_ROOT/$dataset/${sub}" -maxdepth 1 -type d -name "ses-*" | head -1)
 		if [ -n "$first_ses_dir" ]; then
 			ses=$(basename "$first_ses_dir")
+			
 			address=${sub}/${ses}
 			echo $address
 			filename=${sub}_${ses}
