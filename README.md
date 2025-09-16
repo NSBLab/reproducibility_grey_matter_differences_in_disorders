@@ -24,13 +24,13 @@ Read the comments and documentation within each code for details.
 
 Due to the file size exceeding the limit allowed by GitHub, you will need to fill the `data/` directories with data that you can download from this [OSF repository](https://osf.io/huz4e/). The total file size is 2 GB. 
 
-Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/1.0.0) and [Speech](https://openneuro.org/datasets/ds004302/versions/1.0.0) that are openly available from openneuro.org and put them in `data/` with folder name `Myelin` and `Speech`, respectively. Please consult the link for detailed information about access, licensing, and terms and conditions of usage.
+Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/1.0.0) and [RD](https://openneuro.org/datasets/ds002748/versions/1.0.5) that are openly available from openneuro.org and put them in `data/` with folder name `Myelin` and `RD`, respectively. Please consult the link for detailed information about access, licensing, and terms and conditions of usage.
 
 ## Usage
 
 ### Organising downloaded data into BIDS format
 
-run BIDS_<studyname> to copy files into BIDS format
+run BIDS_<studyname> to copy files into BIDS format, extract files, and get the subjects with age between 18 and 60.
 
 run first part of extract_sub_<studyname>.m (upto write useFolder) to get the list of subjects that can be used, i.e., adult (age 18-60) in a site that has at least 20HC and 20P.
 
@@ -94,17 +94,23 @@ run figure_cor_tmap_raincloud.m
 parcelate the template on CAT12MNI by roi/project_parcellations_on_CAT12MNI.sh
 combine 3 template of cortex, subcortex, and cerebellum by roi/combine_parcellation.sh
 run parcelation by roi/parcellate_maps_send.sh
-.run glm by roi/runGLM_send.sh
+run glm by roi/runGLM_parc_send.sh
 run analysis/corr_tmap_parc.m
 run roi/matToTxt.m and roi/matThresToTxt.m
 run roi/parcellate_null_maps_send.sh to run parcellate_null_maps.m to parcellate nullmaps
 run analysis/corr_tmap_parc_null.m
 
+## plotting
+figure_cor_tmap_raincloud.m -done
+figure_cor_tmap_raincloud_combine_thres.m
+figure_cor_tmap_raincloud_combine_smooth.m
+figure_cor_tmap_raincloud_combine_smooth_thres.m
 
+figure_cor_tmap_raincloud_combine_parc.m
+figure_cor_tmap_raincloud_combine_combat_noncombat.m
 
 # SBM
 ## preprocessing
-(skip if already run VBM) run first part of extract_sub_<studyname>.m (upto write useFolder) to get the list of subjects that can be used, i.e., adult (age 18-60) in a site that has at least 20HC and 20P.
 
 if the dataset is longitudinal, run make_ses_list.sh to create a list of subject with the lowest session to use.
 
@@ -140,21 +146,28 @@ run glm_parc.m for glm
 run corr_zmap_parc.m read all stat maps 
 
 ## eigentraping for null test (eigentrap the zmaps that are calculated without combat)
-run precal_eigenmode.m
 run nulltest.m by nulltest_send.sh
 run parc_null.m to parcellate the null zmaps and thresholding the parcallated maps 
 run ver_null.m to read the zmaps at vertice level 
 run corr_zmap_parc_null.m to correlate parcelated null zmaps
-run figure_cor_zmap_parcel_raincloud.m, figure_cor_zmap_parcel_thres_raincloud.m, and figure_cor_zmap_parcel_rep_raincloud.m
+
 run corr_zmap_null_func.m by corr_zmap_null_send.sh to calculate correlation for each null
 run corr_zmap_null_combine.m to combine the correlations of all nulls 
-run figure_cor_zmap_raincloud.m
+
+## plotting results
+figure_cor_zmap_raincloud.m
+figure_cor_zmap_raincloud_combine_thres.m
+figure_cor_zmap_raincloud_combine_smooth.m
+figure_cor_zmap_raincloud_combine_smooth_thres.m
+
+figure_cor_zmap_raincloud_combine_parc.m
+figure_cor_zmap_raincloud_combine_combat_noncombat.m
 
 
 ## covariate effect
 run corr_zmap_var_<var>.mlx (<var> sex, treatment,...)
 run corr_zmap_covariate_combine.m to combine all the covariate effect
-run plot_confound.m
+run figure_covariates.m
 
 
 ## sample size effect
