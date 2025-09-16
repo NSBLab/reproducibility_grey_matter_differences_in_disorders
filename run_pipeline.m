@@ -22,7 +22,7 @@ end
 config = load_config(config_file);
 
 % Validate stage - Updated to include all stages from config.json
-valid_stages = {'organize_bids', 'organize_extract', ...
+valid_stages = {'organize_bids',  ...
                 'VBM_CAT12', 'VBM_extract_subjects', 'VBM_smoothing', ...
                 'VBM_combat', 'VBM_metadata', 'VBM_statistical_analysis', ...
                 'VBM_parcellation', 'VBM_nulltest', 'VBM_consistency', ...
@@ -245,7 +245,7 @@ success = true;
 end
 
 function enabled_datasets = run_vbm_extract_subjects(config)
-fprintf('=== VBM EXTRACT SUBJECTS STAGE ===\n');
+fprintf('=== VBM EXTRACT SUBJECTS ===\n');
 enabled_datasets = get_enabled_datasets(config);
 data_bids_dir = config.data_directories.data_BIDS;
 
@@ -372,26 +372,6 @@ if exist(roi_script, 'file')
     end
 else
     fprintf('  Warning: ROI script not found: %s\n', roi_script);
-end
-success = true;
-end
-
-function success = run_vbm_extract_subjects(config)
-fprintf('=== VBM EXTRACT SUBJECTS ===\n');
-vbm_dir = config.data_directories.VBM;
-step2_dir = fullfile(vbm_dir, 'preprocessing', 'step2_extract_subjects');
-extract_script = fullfile(step2_dir, 'extract_subjects_batch.sh');
-if exist(extract_script, 'file')
-    fprintf('  Extracting subjects...\n');
-    try
-        system(['bash ', extract_script]);
-    catch ME
-        fprintf('  Error extracting subjects: %s\n', ME.message);
-        success = false;
-        return;
-    end
-else
-    fprintf('  Warning: Extract subjects script not found: %s\n', extract_script);
 end
 success = true;
 end
