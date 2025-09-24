@@ -2,7 +2,7 @@
 
 # Read the configuration file to get enabled datasets (resolve relative to this script)
 export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-CONFIG_FILE="$SCRIPT_DIR/../../../config_hpc.json"
+CONFIG_FILE="$SCRIPT_DIR/../../../config_hpc_fulldata.json"
 
 # Check if config file exists
 if [ ! -f "$CONFIG_FILE" ]; then

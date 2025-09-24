@@ -71,7 +71,6 @@ Manual usage (optional):
 cd VBM/preprocessing/step1_CAT12
 
 # To manually run, DATA_ROOT must be set:
-export DATA_ROOT=/path/to/data/root 
 sh ./step1a_CAT12_preprocessing_send.sh
 
 # After CAT12 jobs have finished 
