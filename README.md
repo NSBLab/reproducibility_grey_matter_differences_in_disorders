@@ -22,7 +22,7 @@ In this package, we provide the codes that were used to obtain the results in th
    - `config_hpc.json` (HPC/cluster)
    - `config.json` (WSL/Linux example)
    Ensure `data_directories.dataset_root` points to the folder containing your datasets (e.g., `.../multiple_dataset`).
-3) Optionally copy your chosen config to `config.json` or keep it as-is; the pipeline accepts a config struct and internal scripts read relative to their own locations.
+3) The pipeline accepts a config struct and internal scripts read relative to their own locations.
 
 Read the comments in the config for details on paths, stages, and datasets.
 
@@ -37,7 +37,7 @@ Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/
 Open MATLAB in the repo root and run:
 
 ```matlab
-run_pipeline('full');
+run_pipeline('full',<config_file>);
 ```
 
 This uses the configuration file to:
@@ -48,7 +48,7 @@ This uses the configuration file to:
 You can also run specific stages, e.g.:
 
 ```matlab
-run_pipeline('VBM_CAT12');
+run_pipeline('VBM_CAT12_step1a');
 ```
 
 ### Organising downloaded data into BIDS format

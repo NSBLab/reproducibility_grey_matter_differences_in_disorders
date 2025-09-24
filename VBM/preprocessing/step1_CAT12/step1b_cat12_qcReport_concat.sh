@@ -6,6 +6,7 @@ for dataset in `cat "$DATA_ROOT/dataset_list_VBM.txt"`; do
 
 	echo ${dataset}
 	cd "$DATA_ROOT/$dataset/" || continue
+	rm -f "$DATA_ROOT/$dataset/cat12_qcReport_${dataset}.txt"
 
 	for sub in `cat subject_use.txt`; do
 
