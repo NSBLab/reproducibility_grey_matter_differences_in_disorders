@@ -60,18 +60,23 @@ The pipeline calls `data_BIDS/BIDS_<Dataset>.m` for each enabled dataset in the 
 ### VBM
 
 #### step1 preprocessing (VBM/CAT12)
-- The CAT12 step is launched by the pipeline via `VBM/preprocessing/step1_CAT12/CAT12_preprocessing_send.sh`.
+- The CAT12 step is launched by the pipeline via `VBM/preprocessing/step1_CAT12/step1a_CAT12_preprocessing_send.sh`.
 - It reads the config, determines enabled datasets, writes the list to `<dataset_root>/dataset_list_VBM.txt`, and submits one job per subject.
 - The environment variable `DATA_ROOT` is set automatically by the pipeline so downstream shell scripts can find your data.
-- After submissions, the QC concatenation script `VBM/preprocessing/step1_CAT12/cat12_qcReport_concat.sh` is run automatically to aggregate CAT12 QC values per dataset.
+- After CAT12 jobs have finished, the QC concatenation script `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.sh` is run to aggregate CAT12 QC values per dataset.
+- The segmentation on native space and the normalisation on MRI space are concatinated for visualisation (quality control) by `step1c_visualisation.sh`.
 
 Manual usage (optional):
 ```bash
 cd VBM/preprocessing/step1_CAT12
-chmod +x CAT12_preprocessing_send.sh CAT12_preprocessing.sh cat12_qcReport_concat.sh
-./CAT12_preprocessing_send.sh
-# To manually re-run QC aggregation (DATA_ROOT must be set):
-DATA_ROOT=/path/to/multiple_dataset ./cat12_qcReport_concat.sh
+
+# To manually run, DATA_ROOT must be set:
+export DATA_ROOT=/path/to/data/root 
+sh ./step1a_CAT12_preprocessing_send.sh
+
+# After CAT12 jobs have finished 
+sh ./step1b_cat12_qcReport_concat.sh
+sh ./step1c_visualisation.sh
 ```
 #### step2
 
