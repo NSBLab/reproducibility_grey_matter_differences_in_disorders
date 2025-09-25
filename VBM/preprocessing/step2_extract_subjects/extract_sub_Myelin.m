@@ -93,23 +93,24 @@ metadata.dataset = cellstr(repmat(study, size(quality_subjects)));
 metadata.site_string = metadata.dataset;
 metadata.site = cellstr(repmat('41', size(quality_subjects))); % Myelin uses site 41
 
+
 % Extract demographic information for quality subjects
 for i = 1:length(quality_subjects)
     sub_idx = find(strcmp(imageFile.participant_id, quality_subjects{i}));
     if ~isempty(sub_idx)
-        metadata.age(i) = imageFile.age(sub_idx);
-        metadata.sex_string{i} = imageFile.sex{sub_idx}; % Myelin uses 'sex' column
-        metadata.diagnosis_string{i} = imageFile.group{sub_idx};
+        metadata.age(i,1) = imageFile.age(sub_idx);
+        metadata.sex_string{i,1} = imageFile.sex{sub_idx}; % Myelin uses 'sex' column
+        metadata.diagnosis_string{i,1} = imageFile.group{sub_idx};
     else
         warning('Subject %s not found in demographic file', quality_subjects{i});
-        metadata.age(i) = NaN;
-        metadata.sex_string{i} = 'Unknown';
-        metadata.diagnosis_string{i} = 'Unknown';
+        metadata.age(i,1) = NaN;
+        metadata.sex_string{i,1} = 'Unknown';
+        metadata.diagnosis_string{i,1} = 'Unknown';
     end
 end
 
 % Convert sex to numeric (1=M, 0=F) - Myelin uses 'M'/'F' format
-metadata.sex = cellstr(num2str(strcmp(metadata.sex_string, 'M')));
+metadata.sex = arrayfun(@(x) num2str(strcmp(x, 'M')), metadata.sex_string, 'UniformOutput', false);
 
 % Convert diagnosis to numeric codes - Myelin uses diagList [1,3]
 [diag, ~, ~] = unique(imageFile.group);
@@ -123,7 +124,7 @@ for i = 1:length(metadata.diagnosis_string)
         elseif diag_idx == 3
             metadata.diagnosis(i) = 6; % Other diagnosis (diagList [1,3])
         else
-            metadata.diagnosis(i) = 6; % Default to other
+            metadata.diagnosis(i) = 8; % Default to other
         end
     end
 end
@@ -137,11 +138,12 @@ for i = 1:length(metadata.diagnosis)
         metadata.diagnosis_string{i} = 'Unknown';
     end
 end
-metadata.diagnosis = cellstr(num2str(metadata.diagnosis));
+metadata.diagnosis = arrayfun(@(x) num2str(x), metadata.diagnosis, 'UniformOutput', false);
 
 % Handle session information for longitudinal studies
 if is_longitudinal
     % Extract session information from CAT12 report
+    metadata.ses = cell(size(metadata.subj_id));
     metadata.ses = catFile.Var3(catFile.Var2 <= IQRthres & ismember(catFile.Var1, useFolder));
     fprintf('Extracted session information for longitudinal study\n');
 else
@@ -152,6 +154,7 @@ end
 
 % Check number of subjects per diagnosis
 diagCat = unique(metadata.diagnosis);
+diagCat = diagCat(ismember(diagCat,{'1','2','3','4','5','6','7'}));
 fprintf('\nSubject counts by diagnosis:\n');
 for iDiag = 1:length(diagCat)
     nSiteDiag(iDiag) = sum(strcmp(metadata.diagnosis, diagCat(iDiag)));

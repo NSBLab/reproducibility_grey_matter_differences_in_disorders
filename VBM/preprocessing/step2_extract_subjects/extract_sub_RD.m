@@ -78,19 +78,19 @@ metadata.site = cellstr(repmat('37', size(quality_subjects)));
 for i = 1:length(quality_subjects)
     sub_idx = find(strcmp(imageFile.participant_id, quality_subjects{i}));
     if ~isempty(sub_idx)
-        metadata.age(i) = imageFile.age(sub_idx);
-        metadata.sex_string{i} = imageFile.gender{sub_idx};
-        metadata.diagnosis_string{i} = imageFile.group{sub_idx};
+        metadata.age(i,1) = imageFile.age(sub_idx);
+        metadata.sex_string{i,1} = imageFile.gender{sub_idx};
+        metadata.diagnosis_string{i,1} = imageFile.group{sub_idx};
     else
         warning('Subject %s not found in demographic file', quality_subjects{i});
-        metadata.age(i) = NaN;
-        metadata.sex_string{i} = 'Unknown';
-        metadata.diagnosis_string{i} = 'Unknown';
+        metadata.age(i,1) = NaN;
+        metadata.sex_string{i,1} = 'Unknown';
+        metadata.diagnosis_string{i,1} = 'Unknown';
     end
 end
 
 % Convert sex to numeric (1=M, 0=F)
-metadata.sex = cellstr(num2str(strcmp(metadata.sex_string, 'm')));
+metadata.sex = arrayfun(@(x) num2str(strcmp(x, 'm')), metadata.sex_string, 'UniformOutput', false);
 metadata.sex_string(strcmp(metadata.sex_string, 'm')) = {'M'};
 metadata.sex_string(strcmp(metadata.sex_string, 'f')) = {'F'};
 
@@ -118,10 +118,11 @@ for i = 1:length(metadata.diagnosis)
         metadata.diagnosis_string{i} = 'Unknown';
     end
 end
-metadata.diagnosis = cellstr(num2str(metadata.diagnosis));
+metadata.diagnosis = arrayfun(@(x) num2str(x), metadata.diagnosis, 'UniformOutput', false);
 
 % Check number of subjects per diagnosis
 diagCat = unique(metadata.diagnosis);
+diagCat = diagCat(ismember(diagCat,{'1','2','3','4','5','6','7'}));
 fprintf('\nSubject counts by diagnosis:\n');
 for iDiag = 1:length(diagCat)
     nSiteDiag(iDiag) = sum(strcmp(metadata.diagnosis, diagCat(iDiag)));
