@@ -89,6 +89,7 @@ for dataset in `cat "$ENABLED_DATASETS_FILE"`; do
 			unset ses
 			filename=$sub
 			address=${sub}
+			echo $address
 		fi
 
 		cd "$DATA_ROOT/$dataset/${address}/anat/" || continue

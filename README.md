@@ -64,7 +64,7 @@ The pipeline calls `data_BIDS/BIDS_<Dataset>.m` for each enabled dataset in the 
 - It reads the config, determines enabled datasets, writes the list to `<dataset_root>/dataset_list_VBM.txt`, and submits one job per subject.
 - The environment variable `DATA_ROOT` is set automatically by the pipeline so downstream shell scripts can find your data.
 - After CAT12 jobs have finished, the QC concatenation script `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.sh` is run to aggregate CAT12 QC values per dataset.
-- The segmentation on native space and the normalisation on MRI space are concatinated for visualisation (quality control) by `step1c_visualisation.sh`.
+- The segmentation on native space and the normalisation on MRI space are concatinated for visualisation (quality control) by `step1c_visualisation.sh`. THIS HAS TO BE RUN DIRECTLY FROM BASH (as bash called from MATLAB doesn't provide visualisation-the function need to render a displayed image).
 
 Manual usage (optional):
 ```bash

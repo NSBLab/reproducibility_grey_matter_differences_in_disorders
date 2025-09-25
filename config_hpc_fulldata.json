@@ -13,209 +13,195 @@
         "path": "${dataset_root}/Myelin",
         "bids_script": "BIDS_Myelin.m",
         "vbm_extract_script": "extract_sub_Myelin.m",
-        "enabled": true,
+        "enabled": false,
         "longitudinal": true
       },
       "RD": {
         "path": "${dataset_root}/RD",
         "bids_script": "BIDS_RD.m",
         "vbm_extract_script": "extract_sub_RD.m",
-        "enabled": true,
+        "enabled": false,
         "longitudinal": false
       },
       "ABIDEI": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
-        "enabled": true,
+        "path": "${dataset_root}/ABIDEI",
+        "bids_script": "BIDS_ABIDEI.m",
+        "vbm_extract_script": "extract_sub_ABIDEI.m",
+        "enabled": false,
         "longitudinal": false
       },
       "ABIDEII": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
-        "enabled": true,
+        "path": "${dataset_root}/ABIDEII",
+        "bids_script": "BIDS_ABIDEII.m",
+        "vbm_extract_script": "extract_sub_ABIDEII.m",
+        "enabled": false,
         "longitudinal": false
       },
       "Advan_inno": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
-        "enabled": true,
+        "path": "${dataset_root}/Advan_inno",
+        "bids_script": "BIDS_Advan_inno.m",
+        "vbm_extract_script": "extract_sub_Advan_inno.m",
+        "enabled": false,
         "longitudinal": false
       },
       "AIBL": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
-        "enabled": true,
+        "path": "${dataset_root}/AIBL",
+        "bids_script": "BIDS_AIBL.m",
+        "vbm_extract_script": "extract_sub_AIBL.m",
+        "enabled": false,
         "longitudinal": true
       },
       "Brain45": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/Brain45",
+        "bids_script": "BIDS_Brain45.m",
+        "vbm_extract_script": "extract_sub_Brain45.m",
         "enabled": true,
         "longitudinal": true
       },
       "BrainGluSchi": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/BrainGluSchi",
+        "bids_script": "BIDS_BrainGluSchi.m",
+        "vbm_extract_script": "extract_sub_BrainGluSchi.m",
         "enabled": true,
         "longitudinal": false
       },
       "BSNIP": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/BSNIP",
+        "bids_script": "BIDS_BSNIP.m",
+        "vbm_extract_script": "extract_sub_BSNIP.m",
         "enabled": true,
         "longitudinal": false
       },
       "BSNIP2": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/BSNIP2",
+        "bids_script": "BIDS_BSNIP2.m",
+        "vbm_extract_script": "extract_sub_BSNIP2.m",
         "enabled": true,
         "longitudinal": false
       },
 	  "COBRE": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/COBRE",
+        "bids_script": "BIDS_COBRE.m",
+        "vbm_extract_script": "extract_sub_COBRE.m",
         "enabled": true,
         "longitudinal": false
       },
       "Harmonisation": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/Harmonisation",
+        "bids_script": "BIDS_Harmonisation.m",
+        "vbm_extract_script": "extract_sub_Harmonisation.m",
         "enabled": true,
         "longitudinal": true
       },
       "HCP": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/HCP",
+        "bids_script": "BIDS_HCP.m",
+        "vbm_extract_script": "extract_sub_HCP.m",
         "enabled": true,
         "longitudinal": false
       },
       "Inhi_dys": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/Inhi_dys",
+        "bids_script": "BIDS_Inhi_dys.m",
+        "vbm_extract_script": "extract_sub_Inhi_dys.m",
         "enabled": true,
         "longitudinal": true
       },
       "MBBP": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/MBBP",
+        "bids_script": "BIDS_MBBP.m",
+        "vbm_extract_script": "extract_sub_MBBP.m",
         "enabled": true,
         "longitudinal": false
       },
       "MCIC": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/MCIC",
+        "bids_script": "BIDS_MCIC.m",
+        "vbm_extract_script": "extract_sub_MCIC.m",
         "enabled": true,
         "longitudinal": true
       },
       "miriad": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/miriad",
+        "bids_script": "BIDS_miriad.m",
+        "vbm_extract_script": "extract_sub_miriad.m",
         "enabled": true,
         "longitudinal": true
       },
       "Modul_vent": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/Modul_vent",
+        "bids_script": "BIDS_Modul_vent.m",
+        "vbm_extract_script": "extract_sub_Modul_vent.m",
         "enabled": true,
         "longitudinal": true
       },
       "MultidimCog": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/MultidimCog",
+        "bids_script": "BIDS_MultidimCog.m",
+        "vbm_extract_script": "extract_sub_MultidimCog.m",
         "enabled": true,
         "longitudinal": false
       },
-      "Myelin": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
-        "enabled": true,
-        "longitudinal": true
-      },
 	  "OASIS3": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/OASIS3",
+        "bids_script": "BIDS_OASIS3.m",
+        "vbm_extract_script": "extract_sub_OASIS3.m",
         "enabled": true,
         "longitudinal": true
       },
 	  "OASIS4": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/OASIS4",
+        "bids_script": "BIDS_OASIS4.m",
+        "vbm_extract_script": "extract_sub_OASIS4.m",
         "enabled": true,
         "longitudinal": true
       },
       "PARDIP": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
-        "enabled": true,
-        "longitudinal": false
-      },
-      "RestDepress": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/PARDIP",
+        "bids_script": "BIDS_PARDIP.m",
+        "vbm_extract_script": "extract_sub_PARDIP.m",
         "enabled": true,
         "longitudinal": false
       },
       "speech": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/speech",
+        "bids_script": "BIDS_speech.m",
+        "vbm_extract_script": "extract_sub_speech.m",
         "enabled": true,
         "longitudinal": false
       },
       "SRPBS": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/SRPBS",
+        "bids_script": "BIDS_SRPBS.m",
+        "vbm_extract_script": "extract_sub_SRPBS.m",
         "enabled": true,
         "longitudinal": false
       },
       "Study_neura": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/Study_neura",
+        "bids_script": "BIDS_Study_neura.m",
+        "vbm_extract_script": "extract_sub_Study_neura.m",
         "enabled": true,
         "longitudinal": true
       },
       "Transdiagnostic": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/Transdiagnostic",
+        "bids_script": "BIDS_Transdiagnostic.m",
+        "vbm_extract_script": "extract_sub_Transdiagnostic.m",
         "enabled": true,
         "longitudinal": false
       },
       "UCLA": {
-        "path": "${dataset_root}/RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
+        "path": "${dataset_root}/UCLA",
+        "bids_script": "BIDS_UCLA.m",
+        "vbm_extract_script": "extract_sub_UCLA.m",
         "enabled": true,
         "longitudinal": false
       },
       "YMDD": {
-        "path": "${dataset_root}/Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
+        "path": "${dataset_root}/YMDD",
+        "bids_script": "BIDS_YMDD.m",
+        "vbm_extract_script": "extract_sub_YMDD.m",
         "enabled": true,
         "longitudinal": false
       }
