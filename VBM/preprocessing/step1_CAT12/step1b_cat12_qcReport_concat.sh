@@ -78,7 +78,7 @@ for dataset in `cat "$ENABLED_DATASETS_FILE"`; do
 	rm -f "$DATA_ROOT/$dataset/subjects_cat12_failed.txt"
 
 	# CAT12 IQR threshold (adjust as needed)
-	IQR_THRESHOLD=0.7
+	IQR_THRESHOLD=2.8
 
 	for sub in `cat subject_use.txt`; do
 
@@ -108,11 +108,12 @@ for dataset in `cat "$ENABLED_DATASETS_FILE"`; do
 
 			iqr=$(grep -n "<IQR>" cat_${filename}_T1w.xml )
 			iqr=${iqr:15:7}
+			echo $iqr
 
 			printf "\n${sub}\t${iqr}\t${ses}" >> "$DATA_ROOT/$dataset/cat12_qcReport_$dataset.txt"
 			
 			# Check if IQR passes threshold
-			if (( $(echo "$iqr < $IQR_THRESHOLD" | bc -l) )); then
+			if (( $(echo "$iqr <= $IQR_THRESHOLD" | bc -l) )); then
 				echo "$sub" >> "$DATA_ROOT/$dataset/subjects_cat12_passed.txt"
 			else
 				echo "$sub" >> "$DATA_ROOT/$dataset/subjects_cat12_failed.txt"

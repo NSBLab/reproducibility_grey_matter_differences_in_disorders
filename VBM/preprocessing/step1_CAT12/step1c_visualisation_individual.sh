@@ -103,19 +103,21 @@ while IFS= read -r DATASET; do
 	# Prefer re-rendering only subjects that were missing in the previous run
 	RENDER_SUBJECTS_FILE="$CAT12_PASSED_FILE"
 	PREV_P0_MISSING_FILE="$OUT_DIR/subjects_missing_p0.txt"
-	if [ -s "$PREV_P0_MISSING_FILE" ]; then
-		echo "Found non-empty missing list from previous run: $PREV_P0_MISSING_FILE"
-		# Filter missing subjects to only include those that passed CAT12
+
+	if [ -f "$PREV_P0_MISSING_FILE" ]; then
+		echo "Found previous missing list: $PREV_P0_MISSING_FILE"
+
 		TEMP_MISSING_FILE="$OUT_DIR/temp_missing_cat12_passed.txt"
 		comm -12 <(sort "$PREV_P0_MISSING_FILE") <(sort "$CAT12_PASSED_FILE") > "$TEMP_MISSING_FILE"
-		if [ -s "$TEMP_MISSING_FILE" ]; then
-			RENDER_SUBJECTS_FILE="$TEMP_MISSING_FILE"
-		else
-			echo "No missing subjects from CAT12 passed list found. Using all CAT12 passed subjects."
-		fi
+
+	    RENDER_SUBJECTS_FILE="$TEMP_MISSING_FILE"
+
+	
 	else
-		echo "No previous missing-subjects list found or it is empty. Using all CAT12 passed subjects."
+		echo "No previous missing-subjects list found. Using all CAT12 passed subjects."
+		RENDER_SUBJECTS_FILE="$CAT12_PASSED_FILE"
 	fi
+
     
 	# Process each subject
 	while IFS= read -r SUBJECT; do

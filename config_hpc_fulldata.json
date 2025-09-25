@@ -27,28 +27,28 @@
         "path": "${dataset_root}/ABIDEI",
         "bids_script": "BIDS_ABIDEI.m",
         "vbm_extract_script": "extract_sub_ABIDEI.m",
-        "enabled": false,
+        "enabled": true,
         "longitudinal": false
       },
       "ABIDEII": {
         "path": "${dataset_root}/ABIDEII",
         "bids_script": "BIDS_ABIDEII.m",
         "vbm_extract_script": "extract_sub_ABIDEII.m",
-        "enabled": false,
+        "enabled": true,
         "longitudinal": false
       },
       "Advan_inno": {
         "path": "${dataset_root}/Advan_inno",
         "bids_script": "BIDS_Advan_inno.m",
         "vbm_extract_script": "extract_sub_Advan_inno.m",
-        "enabled": false,
+        "enabled": true,
         "longitudinal": false
       },
       "AIBL": {
         "path": "${dataset_root}/AIBL",
         "bids_script": "BIDS_AIBL.m",
         "vbm_extract_script": "extract_sub_AIBL.m",
-        "enabled": false,
+        "enabled": true,
         "longitudinal": true
       },
       "Brain45": {
