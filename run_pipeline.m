@@ -21,7 +21,8 @@ config = load_config(config_file);
 
 % Validate stage - Updated to include all stages from config.json
 valid_stages = {'step0a_create_dataset_list', 'step0b_organize_bids',  ...
-                'VBM_CAT12_step1a', 'VBM_CAT12_step1b', 'VBM_extract_subjects_step2', 'VBM_smoothing_step3', ...
+                'VBM_CAT12_step1a', 'VBM_CAT12_step1b', 'VBM_CAT12_step1c', ...
+                'VBM_extract_subjects_step2', 'VBM_smoothing_step3', ...
                 'VBM_combat', 'VBM_metadata', 'VBM_statistical_analysis', ...
                 'VBM_parcellation', 'VBM_nulltest', 'VBM_consistency', ...
                 'VBM_covariates', 'VBM_figures', ...
@@ -94,8 +95,8 @@ switch stage
         success = run_vbm_cat12_step1a(config);
     case 'VBM_CAT12_step1b'
         success = run_vbm_cat12_step1b(config);
-    % case 'VBM_CAT12_step1c'
-    %     success = run_vbm_cat12_step1c(config);
+    case 'VBM_CAT12_step1c'
+        success = run_vbm_cat12_step1c(config);
     case 'VBM_extract_subjects_step2'
         success = run_vbm_extract_subjects_step2(config);
     case 'VBM_smoothing_step3'
@@ -298,7 +299,7 @@ end
 end
 
 function success = run_vbm_cat12_step1b(config)
-fprintf('=== VBM CAT12 STEP 1B: QC REPORT CONCATENATION ===\n');
+fprintf('=== VBM CAT12 STEP 1B: QC REPORT + SUBJECT FILTERING ===\n');
 vbm_dir = config.data_directories.VBM;
 step1_dir = fullfile(vbm_dir, 'preprocessing', 'step1_CAT12');
 % Use the step1b script name
@@ -342,50 +343,40 @@ catch ME
 end
 end
 
-% function success = run_vbm_cat12_step1c(config)
-% fprintf('=== VBM CAT12 STEP 1C: QC VISUALISATION ===\n');
-% vbm_dir = config.data_directories.VBM;
-% step1_dir = fullfile(vbm_dir, 'preprocessing', 'step1_CAT12');
-% % Use the step1b script name
-% qc_script = fullfile(step1_dir, 'step1c_visualisation.sh');
-% if ~exist(qc_script, 'file')
-%     fprintf('  Warning: QC concat script not found: %s\n', qc_script);
-%     success = false;
-%     return;
-% end
-% try
-%     dataset_root = config.data_directories.dataset_root;
-%     setenv('DATA_ROOT', dataset_root);
-%     % Pass config file to shell script
-%     if isfield(config, 'config_file')
-%         setenv('CONFIG_FILE', config.config_file);
-%     end
-%     % Determine whether to consider sessions based on dataset configs
-%     enabled_names = get_enabled_datasets(config);
-%     consider_sessions = false;
-%     for ii = 1:numel(enabled_names)
-%         ds_name = enabled_names{ii};
-%         if isfield(config.datasets.(ds_name), 'longitudinal') && logical(config.datasets.(ds_name).longitudinal)
-%             consider_sessions = true;
-%             break;
-%         end
-%     end
-%     if consider_sessions
-%         % Signal the shell script to handle sessions
-%         setenv('ses', 'ses-1');
-%         fprintf('  Session-aware QC: considering sessions for longitudinal datasets.\n');
-%     else
-%         % Ensure session var is not set so script treats data as single-session
-%         setenv('ses', '');
-%         fprintf('  Session-aware QC: no longitudinal datasets enabled; ignoring sessions.\n');
-%     end
-%     system(['bash ', qc_script]);
-%     success = true;
-% catch ME
-%     fprintf('  Warning: CAT12 step1c failed: %s\n', ME.message);
-%     success = false;
-% end
-% end
+function success = run_vbm_cat12_step1c(config)
+fprintf('=== VBM CAT12 STEP 1C: RENDER IMAGES FOR QC PASSED SUBJECTS ===\n');
+vbm_dir = config.data_directories.VBM;
+step1_dir = fullfile(vbm_dir, 'preprocessing', 'step1_CAT12');
+% Use the step1c script name
+viz_script = fullfile(step1_dir, 'step1c_visualisation_individual.sh');
+if ~exist(viz_script, 'file')
+    fprintf('  Warning: Individual visualization script not found: %s\n', viz_script);
+    success = false;
+    return;
+end
+try
+    dataset_root = config.data_directories.dataset_root;
+    setenv('DATA_ROOT', dataset_root);
+    % Pass config file to shell script
+    if isfield(config, 'config_file')
+        setenv('CONFIG_FILE', config.config_file);
+    end
+    % Run the visualization script (handles both rendering and PDF concatenation)
+    cmd = sprintf('bash %s', viz_script);
+    [status, output] = system(cmd);
+    if status == 0
+        fprintf('  Image rendering and PDF concatenation completed successfully\n');
+        success = true;
+    else
+        fprintf('  Warning: Image rendering and PDF concatenation failed with status %d\n', status);
+        fprintf('  Output: %s\n', output);
+        success = false;
+    end
+catch ME
+    fprintf('  Warning: CAT12 step1c failed: %s\n', ME.message);
+    success = false;
+end
+end
 
 function success = run_vbm_extract_subjects_step2(config)
 fprintf('=== VBM EXTRACT SUBJECTS STEP 2 ===\n');

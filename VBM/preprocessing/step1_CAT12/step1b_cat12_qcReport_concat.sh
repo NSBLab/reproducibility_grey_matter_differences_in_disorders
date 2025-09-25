@@ -74,6 +74,11 @@ for dataset in `cat "$ENABLED_DATASETS_FILE"`; do
 	echo ${dataset}
 	cd "$DATA_ROOT/$dataset/" || continue
 	rm -f "$DATA_ROOT/$dataset/cat12_qcReport_${dataset}.txt"
+	rm -f "$DATA_ROOT/$dataset/subjects_cat12_passed.txt"
+	rm -f "$DATA_ROOT/$dataset/subjects_cat12_failed.txt"
+
+	# CAT12 IQR threshold (adjust as needed)
+	IQR_THRESHOLD=0.7
 
 	for sub in `cat subject_use.txt`; do
 
@@ -105,8 +110,19 @@ for dataset in `cat "$ENABLED_DATASETS_FILE"`; do
 			iqr=${iqr:15:7}
 
 			printf "\n${sub}\t${iqr}\t${ses}" >> "$DATA_ROOT/$dataset/cat12_qcReport_$dataset.txt"
+			
+			# Check if IQR passes threshold
+			if (( $(echo "$iqr < $IQR_THRESHOLD" | bc -l) )); then
+				echo "$sub" >> "$DATA_ROOT/$dataset/subjects_cat12_passed.txt"
+			else
+				echo "$sub" >> "$DATA_ROOT/$dataset/subjects_cat12_failed.txt"
+			fi
 		fi
 	done
+
+	echo "CAT12 QC completed for $dataset"
+	echo "Passed subjects: $(wc -l < "$DATA_ROOT/$dataset/subjects_cat12_passed.txt" 2>/dev/null || echo 0)"
+	echo "Failed subjects: $(wc -l < "$DATA_ROOT/$dataset/subjects_cat12_failed.txt" 2>/dev/null || echo 0)"
 
 done
 

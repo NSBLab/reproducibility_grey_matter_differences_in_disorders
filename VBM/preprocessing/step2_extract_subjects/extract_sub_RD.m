@@ -31,34 +31,44 @@ IQRthres = config.analysis_settings.cat12_quality_threshold; % threshold to dete
 fprintf('=== EXTRACTING SUBJECTS FOR %s ===\n', study);
 fprintf('Using CAT12 quality threshold: %.1f\n', IQRthres);
 
-% Check if subject_use.txt exists (created by BIDS_RD.m)
-subject_list_file = fullfile(study_path, 'subject_use.txt');
-if ~exist(subject_list_file, 'file')
-    error('subject_use.txt not found at %s. Please run BIDS_RD.m first to create the subject list.', subject_list_file);
+% Check if CAT12 passed subjects list exists (created by step1b)
+cat12_passed_file = fullfile(study_path, 'subjects_cat12_passed.txt');
+if ~exist(cat12_passed_file, 'file')
+    error('subjects_cat12_passed.txt not found at %s. Please run step1b first to generate CAT12 QC results.', cat12_passed_file);
 end
 
-% Read the filtered subject list
-useFolder = readlines(subject_list_file);
-fprintf('Found %d subjects in subject_use.txt\n', length(useFolder));
+% Read the CAT12 passed subjects list
+cat12_passed_subjects = readlines(cat12_passed_file);
+fprintf('Found %d subjects that passed CAT12 QC\n', length(cat12_passed_subjects));
 
-% Check if CAT12 QC report exists
+% Check if visual inspection exclusion list exists
+visual_exclusion_file = fullfile(study_path, 'subject_list_excluded_after_visualisation.txt');
+if exist(visual_exclusion_file, 'file')
+    visual_excluded_subjects = readlines(visual_exclusion_file);
+    fprintf('Found %d subjects excluded after visual inspection\n', length(visual_excluded_subjects));
+    
+    % Remove visually excluded subjects from CAT12 passed list
+    useFolder = setdiff(cat12_passed_subjects, visual_excluded_subjects);
+    fprintf('After visual inspection exclusion: %d subjects remaining\n', length(useFolder));
+else
+    fprintf('No visual inspection exclusion list found. Using all CAT12 passed subjects.\n');
+    useFolder = cat12_passed_subjects;
+end
+
+% Check if CAT12 QC report exists (for metadata extraction)
 cat_report_file = fullfile(study_path, sprintf('cat12_qcReport_%s.txt', study));
 if ~exist(cat_report_file, 'file')
     error('CAT12 QC report not found at %s. Please run CAT12 preprocessing first.', cat_report_file);
 end
 
-% Read CAT12 QC report
+% Read CAT12 QC report for metadata extraction
 fprintf('Reading CAT12 QC report: %s\n', cat_report_file);
 catFile = readtable(cat_report_file, "FileType","text",'Delimiter', '\t');
 
-% Extract subjects with good quality (IQR <= threshold)
-subHighQR = catFile.Var1(catFile.Var2 <= IQRthres);
-fprintf('Found %d subjects with good CAT12 quality (IQR <= %.1f)\n', length(subHighQR), IQRthres);
-
-% Find intersection with subjects that meet demographic criteria
-[La, indexHighQRinUseFolder] = ismember(subHighQR, useFolder);
-quality_subjects = useFolder(indexHighQRinUseFolder);
-fprintf('Found %d subjects meeting both demographic and quality criteria\n', length(quality_subjects));
+% Since we're already using CAT12 passed subjects, we just need to verify they exist in the QC report
+% and extract their IQR values for metadata
+quality_subjects = useFolder; % All subjects in useFolder have already passed CAT12 QC
+fprintf('Using %d subjects that passed CAT12 QC and visual inspection\n', length(quality_subjects));
 
 % Read demographic data for metadata creation
 demographic_file = fullfile(source_path, 'participants.tsv');
@@ -74,8 +84,10 @@ metadata.dataset = cellstr(repmat(study, size(quality_subjects)));
 metadata.site_string = metadata.dataset;
 metadata.site = cellstr(repmat('37', size(quality_subjects)));
 
-% Extract demographic information for quality subjects
+% Extract demographic information and IQR values for quality subjects
+metadata.iqr = zeros(size(quality_subjects));
 for i = 1:length(quality_subjects)
+    % Extract demographic info
     sub_idx = find(strcmp(imageFile.participant_id, quality_subjects{i}));
     if ~isempty(sub_idx)
         metadata.age(i,1) = imageFile.age(sub_idx);
@@ -86,6 +98,15 @@ for i = 1:length(quality_subjects)
         metadata.age(i,1) = NaN;
         metadata.sex_string{i,1} = 'Unknown';
         metadata.diagnosis_string{i,1} = 'Unknown';
+    end
+    
+    % Extract IQR from CAT12 report
+    cat_idx = find(strcmp(catFile.Var1, quality_subjects{i}));
+    if ~isempty(cat_idx)
+        metadata.iqr(i,1) = catFile.Var2(cat_idx);
+    else
+        warning('Subject %s not found in CAT12 QC report', quality_subjects{i});
+        metadata.iqr(i,1) = NaN;
     end
 end
 
