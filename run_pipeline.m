@@ -1,14 +1,12 @@
 function run_pipeline(stage, config_file)
 % Main pipeline runner for neuroimaging analysis
-% Supports running the full pipeline, individual stages, or multiple stages
+% Supports running individual stages or multiple stages
 %
 % Usage:
-%   run_pipeline('organize_bids')                    % Run single stage
-%   run_pipeline({'organize_bids', 'organize_extract'}) % Run multiple stages
-%   run_pipeline('VBM_CAT12')                        % Run VBM CAT12 only
-%   run_pipeline('full')                             % Run full pipeline
-%   run_pipeline('organize_bids', 'my_config.json')  % Use custom config
-%   run_pipeline({'VBM_CAT12', 'VBM_smoothing'}, 'my_config.json') % Multiple stages with custom config
+%   run_pipeline('step0a_create_dataset_list')                    % Run single stage
+%   run_pipeline({'step0a_create_dataset_list', 'step0b_organize_bids'}) % Run multiple stages
+%   run_pipeline('step0a_create_dataset_list', 'my_config.json')  % Use custom config
+%   run_pipeline({'step0a_create_dataset_list', 'step0b_organize_bids'}, 'my_config.json') % Multiple stages with custom config
 
 if nargin < 1
     error('Please specify a stage to run');
@@ -22,8 +20,8 @@ end
 config = load_config(config_file);
 
 % Validate stage - Updated to include all stages from config.json
-valid_stages = {'organize_bids',  ...
-                'VBM_CAT12_step1a', 'VBM_CAT12_step1b', 'VBM_CAT12_step1c','VBM_extract_subjects', 'VBM_smoothing', ...
+valid_stages = {'step0a_create_dataset_list', 'step0b_organize_bids',  ...
+                'VBM_CAT12_step1a', 'VBM_CAT12_step1b', 'VBM_CAT12_step1c','VBM_extract_subjects_step2', 'VBM_smoothing_step3', ...
                 'VBM_combat', 'VBM_metadata', 'VBM_statistical_analysis', ...
                 'VBM_parcellation', 'VBM_nulltest', 'VBM_consistency', ...
                 'VBM_covariates', 'VBM_figures', ...
@@ -31,7 +29,7 @@ valid_stages = {'organize_bids',  ...
                 'SBM_extract_subjects', 'SBM_combat', 'SBM_metadata', ...
                 'SBM_statistical_analysis', 'SBM_parcellation', 'SBM_nulltest', ...
                 'SBM_consistency', 'SBM_covariates', 'SBM_sample_size_effect', ...
-                'SBM_figures', 'full'};
+                'SBM_figures'};
 
 % Handle multiple stages
 if iscell(stage)
@@ -88,18 +86,20 @@ end
 function success = run_single_stage(stage, config)
 % Run a single pipeline stage
 switch stage
-    case 'organize_bids'
-        success = run_organize_bids(config);
+    case 'step0a_create_dataset_list'
+        success = run_step0a_create_dataset_list(config);
+    case 'step0b_organize_bids'
+        success = run_step1b_organize_bids(config);
     case 'VBM_CAT12_step1a'
         success = run_vbm_cat12_step1a(config);
     case 'VBM_CAT12_step1b'
         success = run_vbm_cat12_step1b(config);
     case 'VBM_CAT12_step1c'
         success = run_vbm_cat12_step1c(config);
-    case 'VBM_extract_subjects'
-        success = run_vbm_extract_subjects(config);
-    case 'VBM_smoothing'
-        success = run_vbm_smoothing(config);
+    case 'VBM_extract_subjects_step2'
+        success = run_vbm_extract_subjects_step2(config);
+    case 'VBM_smoothing_step3'
+        success = run_vbm_smoothing_step3(config);
     case 'VBM_combat'
         success = run_vbm_combat(config);
     case 'VBM_metadata'
@@ -142,8 +142,6 @@ switch stage
         success = run_sbm_sample_size_effect(config);
     case 'SBM_figures'
         success = run_sbm_figures(config);
-    case 'full'
-        success = run_full_pipeline(config);
 end
 end
 
@@ -178,10 +176,35 @@ if isfield(config, 'data_directories') && isfield(config.data_directories, 'data
 end
 end
 
-function success = run_organize_bids(config)
-fprintf('=== ORGANIZE BIDS STAGE ===\n');
+function success = run_step0a_create_dataset_list(config)
+fprintf('=== STEP 0A: CREATE DATASET LIST ===\n');
+
 enabled_datasets = get_enabled_datasets(config);
-% Resolve data_BIDS directory relative to this file if it's a relative path
+
+% Create dataset list file for shell scripts
+dataset_root = config.data_directories.dataset_root;
+dataset_list_file = fullfile(dataset_root, 'dataset_list.txt');
+fid = fopen(dataset_list_file, 'w');
+if fid == -1
+    fprintf('  Error: Could not create dataset list file: %s\n', dataset_list_file);
+    success = false;
+    return;
+end
+for ii = 1:numel(enabled_datasets)
+    fprintf(fid, '%s\n', enabled_datasets{ii});
+end
+fclose(fid);
+fprintf('  Created dataset list: %s\n', dataset_list_file);
+fprintf('  Found %d enabled datasets: %s\n', numel(enabled_datasets), strjoin(enabled_datasets, ', '));
+success = true;
+end
+
+function success = run_step0b_organize_bids(config)
+fprintf('=== STEP 0B: ORGANIZE BIDS STAGE ===\n');
+
+enabled_datasets = get_enabled_datasets(config);
+
+% Resolve data_BIDS directory relative to this file if it is a relative path
 project_root = fileparts(mfilename('fullpath'));
 data_bids_dir = resolve_relative_path(project_root, config.data_directories.data_BIDS);
 
@@ -288,6 +311,10 @@ end
 try
     dataset_root = config.data_directories.dataset_root;
     setenv('DATA_ROOT', dataset_root);
+    % Pass config file to shell script
+    if isfield(config, 'config_file')
+        setenv('CONFIG_FILE', config.config_file);
+    end
     % Determine whether to consider sessions based on dataset configs
     enabled_names = get_enabled_datasets(config);
     consider_sessions = false;
@@ -329,6 +356,10 @@ end
 try
     dataset_root = config.data_directories.dataset_root;
     setenv('DATA_ROOT', dataset_root);
+    % Pass config file to shell script
+    if isfield(config, 'config_file')
+        setenv('CONFIG_FILE', config.config_file);
+    end
     % Determine whether to consider sessions based on dataset configs
     enabled_names = get_enabled_datasets(config);
     consider_sessions = false;
@@ -356,40 +387,45 @@ catch ME
 end
 end
 
-function enabled_datasets = run_vbm_extract_subjects(config)
-fprintf('=== VBM EXTRACT SUBJECTS ===\n');
+function success = run_vbm_extract_subjects_step2(config)
+fprintf('=== VBM EXTRACT SUBJECTS STEP 2 ===\n');
 enabled_datasets = get_enabled_datasets(config);
-data_bids_dir = config.data_directories.data_BIDS;
+
+% Get VBM preprocessing directory
+vbm_dir = config.data_directories.VBM;
+extract_dir = fullfile(vbm_dir, 'preprocessing', 'step2_extract_subjects');
 
 for i = 1:length(enabled_datasets)
     dataset_name = enabled_datasets{i};
-    dataset_config = config.datasets.(dataset_name);
-    extract_script = fullfile(data_bids_dir, dataset_config.vbm_extract_script);
+    fprintf('  Processing dataset: %s\n', dataset_name);
+    
+    % Construct extract function name based on dataset
+    extract_function = sprintf('extract_sub_%s', dataset_name);
+    extract_script = fullfile(extract_dir, [extract_function, '.m']);
     
     if exist(extract_script, 'file')
-        fprintf('  Running vbm_extract_subjects script: %s\n', extract_script);
+        fprintf('  Running extract function: %s\n', extract_function);
         try
-            % Get the function name from the script file
-            [script_dir, func_name, ~] = fileparts(extract_script);
-            
             % Add directory to path, call function, then remove
-            addpath(script_dir);
-            feval(func_name, config);
-            rmpath(script_dir);
+            addpath(extract_dir);
+            feval(extract_function, config);
+            rmpath(extract_dir);
+            fprintf('  Successfully processed %s\n', dataset_name);
             
         catch ME
-            fprintf('  Error running vbm_extract_subjects script: %s\n', ME.message);
+            fprintf('  Error running extract function for %s: %s\n', dataset_name, ME.message);
+            rmpath(extract_dir);
             success = false;
             return;
         end
     else
-        fprintf('  Warning: vbm_extract_subjects script not found: %s\n', extract_script);
+        fprintf('  Warning: Extract function not found: %s\n', extract_script);
     end
 end
 success = true;
 end
 
-function success = run_vbm_smoothing(config)
+function success = run_vbm_smoothing_step3(config)
 fprintf('=== VBM SMOOTHING ===\n');
 vbm_dir = config.data_directories.VBM;
 step3_dir = fullfile(vbm_dir, 'preprocessing', 'step3_smoothing');
@@ -888,33 +924,3 @@ else
 end
 success = true;
 end
-
-function success = run_full_pipeline(config)
-% Run all enabled stages in order according to config.json
-stages = {'organize_bids', 'organize_extract', ...
-          'VBM_CAT12', 'VBM_extract_subjects', 'VBM_smoothing', 'VBM_combat', 'VBM_metadata', ...
-          'VBM_statistical_analysis', 'VBM_parcellation', 'VBM_nulltest', 'VBM_consistency', ...
-          'VBM_covariates', 'VBM_figures', ...
-          'SBM_recon_all', 'SBM_autoQC', 'SBM_surfacevis', 'SBM_extract_subjects', ...
-          'SBM_combat', 'SBM_metadata', 'SBM_statistical_analysis', 'SBM_parcellation', ...
-          'SBM_nulltest', 'SBM_consistency', 'SBM_covariates', 'SBM_sample_size_effect', ...
-          'SBM_figures'};
-for i = 1:length(stages)
-    stage = stages{i};
-    if isfield(config.pipeline_stages, stage) && config.pipeline_stages.(stage).enabled
-        fprintf('\n%s\n', repmat('=', 1, 50));
-        fprintf('Starting %s stage...\n', upper(stage));
-        fprintf('%s\n', repmat('=', 1, 50));
-        try
-            run_pipeline(stage, config);
-        catch ME
-            fprintf('Error in %s stage: %s\n', stage, ME.message);
-            success = false;
-            return;
-        end
-    else
-        fprintf('\nSkipping %s stage (disabled in config)\n', stage);
-    end
-end
-success = true;
-end 

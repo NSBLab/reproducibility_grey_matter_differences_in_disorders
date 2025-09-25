@@ -27,9 +27,11 @@
     
     "pipeline_stages": {
       "organize_bids": { "enabled": true, "description": "Convert datasets to BIDS format" },
-      "VBM_CAT12": { "enabled": true, "description": "VBM CAT12 preprocessing" },
-      "VBM_extract_subjects": { "enabled": true, "description": "VBM extract subjects" },
-      "VBM_smoothing": { "enabled": true, "description": "VBM smoothing" },
+      "VBM_CAT12_step1a": { "enabled": true, "description": "VBM CAT12 preprocessing step 1a" },
+      "VBM_CAT12_step1b": { "enabled": true, "description": "VBM CAT12 QC report concatenation" },
+      "VBM_CAT12_step1c": { "enabled": true, "description": "VBM CAT12 visualization" },
+      "VBM_extract_subjects_step2": { "enabled": true, "description": "VBM extract subjects" },
+      "VBM_smoothing_step3": { "enabled": true, "description": "VBM smoothing" },
       "VBM_combat": { "enabled": true, "description": "VBM COMBAT harmonization" },
       "VBM_metadata": { "enabled": true, "description": "VBM combine metadata" },
       "VBM_statistical_analysis": { "enabled": true, "description": "VBM statistical analysis" },
@@ -82,7 +84,8 @@
         "max": 60
       },
       "minimum_subjects_per_site": 20,
-      "masking_threshold": 0.2
+      "masking_threshold": 0.2,
+      "cat12_quality_threshold": 2.8
     },
     
     "software_paths": {

@@ -1,8 +1,14 @@
 #!/bin/bash
 
-# Read the configuration file to get enabled datasets (resolve relative to this script)
-export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-CONFIG_FILE="$SCRIPT_DIR/../../../config_hpc.json"
+# Read the configuration file to get enabled datasets
+# Use CONFIG_FILE environment variable if passed from MATLAB, otherwise use default
+if [ -z "$CONFIG_FILE" ]; then
+    export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+    CONFIG_FILE="$SCRIPT_DIR/../../../config_hpc.json"
+    echo "Using default config file: $CONFIG_FILE"
+else
+    echo "Using config file passed from MATLAB: $CONFIG_FILE"
+fi
 
 # Check if config file exists
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -10,20 +16,15 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
-# Extract data root and enabled datasets from config file using jq (JSON processor)
+# Extract data root from config file using jq (JSON processor)
 # If jq is not available, we'll use a simple grep approach
 if command -v jq &> /dev/null; then
     echo "Using jq to parse JSON config..."
     DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-    # Get enabled datasets
-    jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE" > "$DATA_ROOT/dataset_list_VBM.txt"
 else
     echo "jq not available, using grep to parse JSON config..."
     # Extract data root using grep and sed
     DATA_ROOT=$(grep '"dataset_root"' "$CONFIG_FILE" | sed 's/.*"dataset_root": *"\([^\"]*\)".*/\1/')
-    
-    # Extract enabled datasets using grep
-    grep -A 10 '"datasets"' "$CONFIG_FILE" | grep -B 5 '"enabled": true' | grep '".*":' | sed 's/.*"\([^\"]*\)":.*/\1/' > "$DATA_ROOT/dataset_list_VBM.txt"
 fi
 
 # Check if we got the data root
@@ -32,15 +33,37 @@ if [ -z "$DATA_ROOT" ]; then
     exit 1
 fi
 
-# Check if we have enabled datasets
-if [ ! -s "$DATA_ROOT/dataset_list_VBM.txt" ]; then
+# Extract enabled datasets from config file and create persistent list
+echo "Extracting enabled datasets from config..."
+
+# Create persistent file for enabled datasets in data root
+ENABLED_DATASETS_FILE="$DATA_ROOT/dataset_list_step1a.txt"
+
+if command -v jq &> /dev/null; then
+    echo "Using jq to extract enabled datasets..."
+    # Use jq to extract dataset names where enabled == true
+    jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE" > "$ENABLED_DATASETS_FILE"
+else
+    echo "jq not available, using grep/sed to extract enabled datasets..."
+    # Extract enabled datasets using grep and sed (more complex but works without jq)
+    # This approach looks for dataset blocks with "enabled": true
+    grep -A 20 '"datasets"' "$CONFIG_FILE" | \
+    grep -B 5 -A 15 '"enabled": *true' | \
+    grep '"[^"]*":' | \
+    sed 's/.*"\([^"]*\)":.*/\1/' | \
+    grep -v 'datasets\|enabled' > "$ENABLED_DATASETS_FILE" || true
+fi
+
+# Check if we found any enabled datasets
+if [ ! -s "$ENABLED_DATASETS_FILE" ]; then
     echo "Error: No enabled datasets found in configuration!"
     exit 1
 fi
 
 echo "Data root: $DATA_ROOT"
+echo "Created persistent dataset list: $ENABLED_DATASETS_FILE"
 echo "Found enabled datasets:"
-cat "$DATA_ROOT/dataset_list_VBM.txt"
+cat "$ENABLED_DATASETS_FILE"
 
 # Export DATA_ROOT so batch jobs can see it
 export DATA_ROOT
@@ -109,8 +132,7 @@ while IFS= read -r DATASET; do
         
     done < "$SUBJECTS_FILE"
     
-done < "$DATA_ROOT/dataset_list_VBM.txt"
-
-# No cleanup needed; keep the dataset list for reuse
+done < "$ENABLED_DATASETS_FILE"
 
 echo "CAT12 preprocessing job submission completed!"
+echo "Dataset list saved to: $ENABLED_DATASETS_FILE"
