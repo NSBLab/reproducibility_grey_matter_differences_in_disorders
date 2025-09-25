@@ -98,9 +98,19 @@ while IFS= read -r DATASET; do
         echo "Warning: Subject list file $SUBJECTS_FILE not found, skipping dataset $DATASET"
         continue
     fi
+
+	# Prefer re-rendering only subjects that were missing in the previous run
+	RENDER_SUBJECTS_FILE="$SUBJECTS_FILE"
+	PREV_P0_MISSING_FILE="$OUT_DIR/subjects_missing_p0.txt"
+	if [ -s "$PREV_P0_MISSING_FILE" ]; then
+		echo "Found non-empty missing list from previous run: $PREV_P0_MISSING_FILE"
+		RENDER_SUBJECTS_FILE="$PREV_P0_MISSING_FILE"
+	else
+		echo "No previous missing-subjects list found or it is empty. Using all subjects."
+	fi
     
-    # Process each subject
-    while IFS= read -r SUBJECT; do
+	# Process each subject
+	while IFS= read -r SUBJECT; do
         # Skip empty lines
         if [ -z "$SUBJECT" ]; then
             continue
@@ -151,19 +161,63 @@ while IFS= read -r DATASET; do
 
 		#vglrun fsleyes render -of ${WORK_DIR}/${SUBJECT}_coronal_MNI.png --scene lightbox --worldLoc -13.815606917778084 51.749865511037996 24.37217752776877 --displaySpace /usr/local/spm12/matlab2021a.r7771-v1/toolbox/cat12/templates_MNI152NLin2009cAsym/Template_0_GS.nii --zaxis 1 --sliceSpacing 0.08475952426401523 --zrange 0.29934306572835545 0.8393430656585062 --ncols 0 --nrows 0 --cursorWidth 1.0 --bgColour 0.0 0.0 0.0 --fgColour 1.0 1.0 1.0 --cursorColour 0.0 1.0 0.0 --colourBarLocation top --colourBarLabelSide top-left --colourBarSize 100.0 --labelSize 12 --performance 3 /usr/local/spm12/matlab2021a.r7771-v1/toolbox/cat12/templates_MNI152NLin2009cAsym/Template_0_GS.nii --name "Template_0_GS" --overlayType volume --alpha 100.0 --brightness 49.74999999999999 --contrast 49.90029860765409 --cmap greyscale --negativeCmap greyscale --displayRange 0.0 1.009984588623047 --clippingRange 0.0 1.009984588623047 --modulateRange 0.0 0.9999847412109375 --gamma 0.0 --cmapResolution 256 --interpolation none --numSteps 60 --blendFactor 0.3 --smoothing 0 --resolution 70 --numInnerSteps 10 --clipMode intersection --volume 0 ${FILENAMEMWDIR} --name ${FILENAMEMW} --overlayType volume --alpha 100.0 --cmap red-yellow --negativeCmap greyscale --useNegativeCmap --displayRange 0.1 1.0 --clippingRange 0.1 1.4580326879024506 --modulateRange 0.0 1.4435967206954956 --gamma 0.0 --cmapResolution 256 --interpolation none --numSteps 60 --blendFactor 0.3 --smoothing 0 --resolution 70 --numInnerSteps 10 --clipMode intersection --volume 0
         
-    done < "$SUBJECTS_FILE"
+	    done < "$RENDER_SUBJECTS_FILE"
 
 	echo "Extract brain maps for visualisation completed!"
 
 
 	cd ${WORK_DIR}
 
-	convert $(sed 's/$/_sagittal.png/' "$SUBJECTS_FILE") -resize 800x1800 ${OUT_DIR}/sagittal_${DATASET}_p0.pdf
-	convert $(sed 's/$/_axial.png/' "$SUBJECTS_FILE") -resize 800x1800 ${OUT_DIR}/axial_${DATASET}_p0.pdf
-	convert $(sed 's/$/_coronal.png/' "$SUBJECTS_FILE") -resize 800x1800 ${OUT_DIR}/coronal_${DATASET}_p0.pdf
-	convert $(sed 's/$/_sagittal_MNI.png/' "$SUBJECTS_FILE") -resize 800x1800 ${OUT_DIR}/sagittal_${DATASET}_mw.pdf
-	convert $(sed 's/$/_axial_MNI.png/' "$SUBJECTS_FILE") -resize 800x1800 ${OUT_DIR}/axial_${DATASET}_mw.pdf
-	convert $(sed 's/$/_coronal_MNI.png/' "$SUBJECTS_FILE") -resize 800x1800 ${OUT_DIR}/coronal_${DATASET}_mw.pdf
+	# Build lists of subjects with existing/missing images in work dir
+	P0_EXISTING_SUBS_FILE="${OUT_DIR}/subjects_existing_p0.txt"
+	P0_MISSING_SUBS_FILE="${OUT_DIR}/subjects_missing_p0.txt"
+	MW_EXISTING_SUBS_FILE="${OUT_DIR}/subjects_existing_mw.txt"
+	MW_MISSING_SUBS_FILE="${OUT_DIR}/subjects_missing_mw.txt"
+
+	# Reset lists
+	: > "$P0_EXISTING_SUBS_FILE"
+	: > "$P0_MISSING_SUBS_FILE"
+	: > "$MW_EXISTING_SUBS_FILE"
+	: > "$MW_MISSING_SUBS_FILE"
+
+	# Evaluate existence per subject
+	while IFS= read -r SUBJECT; do
+		[ -z "$SUBJECT" ] && continue
+		SAG_P0="${WORK_DIR}/${SUBJECT}_sagittal.png"
+		AX_P0="${WORK_DIR}/${SUBJECT}_axial.png"
+		COR_P0="${WORK_DIR}/${SUBJECT}_coronal.png"
+		if [ -f "$SAG_P0" ] && [ -f "$AX_P0" ] && [ -f "$COR_P0" ]; then
+			echo "$SUBJECT" >> "$P0_EXISTING_SUBS_FILE"
+		else
+			echo "$SUBJECT" >> "$P0_MISSING_SUBS_FILE"
+		fi
+
+		SAG_MW="${WORK_DIR}/${SUBJECT}_sagittal_MNI.png"
+		AX_MW="${WORK_DIR}/${SUBJECT}_axial_MNI.png"
+		COR_MW="${WORK_DIR}/${SUBJECT}_coronal_MNI.png"
+		if [ -f "$SAG_MW" ] && [ -f "$AX_MW" ] && [ -f "$COR_MW" ]; then
+			echo "$SUBJECT" >> "$MW_EXISTING_SUBS_FILE"
+		else
+			echo "$SUBJECT" >> "$MW_MISSING_SUBS_FILE"
+		fi
+	done < "$SUBJECTS_FILE"
+
+	# Combine only existing images into PDFs
+	if [ -s "$P0_EXISTING_SUBS_FILE" ]; then
+		convert $(sed 's/$/_sagittal.png/' "$P0_EXISTING_SUBS_FILE") -resize 800x1800 ${OUT_DIR}/sagittal_${DATASET}_p0.pdf
+		convert $(sed 's/$/_axial.png/' "$P0_EXISTING_SUBS_FILE") -resize 800x1800 ${OUT_DIR}/axial_${DATASET}_p0.pdf
+		convert $(sed 's/$/_coronal.png/' "$P0_EXISTING_SUBS_FILE") -resize 800x1800 ${OUT_DIR}/coronal_${DATASET}_p0.pdf
+	else
+		echo "No existing p0 images found for dataset ${DATASET}; skipping p0 PDF creation."
+	fi
+
+	if [ -s "$MW_EXISTING_SUBS_FILE" ]; then
+		convert $(sed 's/$/_sagittal_MNI.png/' "$MW_EXISTING_SUBS_FILE") -resize 800x1800 ${OUT_DIR}/sagittal_${DATASET}_mw.pdf
+		convert $(sed 's/$/_axial_MNI.png/' "$MW_EXISTING_SUBS_FILE") -resize 800x1800 ${OUT_DIR}/axial_${DATASET}_mw.pdf
+		convert $(sed 's/$/_coronal_MNI.png/' "$MW_EXISTING_SUBS_FILE") -resize 800x1800 ${OUT_DIR}/coronal_${DATASET}_mw.pdf
+	else
+		echo "No existing mw images found for dataset ${DATASET}; skipping mw PDF creation."
+	fi
     
 done < "$ENABLED_DATASETS_FILE"
 
