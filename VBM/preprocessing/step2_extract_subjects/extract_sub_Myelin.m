@@ -51,7 +51,7 @@ cat12_passed_subjects = cat12_passed_subjects(~strcmp(cat12_passed_subjects, '')
 fprintf('Found %d subjects that passed CAT12 QC\n', length(cat12_passed_subjects));
 
 % Check if visual inspection exclusion list exists
-visual_exclusion_file = fullfile(study_path, 'subject_list_excluded_after_visualisation.txt');
+visual_exclusion_file = fullfile(study_path, 'derivatives','volume_visualisation','subject_list_excluded_after_visualisation.txt');
 if exist(visual_exclusion_file, 'file')
     visual_excluded_subjects = readlines(visual_exclusion_file);
      % Remove empty lines that may be created by bash
