@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=0-1:00:00
-#SBATCH --job-name=ABIDEII_Preprocessing
+#SBATCH --job-name=smooth_${dataset}
 #SBATCH --account=kg98
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=60000
@@ -9,13 +9,18 @@
 # SBATCH --mail-type=BEGIN
 # SBATCH --mail-type=END
 
+# Get DATA_ROOT from environment variable (set by pipeline)
+if [ -z "$DATA_ROOT" ]; then
+    echo "Error: DATA_ROOT environment variable not set. Please run from pipeline."
+    exit 1
+fi
 
+# Get script directory (current directory)
+export script_DIR=$(dirname "$0")
 
-export script_DIR=/home/trangc/kg98/trangc/VBM/code/voxelwise
+# Load required modules
+module load spm12/matlab2021a.r7771-v1
 
-module load  spm12/matlab2021a.r7771-v1
-#module load  matlab/r2023b
-
-#matlab -nodisplay -r "cd ('$script_DIR');  addpath('/scratch/kg98/trangc/toolbox/spm12'); runGLM_combat_func('$dataset',$isses, $smoothKernel)"
-matlab -nodisplay -r "cd ('$script_DIR');  run_smooth_TIV_func('$dataset',$isses, $smoothKernel)"
+# Run the smoothing function with data_root parameter
+matlab -nodisplay -r "cd ('$script_DIR'); run_smooth_TIV_func('$dataset', $isses, $smoothKernel, '$DATA_ROOT')"
 

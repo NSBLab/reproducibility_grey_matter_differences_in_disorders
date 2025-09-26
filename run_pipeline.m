@@ -417,14 +417,48 @@ success = true;
 end
 
 function success = run_vbm_smoothing_step3(config)
-fprintf('=== VBM SMOOTHING ===\n');
+fprintf('=== VBM SMOOTHING STEP 3 ===\n');
 vbm_dir = config.data_directories.VBM;
 step3_dir = fullfile(vbm_dir, 'preprocessing', 'step3_smoothing');
 smooth_script = fullfile(step3_dir, 'run_smooth_TIV_send.sh');
 if exist(smooth_script, 'file')
     fprintf('  Running smoothing...\n');
     try
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
+        
+        % Set smoothing kernel from config or use default
+        if isfield(config.analysis_settings, 'smoothing_kernel')
+            setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
+        else
+            setenv('smoothKernel', '6'); % default 6mm
+        end
+        
+        % Determine whether to consider sessions based on dataset configs
+        enabled_names = get_enabled_datasets(config);
+        consider_sessions = false;
+        for ii = 1:numel(enabled_names)
+            ds_name = enabled_names{ii};
+            if isfield(config.datasets.(ds_name), 'longitudinal') && logical(config.datasets.(ds_name).longitudinal)
+                consider_sessions = true;
+                break;
+            end
+        end
+        if consider_sessions
+            setenv('isses', '1');
+            fprintf('  Session-aware smoothing: considering sessions for longitudinal datasets.\n');
+        else
+            setenv('isses', '0');
+            fprintf('  Session-aware smoothing: no longitudinal datasets enabled; ignoring sessions.\n');
+        end
+        
+        % Pass config file to shell script
+        if isfield(config, 'config_file')
+            setenv('CONFIG_FILE', config.config_file);
+        end
+        
         system(['bash ', smooth_script]);
+        success = true;
     catch ME
         fprintf('  Error running smoothing: %s\n', ME.message);
         success = false;
@@ -432,8 +466,8 @@ if exist(smooth_script, 'file')
     end
 else
     fprintf('  Warning: Smoothing script not found: %s\n', smooth_script);
+    success = false;
 end
-success = true;
 end
 
 function success = run_vbm_combat(config)
