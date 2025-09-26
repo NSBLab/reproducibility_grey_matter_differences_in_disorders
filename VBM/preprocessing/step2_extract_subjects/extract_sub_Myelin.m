@@ -46,13 +46,17 @@ end
 
 % Read the CAT12 passed subjects list
 cat12_passed_subjects = readlines(cat12_passed_file);
+% Remove empty lines that may be created by bash
+cat12_passed_subjects = cat12_passed_subjects(~strcmp(cat12_passed_subjects, ''));
 fprintf('Found %d subjects that passed CAT12 QC\n', length(cat12_passed_subjects));
 
 % Check if visual inspection exclusion list exists
 visual_exclusion_file = fullfile(study_path, 'subject_list_excluded_after_visualisation.txt');
 if exist(visual_exclusion_file, 'file')
     visual_excluded_subjects = readlines(visual_exclusion_file);
-    fprintf('Found %d subjects excluded after visual inspection\n', length(visual_excluded_subjects));
+     % Remove empty lines that may be created by bash
+    visual_excluded_subjects = visual_excluded_subjects(~strcmp(visual_excluded_subjects, ''));
+   fprintf('Found %d subjects excluded after visual inspection\n', length(visual_excluded_subjects));
     
     % Remove visually excluded subjects from CAT12 passed list
     useFolder = setdiff(cat12_passed_subjects, visual_excluded_subjects);
