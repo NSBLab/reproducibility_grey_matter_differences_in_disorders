@@ -16,9 +16,10 @@ if [ -z "$DATA_ROOT" ]; then
 fi
 
 # Get script directory (current directory)
-export script_DIR=$(dirname "$0")
+export script_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Load required modules
+module unload matlab
 module load spm12/matlab2021a.r7771-v1
 
 # Run the smoothing function with data_root parameter
