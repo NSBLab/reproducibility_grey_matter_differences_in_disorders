@@ -34,7 +34,7 @@ for dataset in `cat ${SUBJLIST}`
 do
     export dataset=$dataset
     echo "Submitting smoothing job for dataset: $dataset"
-    sbatch --job-name=smooth_${dataset} run_smooth_TIV_batch.sh
+    sbatch --job-name=smooth_${dataset} $SCRIPT_DIR/run_smooth_TIV_batch.sh
 done
 
 echo "All smoothing jobs submitted successfully."
