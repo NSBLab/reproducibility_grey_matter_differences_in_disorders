@@ -154,9 +154,9 @@ end
 diagString = {'HC', 'BD', 'SCA', 'SCZ', 'ASD', 'MDD'};
 for i = 1:length(metadata.diagnosis)
     if metadata.diagnosis(i) <= length(diagString)
-        metadata.diagnosis_string{i} = diagString{metadata.diagnosis(i)};
+        metadata.diagnosis_string{i,1} = diagString{metadata.diagnosis(i)};
     else
-        metadata.diagnosis_string{i} = 'Unknown';
+        metadata.diagnosis_string{i,1} = 'Unknown';
     end
 end
 metadata.diagnosis = arrayfun(@(x) num2str(x), metadata.diagnosis, 'UniformOutput', false);
