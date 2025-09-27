@@ -23,8 +23,7 @@ config = load_config(config_file);
 valid_stages = {'step0a_create_dataset_list', 'step0b_organize_bids',  ...
                 'step1a_VBM_CAT12_preprocess', 'step1b_VBM_CAT12_report_concat', 'step1c_VBM_CAT12_visualisation', ...
                 'step2_VBM_extract_subjects', 'step3_VBM_smoothing', ...
-                'step4a_VBM_combine_metadata', 'step4b_VBM_combat_input', 'step4c_VBM_combat', 'step4d_VBM_combat_output', ...
-                'step4_create_combat_groups', ...
+                'step4a_VBM_combine_metadata', 'step4b_VBM_make_mask', 'step4c_VBM_combat_input', 'step4d_VBM_combat', 'step4e_VBM_combat_output', ...
                 'step5_VBM_statistical_analysis', ...
                 'step7_VBM_parcellation', 'step8_VBM_nulltest', 'step9_VBM_consistency', ...
                 'step10_VBM_covariates', 'step11_VBM_figures', ...
@@ -105,14 +104,14 @@ switch stage
         success = run_vbm_smoothing_step3(config);
     case 'step4a_VBM_combine_metadata'
         success = run_vbm_combine_metadata_step4a(config);
-    case 'step4b_VBM_combat_input'
-        success = run_vbm_combat_step4b(config);
-    case 'step4c_VBM_combat'
+    case 'step4b_VBM_make_mask'
+        success = run_vbm_make_mask_step4b(config);
+    case 'step4c_VBM_combat_input'
         success = run_vbm_combat_step4c(config);
-    case 'step4d_VBM_combat_output'
+    case 'step4d_VBM_combat'
         success = run_vbm_combat_step4d(config);
-    case 'step4_create_combat_groups'
-        success = create_combat_group_lists(config);
+    case 'step4e_VBM_combat_output'
+        success = run_vbm_combat_step4e(config);
     case 'step5_VBM_statistical_analysis'
         success = run_vbm_statistical_analysis(config);
     case 'VBM_parcellation'
@@ -282,47 +281,6 @@ for k = 1:numel(dataset_names)
 end
 end
 
-function success = create_combat_group_lists(config)
-% Create dataset list files for each combat group
-fprintf('=== CREATING COMBAT GROUP LISTS ===\n');
-
-datasets_by_group = get_datasets_by_combat_group(config);
-dataset_root = config.data_directories.dataset_root;
-
-group_names = fieldnames(datasets_by_group);
-if isempty(group_names)
-    fprintf('  Warning: No combat groups found in config\n');
-    success = false;
-    return;
-end
-
-for i = 1:length(group_names)
-    group_name = group_names{i};
-    datasets = datasets_by_group.(group_name);
-    
-    if isempty(datasets)
-        continue;
-    end
-    
-    % Create dataset list file for this group
-    list_file = fullfile(dataset_root, ['dataset_list_', group_name, '.txt']);
-    fid = fopen(list_file, 'w');
-    if fid == -1
-        fprintf('  Error: Could not create dataset list file: %s\n', list_file);
-        success = false;
-        return;
-    end
-    
-    for j = 1:length(datasets)
-        fprintf(fid, '%s\n', datasets{j});
-    end
-    fclose(fid);
-    
-    fprintf('  Created %s group list: %s (%d datasets)\n', group_name, list_file, length(datasets));
-end
-
-success = true;
-end
 
 function absPath = resolve_relative_path(baseDir, pathStr)
 % If pathStr is absolute, return as-is; otherwise resolve relative to baseDir
@@ -541,25 +499,6 @@ else
 end
 end
 
-function success = run_vbm_combat(config)
-fprintf('=== VBM COMBAT HARMONIZATION ===\n');
-vbm_dir = config.data_directories.VBM;
-step4_dir = fullfile(vbm_dir, 'preprocessing', 'step4_combat');
-combat_script = fullfile(step4_dir, 'COMBAT_run_sbatch.sh');
-if exist(combat_script, 'file')
-    fprintf('  Running COMBAT harmonization...\n');
-    try
-        system(['bash ', combat_script]);
-    catch ME
-        fprintf('  Error running COMBAT: %s\n', ME.message);
-        success = false;
-        return;
-    end
-else
-    fprintf('  Warning: COMBAT script not found: %s\n', combat_script);
-end
-success = true;
-end
 
 function success = run_vbm_combine_metadata_step4a(config)
 fprintf('=== VBM COMBINE METADATA STEP 4A ===\n');
@@ -585,40 +524,41 @@ else
 end
 end
 
-function success = run_vbm_combat_step4b(config)
-fprintf('=== VBM COMBAT STEP 4B: INPUT PREPARATION ===\n');
+
+function success = run_vbm_make_mask_step4b(config)
+fprintf('=== VBM MAKE MASK STEP 4B ===\n');
 vbm_dir = config.data_directories.VBM;
 step4_dir = fullfile(vbm_dir, 'preprocessing', 'step4_combat');
-step4b_script = fullfile(step4_dir, 'step4b_combat_input.m');
+step4b_script = fullfile(step4_dir, 'step4b_make_mask.m');
 if exist(step4b_script, 'file')
-    fprintf('  Running COMBAT input preparation...\n');
+    fprintf('  Running mask creation...\n');
     try
         addpath(step4_dir);
-        step4b_combat_input(config);
+        step4b_make_mask(config);
         rmpath(step4_dir);
         success = true;
     catch ME
-        fprintf('  Error running COMBAT step4b: %s\n', ME.message);
+        fprintf('  Error running make mask step4b: %s\n', ME.message);
         rmpath(step4_dir);
         success = false;
         return;
     end
 else
-    fprintf('  Warning: COMBAT step4b script not found: %s\n', step4b_script);
+    fprintf('  Warning: Make mask step4b script not found: %s\n', step4b_script);
     success = false;
 end
 end
 
 function success = run_vbm_combat_step4c(config)
-fprintf('=== VBM COMBAT STEP 4C: HARMONIZATION ===\n');
+fprintf('=== VBM COMBAT STEP 4C: INPUT PREPARATION ===\n');
 vbm_dir = config.data_directories.VBM;
 step4_dir = fullfile(vbm_dir, 'preprocessing', 'step4_combat');
-step4c_script = fullfile(step4_dir, 'step4c_combat_run.m');
+step4c_script = fullfile(step4_dir, 'step4c_combat_input.m');
 if exist(step4c_script, 'file')
-    fprintf('  Running COMBAT harmonization...\n');
+    fprintf('  Running COMBAT input preparation...\n');
     try
         addpath(step4_dir);
-        step4c_combat_run(config);
+        step4c_combat_input(config);
         rmpath(step4_dir);
         success = true;
     catch ME
@@ -634,15 +574,15 @@ end
 end
 
 function success = run_vbm_combat_step4d(config)
-fprintf('=== VBM COMBAT STEP 4D: OUTPUT CREATION ===\n');
+fprintf('=== VBM COMBAT STEP 4D: HARMONIZATION ===\n');
 vbm_dir = config.data_directories.VBM;
 step4_dir = fullfile(vbm_dir, 'preprocessing', 'step4_combat');
-step4d_script = fullfile(step4_dir, 'step4d_combat_output.m');
+step4d_script = fullfile(step4_dir, 'step4d_combat_run.m');
 if exist(step4d_script, 'file')
-    fprintf('  Running COMBAT output creation...\n');
+    fprintf('  Running COMBAT harmonization...\n');
     try
         addpath(step4_dir);
-        step4d_combat_output(config);
+        step4d_combat_run(config);
         rmpath(step4_dir);
         success = true;
     catch ME
@@ -653,6 +593,30 @@ if exist(step4d_script, 'file')
     end
 else
     fprintf('  Warning: COMBAT step4d script not found: %s\n', step4d_script);
+    success = false;
+end
+end
+
+function success = run_vbm_combat_step4e(config)
+fprintf('=== VBM COMBAT STEP 4E: OUTPUT CREATION ===\n');
+vbm_dir = config.data_directories.VBM;
+step4_dir = fullfile(vbm_dir, 'preprocessing', 'step4_combat');
+step4e_script = fullfile(step4_dir, 'step4e_combat_output.m');
+if exist(step4e_script, 'file')
+    fprintf('  Running COMBAT output creation...\n');
+    try
+        addpath(step4_dir);
+        step4e_combat_output(config);
+        rmpath(step4_dir);
+        success = true;
+    catch ME
+        fprintf('  Error running COMBAT step4e: %s\n', ME.message);
+        rmpath(step4_dir);
+        success = false;
+        return;
+    end
+else
+    fprintf('  Warning: COMBAT step4e script not found: %s\n', step4e_script);
     success = false;
 end
 end

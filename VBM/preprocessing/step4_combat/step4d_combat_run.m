@@ -1,5 +1,5 @@
-function step4c_combat_run(config)
-% STEP4C: Run COMBAT harmonization
+function step4d_combat_run(config)
+% STEP4D: Run COMBAT harmonization
 % This function runs the COMBAT harmonization process using Python
 % for each combat group separately
 %
@@ -11,7 +11,7 @@ if nargin < 1 || isempty(config)
     config = jsondecode(fileread('../../config.json'));
 end
 
-fprintf('=== STEP4C: COMBAT HARMONIZATION ===\n');
+fprintf('=== STEP4D: COMBAT HARMONIZATION ===\n');
 
 % Get paths from config
 dataset_root = config.data_directories.dataset_root;
@@ -40,7 +40,7 @@ for g = 1:length(group_names)
     process_combat_group(config, group_name, dataset_root, smoothKernel);
 end
 
-fprintf('=== STEP4C COMPLETED ===\n');
+fprintf('=== STEP4D COMPLETED ===\n');
 end
 
 function process_combat_group(config, group_name, dataset_root, smoothKernel)

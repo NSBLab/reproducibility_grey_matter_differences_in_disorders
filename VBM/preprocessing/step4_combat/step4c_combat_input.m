@@ -1,5 +1,5 @@
-function step4b_combat_input(config)
-% STEP4B: Create metadata and combine surface inputs for COMBAT
+function step4c_combat_input(config)
+% STEP4C: Create metadata and combine surface inputs for COMBAT
 % This function prepares the data for COMBAT harmonization by:
 % 1. Reading metadata and creating COMBAT input files
 % 2. Loading smoothed images and applying mask
@@ -13,7 +13,7 @@ if nargin < 1 || isempty(config)
     config = jsondecode(fileread('../../config.json'));
 end
 
-fprintf('=== STEP4B: COMBAT INPUT PREPARATION ===\n');
+fprintf('=== STEP4C: COMBAT INPUT PREPARATION ===\n');
 
 % Get paths from config
 dataset_root = config.data_directories.dataset_root;
@@ -42,7 +42,7 @@ for g = 1:length(group_names)
     process_combat_group(config, group_name, datasets, dataset_root, smoothKernel);
 end
 
-fprintf('=== STEP4B COMPLETED ===\n');
+fprintf('=== STEP4C COMPLETED ===\n');
 end
 
 function process_combat_group(config, group_name, datasets, dataset_root, smoothKernel)

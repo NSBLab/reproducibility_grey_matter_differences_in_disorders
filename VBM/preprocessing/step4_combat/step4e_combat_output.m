@@ -1,5 +1,5 @@
-function step4d_combat_output(config)
-% STEP4D: Create COMBAT output files
+function step4e_combat_output(config)
+% STEP4E: Create COMBAT output files
 % This function takes the COMBAT harmonized data and creates individual
 % NIfTI files for each subject in each combat group
 %
@@ -11,7 +11,7 @@ if nargin < 1 || isempty(config)
     config = jsondecode(fileread('../../config.json'));
 end
 
-fprintf('=== STEP4D: COMBAT OUTPUT CREATION ===\n');
+fprintf('=== STEP4E: COMBAT OUTPUT CREATION ===\n');
 
 % Get paths from config
 dataset_root = config.data_directories.dataset_root;
@@ -40,7 +40,7 @@ for g = 1:length(group_names)
     process_combat_group(config, group_name, dataset_root, smoothKernel);
 end
 
-fprintf('=== STEP4D COMPLETED ===\n');
+fprintf('=== STEP4E COMPLETED ===\n');
 end
 
 function process_combat_group(config, group_name, dataset_root, smoothKernel)
