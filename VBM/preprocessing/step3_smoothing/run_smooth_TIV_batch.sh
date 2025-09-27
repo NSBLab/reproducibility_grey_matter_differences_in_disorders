@@ -16,7 +16,7 @@ if [ -z "$DATA_ROOT" ]; then
 fi
 
 # Get script directory (current directory)
-export script_DIR=$(cd "$(dirname "$0")" && pwd)
+export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Load required modules
 module unload matlab
@@ -29,5 +29,5 @@ export DATA_ROOT='$DATA_ROOT'
 echo $SCRIPT_DIR
 
 # Run the smoothing function with data_root parameter
-matlab -nodisplay -r "cd ('$script_DIR'); addpath('$script_DIR'); run_smooth_TIV_func; exit"
+matlab -nodisplay -r "cd ('$SCRIPT_DIR'); run_smooth_TIV_func('$dataset', $isses, $smoothKernel, '$DATA_ROOT'); exit"
 
