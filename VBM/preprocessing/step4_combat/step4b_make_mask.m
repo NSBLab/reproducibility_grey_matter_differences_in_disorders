@@ -1,6 +1,7 @@
 function step4b_make_mask(config)
 % STEP4B: Create masks for COMBAT processing
 % This function creates masks for each combat group using SPM statistical approach
+% This function use SPM to make a group mask for all the subject so need to have the package installed
 %
 % Input: config - Configuration structure containing paths and settings
 
@@ -16,24 +17,19 @@ fprintf('=== STEP4B: MAKE MASKS ===\n');
 dataset_root = config.data_directories.dataset_root;
 smoothKernel = config.analysis_settings.smoothing_kernel;
 
-% Get datasets grouped by combat group
-datasets_by_group = get_datasets_by_combat_group(config);
-group_names = fieldnames(datasets_by_group);
+% Process each combat group by reading existing metadata files
+group_names = {'psy', 'AD'}; % Known combat groups
 
-if isempty(group_names)
-    error('No combat groups found in config. Please add combat_group field to datasets.');
-end
-
-% Process each combat group
 for g = 1:length(group_names)
     group_name = group_names{g};
-    datasets = datasets_by_group.(group_name);
+    metadataFilename = fullfile(dataset_root, ['metadataVBM_', group_name, '.csv']);
     
-    if isempty(datasets)
+    if ~exist(metadataFilename, 'file')
+        fprintf('  Skipping group %s - metadata file not found: %s\n', group_name, metadataFilename);
         continue;
     end
     
-    fprintf('Creating mask for combat group: %s (%d datasets)\n', group_name, length(datasets));
+    fprintf('Creating mask for combat group: %s\n', group_name);
     
     % Process this group
     process_mask_group(config, group_name, dataset_root, smoothKernel);
@@ -49,7 +45,7 @@ function process_mask_group(config, group_name, dataset_root, smoothKernel)
 inDir = dataset_root;
 outDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)], ['mask_', group_name]);
 
-% Create output directory if it doesn't exist
+% Create output directory if it doesnt exist
 if ~exist(outDir, 'dir')
     mkdir(outDir);
     fprintf('  Created mask directory: %s\n', outDir);
@@ -142,37 +138,3 @@ catch ME
 end
 end
 
-function datasets_by_group = get_datasets_by_combat_group(config)
-% Helper function to group datasets by combat_group
-datasets_by_group = struct();
-
-% Get enabled datasets
-enabled_datasets = {};
-for i = 1:length(config.datasets)
-    if config.datasets(i).enabled
-        enabled_datasets{end+1} = config.datasets(i).name;
-    end
-end
-
-% Group by combat_group
-for i = 1:length(enabled_datasets)
-    dataset_name = enabled_datasets{i};
-    
-    % Find the dataset in config
-    dataset_config = [];
-    for j = 1:length(config.datasets)
-        if strcmp(config.datasets(j).name, dataset_name)
-            dataset_config = config.datasets(j);
-            break;
-        end
-    end
-    
-    if ~isempty(dataset_config) && isfield(dataset_config, 'combat_group')
-        group_name = dataset_config.combat_group;
-        if ~isfield(datasets_by_group, group_name)
-            datasets_by_group.(group_name) = {};
-        end
-        datasets_by_group.(group_name){end+1} = dataset_name;
-    end
-end
-end
