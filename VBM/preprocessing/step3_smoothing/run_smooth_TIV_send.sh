@@ -49,6 +49,7 @@ if [ -z "$isses" ]; then
     export isses=0
     echo "Sessions disabled (default)"
 else
+	export isses=$isses
     echo "Sessions enabled: $isses"
 fi
 
