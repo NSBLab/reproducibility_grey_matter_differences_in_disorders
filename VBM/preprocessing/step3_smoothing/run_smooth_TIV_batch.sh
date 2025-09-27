@@ -23,5 +23,5 @@ module unload matlab
 module load spm12/matlab2021a.r7771-v1
 
 # Run the smoothing function with data_root parameter
-matlab -nodisplay -r "cd ('$script_DIR'); run_smooth_TIV_func('$dataset', $isses, $smoothKernel, '$DATA_ROOT')"
+matlab -nodisplay -r "cd ('$script_DIR'); addpath('$script_DIR'); run_smooth_TIV_func('$dataset', $isses, $smoothKernel, '$DATA_ROOT'); exit"
 

@@ -14,26 +14,31 @@
         "bids_script": "BIDS_Myelin.m",
         "vbm_extract_script": "extract_sub_Myelin.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "psy"
       },
       "RD": {
         "path": "${dataset_root}/RD",
         "bids_script": "BIDS_RD.m",
         "vbm_extract_script": "extract_sub_RD.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       }
     },
     
     "pipeline_stages": {
       "organize_bids": { "enabled": true, "description": "Convert datasets to BIDS format" },
-      "VBM_CAT12_step1a": { "enabled": true, "description": "VBM CAT12 preprocessing step 1a" },
-      "VBM_CAT12_step1b": { "enabled": true, "description": "VBM CAT12 QC report concatenation" },
-      "VBM_CAT12_step1c": { "enabled": true, "description": "VBM CAT12 visualization" },
-      "VBM_extract_subjects_step2": { "enabled": true, "description": "VBM extract subjects" },
-      "VBM_smoothing_step3": { "enabled": true, "description": "VBM smoothing" },
-      "VBM_combat": { "enabled": true, "description": "VBM COMBAT harmonization" },
-      "VBM_metadata": { "enabled": true, "description": "VBM combine metadata" },
+      "step1a_VBM_CAT12_preprocess": { "enabled": true, "description": "VBM CAT12 preprocessing" },
+      "step1b_VBM_CAT12_report_concat": { "enabled": true, "description": "VBM CAT12 QC report concatenation" },
+      "step1c_VBM_CAT12_visualisation": { "enabled": true, "description": "VBM CAT12 visualization" },
+      "step2_VBM_extract_subjects": { "enabled": true, "description": "VBM extract subjects for analysis" },
+      "step3_VBM_smoothing": { "enabled": true, "description": "VBM smoothing" },
+      "step4a_VBM_combat_input": { "enabled": true, "description": "VBM prepare input for COMBAT harmonization" },
+      "step4b_VBM_combat": { "enabled": true, "description": "VBM COMBAT harmonization" },
+      "step4c_VBM_combat_output": { "enabled": true, "description": "VBM output COMBAT harmonization" },
+      "step5_VBM_metadata": { "enabled": true, "description": "VBM combine metadata" },
+      "step6_VBM_statistical_analysis": { "enabled": true, "description": "VBM statistical analysis" },
       "VBM_statistical_analysis": { "enabled": true, "description": "VBM statistical analysis" },
       "VBM_parcellation": { "enabled": true, "description": "VBM parcellation" },
       "VBM_nulltest": { "enabled": true, "description": "VBM null testing" },
