@@ -277,7 +277,7 @@ for k = 1:numel(dataset_names)
         if ~isfield(datasets_by_group, group)
             datasets_by_group.(group) = {};
         end
-        datasets_by_group.(group){end+1} = name_k; %#ok<AGROW>
+        datasets_by_group.(group){end+1} = name_k;
     end
 end
 end

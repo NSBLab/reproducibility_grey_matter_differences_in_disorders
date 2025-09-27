@@ -143,28 +143,52 @@ for iSet = 1:nDataset
     
     if exist(extendFile, 'file')
         fprintf('    Processing extended metadata for: %s\n', dataset_name);
-        extend = readtable(extendFile);
+        extend = readtable(extendFile, 'delimiter',',');
         [isinSet, ~] = ismember(metadata.dataset, dataset_name);
         
         [La, indexSetinData] = ismember(metadata.subj_id(isinSet), extend.subj_id);
         
         if ismember('CAT', extend.Properties.VariableNames)
-            metadata.CAT(isinSet) = extend.CAT(indexSetinData);
+            if iscell(extend.CAT)
+                metadata.CAT(isinSet) = extend.CAT(indexSetinData);
+            else
+                metadata.CAT(isinSet) = cellstr(string(extend.CAT(indexSetinData)));
+            end
         end
         if ismember('antipsychotic', extend.Properties.VariableNames)
-            metadata.antipsychotic(isinSet) = extend.antipsychotic(indexSetinData);
+            if iscell(extend.antipsychotic)
+                metadata.antipsychotic(isinSet) = extend.antipsychotic(indexSetinData);
+            else
+                metadata.antipsychotic(isinSet) = cellstr(string(extend.antipsychotic(indexSetinData)));
+            end
         end
         if ismember('moodstabiliser', extend.Properties.VariableNames)
-            metadata.moodstabiliser(isinSet) = extend.moodstabiliser(indexSetinData);
+            if iscell(extend.moodstabiliser)
+                metadata.moodstabiliser(isinSet) = extend.moodstabiliser(indexSetinData);
+            else
+                metadata.moodstabiliser(isinSet) = cellstr(string(extend.moodstabiliser(indexSetinData)));
+            end
         end
         if ismember('antidepression', extend.Properties.VariableNames)
-            metadata.antidepression(isinSet) = extend.antidepression(indexSetinData);
+            if iscell(extend.antidepression)
+                metadata.antidepression(isinSet) = extend.antidepression(indexSetinData);
+            else
+                metadata.antidepression(isinSet) = cellstr(string(extend.antidepression(indexSetinData)));
+            end
         end
         if ismember('antianxiety', extend.Properties.VariableNames)
-            metadata.antianxiety(isinSet) = extend.antianxiety(indexSetinData);
+            if iscell(extend.antianxiety)
+                metadata.antianxiety(isinSet) = extend.antianxiety(indexSetinData);
+            else
+                metadata.antianxiety(isinSet) = cellstr(string(extend.antianxiety(indexSetinData)));
+            end
         end
         if ismember('treatment', extend.Properties.VariableNames)
-            metadata.treatment(isinSet) = extend.treatment(indexSetinData);
+            if iscell(extend.treatment)
+                metadata.treatment(isinSet) = extend.treatment(indexSetinData);
+            else
+                metadata.treatment(isinSet) = cellstr(string(extend.treatment(indexSetinData)));
+            end
         end
         if ismember('ageOnset', extend.Properties.VariableNames)
             metadata.ageOnset(isinSet) = extend.ageOnset(indexSetinData);
@@ -176,8 +200,12 @@ for iSet = 1:nDataset
 end
 
 % Clean up data
-metadata.ageOnset(metadata.ageOnset == 0 | metadata.ageOnset == 9999) = NaN;
-metadata.illnessDuration(metadata.illnessDuration <= 0) = NaN;
+if ismember('ageOnset', metadata.Properties.VariableNames)
+    metadata.ageOnset(metadata.ageOnset == 0 | metadata.ageOnset == 9999) = NaN;
+end
+if ismember('illnessDuration', metadata.Properties.VariableNames)
+    metadata.illnessDuration(metadata.illnessDuration <= 0) = NaN;
+end
 
 % Write extended metadata
 extended_output_file = fullfile(dataset_root, 'metadataVBM_extended.csv');

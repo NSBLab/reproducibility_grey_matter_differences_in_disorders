@@ -1,4 +1,4 @@
-function run_smooth_TIV_func(datasets, isses, smoothKernel, data_root)
+function run_smooth_TIV_func(dataset, isses, smoothKernel, data_root)
 % This script
 %   1.SPM: Smooth (8mm) - voxel intensities become a weighted average of the
 %       surrounding voxels. This is required to render the data more normally
@@ -31,7 +31,7 @@ rng('default')
 smoothData = true;
 calculateTIV = true;
 
-dataset = char(datasets);
+% dataset = char(datasets);
 
 % Use provided data_root or fallback to environment variable
 if nargin < 4 || isempty(data_root)
@@ -44,6 +44,12 @@ end
 % Directories
 inDir = data_root;
 outDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)]);
+
+% Create output directory if it doesn't exist
+if ~exist(outDir, 'dir')
+    mkdir(outDir);
+    fprintf('Created output directory: %s\n', outDir);
+end
 
 % Load in metadata
 metadataFilename = fullfile(inDir, dataset, [dataset, '_dems.csv']);

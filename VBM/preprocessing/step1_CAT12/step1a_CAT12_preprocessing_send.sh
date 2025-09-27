@@ -117,7 +117,7 @@ while IFS= read -r DATASET; do
         fi
         
         # Check if CAT12 report already exists
-        if [ ! -f "$FILENAME" ]; then
+        #if [ ! -f "$FILENAME" ]; then
             echo "Submitting CAT12 job for subject: $SUBJECT"
             
             # Export variables for the job
@@ -126,9 +126,9 @@ while IFS= read -r DATASET; do
             
             # Submit SLURM job
             sbatch --job-name=CAT_${DATASET}_${SUBJECT} $SCRIPT_DIR/CAT12_preprocessing.sh
-        else
-            echo "CAT12 report already exists for subject $SUBJECT, skipping..."
-        fi
+        #else
+           # echo "CAT12 report already exists for subject $SUBJECT, skipping..."
+       # fi
         
     done < "$SUBJECTS_FILE"
     
