@@ -75,7 +75,10 @@ for dataset in `cat ${SUBJLIST}`
 do
     export dataset=$dataset
     echo "Submitting smoothing job for dataset: $dataset"
+	echo $SCRIPT_DIR
+	export SCRIPT_DIR=$SCRIPT_DIR
     sbatch --job-name=smooth_${dataset} $SCRIPT_DIR/run_smooth_TIV_batch.sh
+	#sh $SCRIPT_DIR/run_smooth_TIV_batch.sh
 done
 
 echo "All smoothing jobs submitted successfully."
