@@ -59,8 +59,6 @@ if ~exist(outDir, 'dir')
     fprintf('  Created output directory: %s\n', outDir);
 end
 
-% Add required paths
-addpath(fullfile(fileparts(mfilename('fullpath')), '..', '..', '..', 'func'));
 
 % Read metadata for this group
 metadataFilename = fullfile(dataDir, ['metadataVBM_', group_name, '.csv']);
