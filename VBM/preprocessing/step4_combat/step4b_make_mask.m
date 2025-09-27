@@ -59,29 +59,38 @@ end
 
 fprintf('  Reading metadata from: %s\n', metadataFilename);
 opts = detectImportOptions(metadataFilename);
-opts = setvaropts(opts, 'ses', 'FillValue', '');
+% Only set ses options if the column exists
+if ismember('ses', opts.VariableNames)
+    opts = setvaropts(opts, 'ses', 'FillValue', '');
+end
 metadata = readtable(metadataFilename, opts);
 
 % Get list of smoothed images for this group
 subNiftiSmooth_cell = {};
 for i = 1:height(metadata)
     subj_id = metadata.subj_id{i};
-    ses = metadata.ses{i};
     dataset = metadata.dataset{i};
     
-    % Construct smoothed image path
-    if ~strcmp(ses, '')
-        % Multiple sessions
-        subNiftiSmooth = fullfile(inDir, dataset, subj_id, ses, 'anat', ...
-            ['s', num2str(smoothKernel), 'mwp1', subj_id, '_', ses, '_T1w.nii']);
+     % Check if ses column exists and get session info
+    if ismember('ses', metadata.Properties.VariableNames)
+        ses = metadata.ses{i};
+        if ~strcmp(ses, '')
+            % Multiple sessions
+            subNiftiSmooth = fullfile(inDir, dataset, subj_id, ses, 'anat', ...
+                ['s', num2str(smoothKernel), 'mwp1', subj_id, '_', ses, '_T1w.nii']);
+        else
+            % Single session
+            subNiftiSmooth = fullfile(inDir, dataset, subj_id, 'anat', ...
+                ['s', num2str(smoothKernel), 'mwp1', subj_id, '_T1w.nii']);
+        end
     else
-        % Single session
+        % No ses column - single session
         subNiftiSmooth = fullfile(inDir, dataset, subj_id, 'anat', ...
             ['s', num2str(smoothKernel), 'mwp1', subj_id, '_T1w.nii']);
     end
     
     if exist(subNiftiSmooth, 'file')
-        subNiftiSmooth_cell{end+1} = subNiftiSmooth;
+        subNiftiSmooth_cell{end+1,1} = subNiftiSmooth;
     else
         warning('Smoothed image not found: %s', subNiftiSmooth);
     end

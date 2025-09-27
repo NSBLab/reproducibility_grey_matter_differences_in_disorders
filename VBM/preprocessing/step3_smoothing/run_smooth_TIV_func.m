@@ -61,7 +61,7 @@ subReport_cell = {};
 
 for i=1:size(metadata,1)
     subj_id = metadata.subj_id{i};
-    if isses == 1
+    if isses == 1 && ismember('ses', metadata.Properties.VariableNames)
         ses = metadata.ses{i};
         subNifti = fullfile(inDir, dataset, subj_id, ses, 'anat', ['mwp1', subj_id, '_', ses, '_T1w.nii']);
         subReport = fullfile(inDir, dataset, subj_id, ses, 'anat', ['cat_', subj_id, '_', ses, '_T1w.xml']);
