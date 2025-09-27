@@ -17,12 +17,12 @@ fprintf('=== STEP4D: COMBAT HARMONIZATION ===\n');
 dataset_root = config.data_directories.dataset_root;
 smoothKernel = config.analysis_settings.smoothing_kernel;
 
-% Set environment variables
-setenv('DATA_ROOT', dataset_root);
-setenv('SMOOTH_KERNEL', num2str(smoothKernel));
-
 % Get script directory
 scriptDir = fileparts(mfilename('fullpath'));
+
+% Set environment variables (following step3 pattern)
+setenv('DATA_ROOT', dataset_root);
+setenv('smoothKernel', num2str(smoothKernel));
 sendScript = fullfile(scriptDir, 'step4d_COMBAT_run_sbatch_send.sh');
 
 if ~exist(sendScript, 'file')

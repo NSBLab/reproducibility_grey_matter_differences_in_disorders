@@ -6,7 +6,25 @@
 # Get script directory
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
+# Check if environment variables are set
+if [ -z "$DATA_ROOT" ]; then
+    echo "Error: DATA_ROOT environment variable not set"
+    exit 1
+fi
+
+if [ -z "$smoothKernel" ]; then
+    echo "Error: smoothKernel environment variable not set"
+    exit 1
+fi
+
+# Export environment variables for batch jobs
+export DATA_ROOT
+export smoothKernel
+export SCRIPT_DIR
+
 echo "=== STEP4D: COMBAT HARMONIZATION BATCH SUBMISSION ==="
+echo "Data root: $DATA_ROOT"
+echo "Smoothing kernel: $smoothKernel"
 
 # Get combat groups from metadata files
 COMBAT_GROUPS=()
@@ -30,11 +48,6 @@ for group in "${COMBAT_GROUPS[@]}"; do
     
     # Submit the batch job
     sbatch --job-name="combat_${group}" \
-           --output="${SCRIPT_DIR}/combat_${group}_%j.out" \
-           --error="${SCRIPT_DIR}/combat_${group}_%j.err" \
-           --time=02:00:00 \
-           --mem=8G \
-           --cpus-per-task=4 \
            "${SCRIPT_DIR}/step4d_COMBAT_run_sbatch.sh" "$group"
     
     if [ $? -eq 0 ]; then
@@ -45,3 +58,4 @@ for group in "${COMBAT_GROUPS[@]}"; do
 done
 
 echo "=== BATCH SUBMISSION COMPLETED ==="
+
