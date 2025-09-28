@@ -577,23 +577,60 @@ function success = run_vbm_combat_step4d(config)
 fprintf('=== VBM COMBAT STEP 4D: HARMONIZATION ===\n');
 vbm_dir = config.data_directories.VBM;
 step4_dir = fullfile(vbm_dir, 'preprocessing', 'step4_combat');
-step4d_script = fullfile(step4_dir, 'step4d_combat_run.m');
+send_script = fullfile(step4_dir, 'step4d_COMBAT_run_sbatch_send.sh');
 
-if exist(step4d_script, 'file')
+if exist(send_script, 'file')
     fprintf('  Running COMBAT harmonization...\n');
     try
-        addpath(step4_dir);
-        step4d_combat_run(config);
-        rmpath(step4_dir);
-        success = true;
+        % Set environment variables for the COMBAT harmonization
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
+        
+        % Set smoothing kernel from config or use default
+        if isfield(config.analysis_settings, 'smoothing_kernel')
+            setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
+        else
+            setenv('smoothKernel', '6'); % default 6mm
+        end
+        
+        % Set conda environment path
+        if isfield(config.data_directories, 'conda_env')
+            setenv('conda_env', config.data_directories.conda_env);
+        else
+            error('Configuration file must contain data_directories.conda_env');
+        end
+        
+        % Pass config file to shell script
+        if isfield(config, 'config_file')
+            setenv('CONFIG_FILE', config.config_file);
+        end
+        
+        fprintf('  Data root: %s\n', dataset_root);
+        fprintf('  Smoothing kernel: %s\n', getenv('smoothKernel'));
+        fprintf('  Conda environment: %s\n', getenv('conda_env'));
+        
+        % Run the send script to submit batch jobs
+        cmd = sprintf('bash "%s"', send_script);
+        [status, output] = system(cmd);
+        
+        if status == 0
+            fprintf('  Batch jobs submitted successfully\n');
+            if ~isempty(output)
+                fprintf('  Output: %s\n', output);
+            end
+            success = true;
+        else
+            fprintf('  Error: Failed to submit batch jobs with status %d\n', status);
+            fprintf('  Output: %s\n', output);
+            success = false;
+        end
     catch ME
         fprintf('  Error running COMBAT step4d: %s\n', ME.message);
-        rmpath(step4_dir);
         success = false;
         return;
     end
 else
-    fprintf('  Warning: COMBAT step4d script not found: %s\n', step4d_script);
+    fprintf('  Warning: COMBAT send script not found: %s\n', send_script);
     success = false;
 end
 end
@@ -684,12 +721,62 @@ end
 function success = run_vbm_statistical_analysis(config)
 fprintf('=== VBM STATISTICAL ANALYSIS ===\n');
 vbm_dir = config.data_directories.VBM;
-analysis_dir = fullfile(vbm_dir, 'analysis', 'step1_statistical_analysis');
+analysis_dir = fullfile(vbm_dir, 'analysis', 'step5_statistical_analysis');
 stat_script = fullfile(analysis_dir, 'runGLM_send.sh');
+
 if exist(stat_script, 'file')
     fprintf('  Running statistical analysis...\n');
     try
+        % Set environment variables for the statistical analysis
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
+        
+        % Set analysis parameters from config or use defaults
+        if isfield(config.analysis_settings, 'smoothing_kernel')
+            setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
+        else
+            setenv('smoothKernel', '6'); % default 6mm
+        end
+        
+        % Set mask diagnostic group from config or use default
+        if isfield(config.analysis_settings, 'mask_diagnostic_group')
+            setenv('maskDiag', config.analysis_settings.mask_diagnostic_group);
+        else
+            setenv('maskDiag', 'psy'); % default to psy
+        end
+        
+        % Set harmonization flag from config or use default
+        if isfield(config.analysis_settings, 'harmonize')
+            setenv('harmonize', num2str(config.analysis_settings.harmonize));
+        else
+            setenv('harmonize', '1'); % default to harmonized
+        end
+        
+        % Determine whether to consider sessions based on dataset configs
+        enabled_names = get_enabled_datasets(config);
+        consider_sessions = false;
+        for ii = 1:numel(enabled_names)
+            ds_name = enabled_names{ii};
+            if isfield(config.datasets.(ds_name), 'longitudinal') && logical(config.datasets.(ds_name).longitudinal)
+                consider_sessions = true;
+                break;
+            end
+        end
+        if consider_sessions
+            setenv('isses', '1');
+            fprintf('  Session-aware analysis: considering sessions for longitudinal datasets.\n');
+        else
+            setenv('isses', '0');
+            fprintf('  Session-aware analysis: no longitudinal datasets enabled; ignoring sessions.\n');
+        end
+        
+        % Pass config file to shell script
+        if isfield(config, 'config_file')
+            setenv('CONFIG_FILE', config.config_file);
+        end
+        
         system(['bash ', stat_script]);
+        success = true;
     catch ME
         fprintf('  Error running statistical analysis: %s\n', ME.message);
         success = false;
@@ -697,8 +784,8 @@ if exist(stat_script, 'file')
     end
 else
     fprintf('  Warning: Statistical analysis script not found: %s\n', stat_script);
+    success = false;
 end
-success = true;
 end
 
 function success = run_vbm_parcellation(config)

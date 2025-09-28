@@ -92,7 +92,9 @@
       "minimum_subjects_per_site": 20,
       "masking_threshold": 0.2,
       "cat12_quality_threshold": 2.8,
-      "smoothing_kernel": 6
+      "smoothing_kernel": 6,
+      "harmonize": 1,
+      "mask_diagnostic_group": "psy"
     },
     
     "software_paths": {

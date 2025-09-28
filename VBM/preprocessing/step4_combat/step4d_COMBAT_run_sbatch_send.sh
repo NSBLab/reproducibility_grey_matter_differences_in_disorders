@@ -49,7 +49,7 @@ for group in "${COMBAT_GROUPS[@]}"; do
     
     # Submit the batch job
     sbatch --job-name="combat_${group}" \
-           "${SCRIPT_DIR}/step4d_COMBAT_run_sbatch.sh" "$group"
+           "${SCRIPT_DIR}/COMBAT_run_sbatch.sh" "$group"
     
     if [ $? -eq 0 ]; then
         echo "  Batch job submitted successfully for group: $group"
