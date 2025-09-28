@@ -1,36 +1,7 @@
 #!/bin/bash
 
-# Load configuration
-if [ -z "$CONFIG_FILE" ]; then
-    echo "Error: CONFIG_FILE environment variable not set"
-    echo "Please ensure the pipeline sets the CONFIG_FILE environment variable."
-    exit 1
-fi
-
-if [ -f "$CONFIG_FILE" ]; then
-    echo "Loading configuration from $CONFIG_FILE"
-    # Extract values from config file (basic extraction)
-    DATA_ROOT=$(grep -o '"dataset_root"[[:space:]]*:[[:space:]]*"[^"]*"' "$CONFIG_FILE" | cut -d'"' -f4)
-    SCRIPT_DIR=$(pwd)
-    
-    # Extract analysis settings
-    smoothKernel=$(grep -o '"smoothing_kernel"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" | cut -d':' -f2 | tr -d ' ')
-    harmonize=$(grep -o '"harmonize"[[:space:]]*:[[:space:]]*[01]' "$CONFIG_FILE" | cut -d':' -f2 | tr -d ' ')
-    
-else
-    echo "Error: Configuration file not found: $CONFIG_FILE"
-    echo "Please ensure the config file exists or set CONFIG_FILE environment variable."
-    exit 1
-fi
-
-# Get script directory
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd) 
-
-# Export global values
-export smoothKernel
-export harmonize
-export DATA_ROOT
-export SCRIPT_DIR
+# Simple script to submit GLM jobs
+# All parameters are passed via environment variables from run_pipeline.m
 
 # Check if required environment variables are set
 if [ -z "$DATA_ROOT" ] || [ -z "$smoothKernel" ] || [ -z "$SCRIPT_DIR" ]; then
@@ -41,55 +12,36 @@ if [ -z "$DATA_ROOT" ] || [ -z "$smoothKernel" ] || [ -z "$SCRIPT_DIR" ]; then
     exit 1
 fi
 
-# Get enabled datasets from config
 echo "=== STEP5: STATISTICAL ANALYSIS SUBMISSION ==="
 echo "Smoothing kernel: $smoothKernel"
 echo "Harmonization: $harmonize"
 echo "Data root: $DATA_ROOT"
 echo "Script directory: $SCRIPT_DIR"
 
-# Get enabled datasets from config
-enabled_datasets=$(grep -o '"enabled"[[:space:]]*:[[:space:]]*true' "$CONFIG_FILE" -B 5 | grep -o '"[^"]*"[[:space:]]*:[[:space:]]*{' | cut -d'"' -f2)
+# Use a simple dataset list file instead of parsing config
+dataset_list_file="$DATA_ROOT/dataset_list_VBM.txt"
 
-if [ -z "$enabled_datasets" ]; then
-    echo "Error: No enabled datasets found in config file '$CONFIG_FILE'"
-    echo "Please ensure at least one dataset has 'enabled': true in the config file."
+if [ ! -f "$dataset_list_file" ]; then
+    echo "Error: Dataset list file not found: $dataset_list_file"
     exit 1
 fi
 
-echo "Using enabled datasets from config:"
-echo "$enabled_datasets"
-datasets_to_process="$enabled_datasets"
+echo "Using dataset list file: $dataset_list_file"
 
-for dataset in $datasets_to_process
-do
-    # Get dataset-specific settings from config
-    dataset_isses=0
-    
-    # Check if this dataset is longitudinal
-    if grep -A 10 "\"$dataset\"" "$CONFIG_FILE" | grep -q '"longitudinal"[[:space:]]*:[[:space:]]*true'; then
-        dataset_isses=1
+# Read datasets from file
+while IFS= read -r dataset; do
+    # Skip empty lines
+    if [ -z "$dataset" ]; then
+        continue
     fi
     
-    # Get combat group for this dataset
-    dataset_combat_group=$(grep -A 10 "\"$dataset\"" "$CONFIG_FILE" | grep -o '"combat_group"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
-    if [ -z "$dataset_combat_group" ]; then
-        echo "Error: combat_group not found for dataset '$dataset' in config file '$CONFIG_FILE'"
-        exit 1
-    fi
-    
-    # Set mask diagnostic group based on combat group
-    dataset_maskDiag="$dataset_combat_group"
-    
-    # Export dataset-specific variables
+    # For now, use default values (these should be set by MATLAB)
     export dataset=$dataset
-    export isses=$dataset_isses
-    export maskDiag=$dataset_maskDiag
+    export isses=$isses
+    export maskDiag=$maskDiag
     
-    echo "Submitting job for dataset: $dataset (sessions: $dataset_isses, group: $dataset_combat_group)"
+    echo "Submitting job for dataset: $dataset (sessions: $isses, group: $maskDiag)"
     sbatch --job-name=GLM_VBM_${dataset} "$SCRIPT_DIR/runGLM_batch.sh"
-done
+done < "$dataset_list_file"
 
 echo "All jobs submitted successfully"
-
-
