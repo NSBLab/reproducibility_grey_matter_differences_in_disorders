@@ -158,6 +158,8 @@ function config = load_config(config_file)
 try
     config = jsondecode(fileread(config_file));
     config = resolve_variables(config);
+    % Store the config file path for use by shell scripts
+    config.config_file = config_file;
 catch ME
     error('Failed to load config file %s: %s', config_file, ME.message);
 end
