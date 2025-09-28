@@ -1,7 +1,11 @@
 #!/bin/bash
 
 # Load configuration
-CONFIG_FILE="${CONFIG_FILE:-../../config.json}"
+if [ -z "$CONFIG_FILE" ]; then
+    echo "Error: CONFIG_FILE environment variable not set"
+    echo "Please ensure the pipeline sets the CONFIG_FILE environment variable."
+    exit 1
+fi
 
 if [ -f "$CONFIG_FILE" ]; then
     echo "Loading configuration from $CONFIG_FILE"
@@ -34,36 +38,30 @@ if [ -z "$DATA_ROOT" ] || [ -z "$smoothKernel" ] || [ -z "$SCRIPT_DIR" ]; then
     exit 1
 fi
 
-# Get enabled datasets from config, fallback to dataset list file
+# Get enabled datasets from config
 echo "=== STEP5: STATISTICAL ANALYSIS SUBMISSION ==="
 echo "Smoothing kernel: $smoothKernel"
 echo "Harmonization: $harmonize"
 echo "Data root: $DATA_ROOT"
 echo "Script directory: $SCRIPT_DIR"
 
-# Try to get enabled datasets from config first
+# Get enabled datasets from config
 enabled_datasets=$(grep -o '"enabled"[[:space:]]*:[[:space:]]*true' "$CONFIG_FILE" -B 5 | grep -o '"[^"]*"[[:space:]]*:[[:space:]]*{' | cut -d'"' -f2)
 
-if [ -n "$enabled_datasets" ]; then
-    echo "Using enabled datasets from config:"
-    echo "$enabled_datasets"
-    datasets_to_process="$enabled_datasets"
-else
-    # Fallback to dataset list file
-    SUBJLIST="$DATA_ROOT/dataset_list_VBM.txt"
-    if [ ! -f "$SUBJLIST" ]; then
-        echo "Error: No enabled datasets found in config and dataset list file not found: $SUBJLIST"
-        exit 1
-    fi
-    echo "Using dataset list file: $SUBJLIST"
-    datasets_to_process=$(cat "$SUBJLIST")
+if [ -z "$enabled_datasets" ]; then
+    echo "Error: No enabled datasets found in config file '$CONFIG_FILE'"
+    echo "Please ensure at least one dataset has 'enabled': true in the config file."
+    exit 1
 fi
+
+echo "Using enabled datasets from config:"
+echo "$enabled_datasets"
+datasets_to_process="$enabled_datasets"
 
 for dataset in $datasets_to_process
 do
     # Get dataset-specific settings from config
     dataset_isses=0
-    dataset_maskDiag="psy"
     
     # Check if this dataset is longitudinal
     if grep -A 10 "\"$dataset\"" "$CONFIG_FILE" | grep -q '"longitudinal"[[:space:]]*:[[:space:]]*true'; then

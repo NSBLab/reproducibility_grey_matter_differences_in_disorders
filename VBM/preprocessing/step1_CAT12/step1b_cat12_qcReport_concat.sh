@@ -1,14 +1,13 @@
 #!/bin/bash
 
 # Read the configuration file to get enabled datasets
-# Use CONFIG_FILE environment variable if passed from MATLAB, otherwise use default
+# Use CONFIG_FILE environment variable passed from MATLAB
 if [ -z "$CONFIG_FILE" ]; then
-    export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-    CONFIG_FILE="$SCRIPT_DIR/../../../config_hpc.json"
-    echo "Using default config file: $CONFIG_FILE"
-else
-    echo "Using config file passed from MATLAB: $CONFIG_FILE"
+    echo "Error: CONFIG_FILE environment variable not set"
+    echo "Please ensure the pipeline sets the CONFIG_FILE environment variable."
+    exit 1
 fi
+echo "Using config file passed from MATLAB: $CONFIG_FILE"
 
 # Check if config file exists
 if [ ! -f "$CONFIG_FILE" ]; then

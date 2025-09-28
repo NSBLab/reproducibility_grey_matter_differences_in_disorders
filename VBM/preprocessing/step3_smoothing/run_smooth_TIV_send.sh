@@ -35,23 +35,21 @@ if [ -z "$DATA_ROOT" ]; then
     exit 1
 fi
 
-# Set smoothing kernel from config or use default
+# Set smoothing kernel from config
 if [ -z "$SMOOTHING_KERNEL" ]; then
-    export smoothKernel=6
-    echo "Using default smoothing kernel: 6mm"
-else
-    export smoothKernel=$SMOOTHING_KERNEL
-    echo "Using smoothing kernel from config: ${smoothKernel}mm"
+    echo "Error: SMOOTHING_KERNEL environment variable not set"
+    exit 1
 fi
+export smoothKernel=$SMOOTHING_KERNEL
+echo "Using smoothing kernel from config: ${smoothKernel}mm"
 
-# Get session flag from environment variable or use default
+# Get session flag from environment variable
 if [ -z "$isses" ]; then
-    export isses=0
-    echo "Sessions disabled (default)"
-else
-	export isses=$isses
-    echo "Sessions enabled: $isses"
+    echo "Error: isses environment variable not set"
+    exit 1
 fi
+export isses=$isses
+echo "Sessions setting: $isses"
 
 # Create dataset list file path
 SUBJLIST="${DATA_ROOT}/dataset_list_VBM.txt"

@@ -158,6 +158,8 @@ function config = load_config(config_file)
 try
     config = jsondecode(fileread(config_file));
     config = resolve_variables(config);
+    % Store the config file path for use by shell scripts
+    config.config_file = config_file;
 catch ME
     error('Failed to load config file %s: %s', config_file, ME.message);
 end
@@ -456,12 +458,11 @@ if exist(smooth_script, 'file')
         dataset_root = config.data_directories.dataset_root;
         setenv('DATA_ROOT', dataset_root);
         
-        % Set smoothing kernel from config or use default
-        if isfield(config.analysis_settings, 'smoothing_kernel')
-            setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
-        else
-            setenv('smoothKernel', '6'); % default 6mm
+        % Set smoothing kernel from config
+        if ~isfield(config.analysis_settings, 'smoothing_kernel')
+            error('Configuration file must contain analysis_settings.smoothing_kernel');
         end
+        setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
         
         % Determine whether to consider sessions based on dataset configs
         enabled_names = get_enabled_datasets(config);
@@ -586,12 +587,11 @@ if exist(send_script, 'file')
         dataset_root = config.data_directories.dataset_root;
         setenv('DATA_ROOT', dataset_root);
         
-        % Set smoothing kernel from config or use default
-        if isfield(config.analysis_settings, 'smoothing_kernel')
-            setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
-        else
-            setenv('smoothKernel', '6'); % default 6mm
+        % Set smoothing kernel from config
+        if ~isfield(config.analysis_settings, 'smoothing_kernel')
+            error('Configuration file must contain analysis_settings.smoothing_kernel');
         end
+        setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
         
         % Set conda environment path
         if isfield(config.data_directories, 'conda_env')
@@ -731,26 +731,23 @@ if exist(stat_script, 'file')
         dataset_root = config.data_directories.dataset_root;
         setenv('DATA_ROOT', dataset_root);
         
-        % Set analysis parameters from config or use defaults
-        if isfield(config.analysis_settings, 'smoothing_kernel')
-            setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
-        else
-            setenv('smoothKernel', '6'); % default 6mm
+        % Set analysis parameters from config
+        if ~isfield(config.analysis_settings, 'smoothing_kernel')
+            error('Configuration file must contain analysis_settings.smoothing_kernel');
         end
+        setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
         
-        % Set mask diagnostic group from config or use default
-        if isfield(config.analysis_settings, 'mask_diagnostic_group')
-            setenv('maskDiag', config.analysis_settings.mask_diagnostic_group);
-        else
-            setenv('maskDiag', 'psy'); % default to psy
+        % Set mask diagnostic group from config
+        if ~isfield(config.analysis_settings, 'mask_diagnostic_group')
+            error('Configuration file must contain analysis_settings.mask_diagnostic_group');
         end
+        setenv('maskDiag', config.analysis_settings.mask_diagnostic_group);
         
-        % Set harmonization flag from config or use default
-        if isfield(config.analysis_settings, 'harmonize')
-            setenv('harmonize', num2str(config.analysis_settings.harmonize));
-        else
-            setenv('harmonize', '1'); % default to harmonized
+        % Set harmonization flag from config
+        if ~isfield(config.analysis_settings, 'harmonize')
+            error('Configuration file must contain analysis_settings.harmonize');
         end
+        setenv('harmonize', num2str(config.analysis_settings.harmonize));
         
         % Determine whether to consider sessions based on dataset configs
         enabled_names = get_enabled_datasets(config);
