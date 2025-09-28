@@ -12,13 +12,15 @@ import pandas as pd
 import numpy as np
 import sys
 
-inDir = '/projects/kg98/trangc/VBM/data/'
 print("Hello")
 #smoothKernel = '8'
 #maskDiag = 'psy'
 smoothKernel = sys.argv[1]
 maskDiag = sys.argv[2]
+inDir = sys.argv[3] + '/'
 outDir = inDir + 'derivatives/s' + smoothKernel + 'COMBAT'
+print(outDir)
+
 
 
 metadata_filename = inDir + 'metadataVBM_' + maskDiag + '.csv'

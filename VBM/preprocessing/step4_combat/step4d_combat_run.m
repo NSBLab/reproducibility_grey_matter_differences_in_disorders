@@ -11,6 +11,13 @@ if nargin < 1 || isempty(config)
     config = jsondecode(fileread('../../config.json'));
 end
 
+  
+if isfield(config, 'data_directories') && isfield(config.data_directories, 'conda_env')
+    conda_env = config.data_directories.conda_env;
+else
+     error('Failed to load conda environment');
+end
+
 fprintf('=== STEP4D: COMBAT HARMONIZATION ===\n');
 
 % Get paths from config
@@ -23,6 +30,7 @@ scriptDir = fileparts(mfilename('fullpath'));
 % Set environment variables (following step3 pattern)
 setenv('DATA_ROOT', dataset_root);
 setenv('smoothKernel', num2str(smoothKernel));
+setenv('conda_env', conda_env);
 sendScript = fullfile(scriptDir, 'step4d_COMBAT_run_sbatch_send.sh');
 
 if ~exist(sendScript, 'file')

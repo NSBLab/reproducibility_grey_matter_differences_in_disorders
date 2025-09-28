@@ -23,11 +23,12 @@ fi
 GROUP_NAME="$1"
 
 # Check if environment variables are set
-if [ -z "$DATA_ROOT" ] || [ -z "$smoothKernel" ] || [ -z "$SCRIPT_DIR" ]; then
+if [ -z "$DATA_ROOT" ] || [ -z "$smoothKernel" ] || [ -z "$SCRIPT_DIR" ] || [ -z "$conda_env" ]; then
     echo "Error: Required environment variables not set"
     echo "DATA_ROOT: $DATA_ROOT"
     echo "smoothKernel: $smoothKernel"
     echo "SCRIPT_DIR: $SCRIPT_DIR"
+	echo "conda environment: $conda_env"
     exit 1
 fi
 
@@ -69,13 +70,9 @@ if [ ! -f "$PYTHON_SCRIPT" ]; then
     exit 1
 fi
 
-# Load required modules (adjust as needed for your HPC system)
-echo "Loading required modules..."
-module load python/3.8
-module load spm12
-
-# Activate conda environment - try to find the right environment
-eval "$(/scratch/kg98/trangc/miniconda/bin/conda shell.bash hook)"
+# Activate conda environment
+echo "Activating conda environment..."
+source $conda_env
 
 # Try to activate an environment that has neuroCombat
 # You may need to adjust this environment name based on your setup
@@ -97,7 +94,7 @@ echo "Group: $GROUP_NAME"
 cd "$SCRIPT_DIR"
 
 # Run the Python script
-python "$PYTHON_SCRIPT" "$smoothKernel" "$GROUP_NAME"
+python "$PYTHON_SCRIPT" "$smoothKernel" "$GROUP_NAME" "$DATA_ROOT"
 
 # Check exit status
 if [ $? -eq 0 ]; then

@@ -21,6 +21,7 @@ fi
 export DATA_ROOT
 export smoothKernel
 export SCRIPT_DIR
+export conda_env
 
 echo "=== STEP4D: COMBAT HARMONIZATION BATCH SUBMISSION ==="
 echo "Data root: $DATA_ROOT"

@@ -578,6 +578,7 @@ fprintf('=== VBM COMBAT STEP 4D: HARMONIZATION ===\n');
 vbm_dir = config.data_directories.VBM;
 step4_dir = fullfile(vbm_dir, 'preprocessing', 'step4_combat');
 step4d_script = fullfile(step4_dir, 'step4d_combat_run.m');
+
 if exist(step4d_script, 'file')
     fprintf('  Running COMBAT harmonization...\n');
     try
