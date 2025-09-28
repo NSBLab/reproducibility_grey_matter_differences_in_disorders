@@ -1,4 +1,4 @@
-function step5a_statistical_analysis(config, dataset, isses, smoothKernel, maskDiag, harmonize)
+function step5a_statistical_analysis(inDir, dataset, isses, smoothKernel, maskDiag, harmonize)
 % STEP5A: Statistical Analysis - GLM Analysis
 % This function performs GLM analysis for VBM data, with or without COMBAT harmonization
 %
@@ -11,31 +11,6 @@ function step5a_statistical_analysis(config, dataset, isses, smoothKernel, maskD
 %   harmonize - Harmonization flag (1 for COMBAT, 0 for no harmonization)
 
 % Use config passed as parameter, or load from file if not provided
-if nargin < 1 || isempty(config)
-    % Load configuration from config.json file
-    config_file = '../../config.json';
-    if ~exist(config_file, 'file')
-        error('Configuration file not found: %s', config_file);
-    end
-    config = jsondecode(fileread(config_file));
-end
-
-% Set default values if not provided
-if nargin < 2 || isempty(dataset)
-    error('Dataset name is required');
-end
-if nargin < 3 || isempty(isses)
-    isses = 0; % Default to no sessions
-end
-if nargin < 4 || isempty(smoothKernel)
-    smoothKernel = 6; % Default smoothing kernel
-end
-if nargin < 5 || isempty(maskDiag)
-    maskDiag = 'psy'; % Default mask diagnostic group
-end
-if nargin < 6 || isempty(harmonize)
-    harmonize = 1; % Default to harmonization
-end
 
 fprintf('=== STEP5A: STATISTICAL ANALYSIS ===\n');
 fprintf('Dataset: %s\n', dataset);
@@ -43,16 +18,10 @@ fprintf('Sessions: %d\n', isses);
 fprintf('Smoothing kernel: %d\n', smoothKernel);
 fprintf('Mask diagnostic group: %s\n', maskDiag);
 fprintf('Harmonization: %d\n', harmonize);
+addpath(pwd)
 
 % Set random seed for reproducibility
 rng('default');
-
-% Get paths from config
-if isfield(config, 'data_directories') && isfield(config.data_directories, 'dataset_root')
-    inDir = config.data_directories.dataset_root;
-else
-    error('Configuration file must contain data_directories.dataset_root');
-end
 
 % Define output directories based on harmonization flag
 if harmonize == 1
@@ -69,7 +38,7 @@ if ~exist(outDir, 'dir')
 end
 
 % Define mask directory
-maskDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)], 'mask_', maskDiag);
+maskDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)], ['mask_', maskDiag,'/']);
 
 % Define TIV directory and filename
 TIVDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)]);
@@ -115,10 +84,8 @@ for i = 1:size(metadata, 1)
                 ['s', num2str(smoothKernel), 'mwp1', subj_id, '_T1w.nii']);
         end
     end
-    subNiftiSmooth_cell{i} = subNiftiSmooth;
+    subNiftiSmooth_cell{i,1} = subNiftiSmooth;
 end
-
-subNiftiSmooth_cell = subNiftiSmooth_cell';
 
 % Prepare to run model for each specific site
 numCovs = 3;
@@ -182,21 +149,14 @@ for s = 1:numSite
         fprintf('    Processing: %s vs %s\n', diagnosisName, siteName);
         
         % Run the appropriate GLM analysis based on harmonization flag
-        if harmonize == 1
-            % Use COMBAT-specific functions
-            factorial_design_ttest_combat_job(newSubFolder, hcCell, patCell, age, sex, tiv, maskDir);
-            
-            % Estimate the model
-            spm_file = fullfile(newSubFolder, 'SPM.mat');
-            model_estimation_combat_job(spm_file);
-        else
+        
             % Use standard functions
             factorial_design_ttest_job(newSubFolder, hcCell, patCell, age, sex, tiv, maskDir);
             
             % Estimate the model
             spm_file = fullfile(newSubFolder, 'SPM.mat');
             model_estimation_job(spm_file);
-        end
+        
         
         % Run contrast and reporting jobs (common for both harmonized and non-harmonized)
         spm_file = fullfile(newSubFolder, 'SPM.mat');
@@ -204,18 +164,11 @@ for s = 1:numSite
         spm('defaults', 'PET');
         report_thres_job(spm_file);
         
-        % Add path for additional functions
-        if isfield(config, 'data_directories') && isfield(config.data_directories, 'utils')
-            addpath(config.data_directories.utils);
-        else
-            addpath(fullfile(fileparts(mfilename('fullpath')), '..', '..', '..', 'utils'));
-        end
         report_fwe_job(spm_file);
     end
 end
 
 fprintf('=== STEP5A COMPLETED ===\n');
 fprintf('Statistical analysis completed for dataset: %s\n', dataset);
-fprintf('Harmonization: %s\n', harmonize == 1 ? 'Yes' : 'No');
 fprintf('Output directory: %s\n', outDir);
 end
