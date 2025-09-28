@@ -1,34 +1,32 @@
-function step5a_statistical_analysis(dataset, isses, smoothKernel, maskDiag, harmonize)
+function step5a_statistical_analysis(inDir, dataset, isses, smoothKernel, maskDiag, harmonize)
 % STEP5A: Statistical Analysis - GLM Analysis
 % This function performs GLM analysis for VBM data, with or without COMBAT harmonization
 %
 % Inputs:
+%   inDir - Dataset root directory
 %   dataset - Dataset name to process
 %   isses - Session flag (1 or 0)
 %   smoothKernel - Smoothing kernel size
 %   maskDiag - Mask diagnostic group ('psy' or 'AD')
 %   harmonize - Harmonization flag (1 for COMBAT, 0 for no harmonization)
-%
-% Environment Variables Required:
-%   DATA_ROOT - Dataset root directory
-
-% All required parameters are passed directly from the batch script
-% No need to load config file since all values are provided as parameters
 
 % Validate required parameters
-if nargin < 1 || isempty(dataset)
+if nargin < 1 || isempty(inDir)
+    error('Data root directory is required');
+end
+if nargin < 2 || isempty(dataset)
     error('Dataset name is required');
 end
-if nargin < 2 || isempty(isses)
+if nargin < 3 || isempty(isses)
     error('Session flag (isses) is required');
 end
-if nargin < 3 || isempty(smoothKernel)
+if nargin < 4 || isempty(smoothKernel)
     error('Smoothing kernel is required');
 end
-if nargin < 4 || isempty(maskDiag)
+if nargin < 5 || isempty(maskDiag)
     error('Mask diagnostic group is required');
 end
-if nargin < 5 || isempty(harmonize)
+if nargin < 6 || isempty(harmonize)
     error('Harmonization flag is required');
 end
 
@@ -39,14 +37,13 @@ fprintf('Smoothing kernel: %d\n', smoothKernel);
 fprintf('Mask diagnostic group: %s\n', maskDiag);
 fprintf('Harmonization: %d\n', harmonize);
 
+% Initialize SPM
+fprintf('Initializing SPM...\n');
+spm('defaults', 'FMRI');
+spm_jobman('initcfg');
+
 % Set random seed for reproducibility
 rng('default');
-
-% Get data root from environment variable
-inDir = getenv('DATA_ROOT');
-if isempty(inDir)
-    error('DATA_ROOT environment variable not set. Please ensure the pipeline sets this variable.');
-end
 
 % Define output directories based on harmonization flag
 if harmonize == 1
@@ -63,7 +60,7 @@ if ~exist(outDir, 'dir')
 end
 
 % Define mask directory
-maskDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)], 'mask_', maskDiag);
+maskDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)], ['mask_', maskDiag,'/']);
 
 % Define TIV directory and filename
 TIVDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)]);
@@ -109,10 +106,8 @@ for i = 1:size(metadata, 1)
                 ['s', num2str(smoothKernel), 'mwp1', subj_id, '_T1w.nii']);
         end
     end
-    subNiftiSmooth_cell{i} = subNiftiSmooth;
+    subNiftiSmooth_cell{i,1} = subNiftiSmooth;
 end
-
-subNiftiSmooth_cell = subNiftiSmooth_cell';
 
 % Prepare to run model for each specific site
 numCovs = 3;
@@ -198,11 +193,14 @@ for s = 1:numSite
         spm('defaults', 'PET');
         report_thres_job(spm_file);
         
+        % Add path for additional functions
+        addpath(fullfile(fileparts(mfilename('fullpath')), '..', '..', '..', 'utils'));
         report_fwe_job(spm_file);
     end
 end
 
 fprintf('=== STEP5A COMPLETED ===\n');
 fprintf('Statistical analysis completed for dataset: %s\n', dataset);
+fprintf('Harmonization: %s\n', harmonize == 1 ? 'Yes' : 'No');
 fprintf('Output directory: %s\n', outDir);
 end

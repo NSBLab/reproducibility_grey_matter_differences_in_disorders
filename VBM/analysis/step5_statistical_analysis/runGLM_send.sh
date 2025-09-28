@@ -23,6 +23,9 @@ else
     exit 1
 fi
 
+# Get script directory
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd) 
+
 # Export global values
 export smoothKernel
 export harmonize
@@ -84,7 +87,7 @@ do
     export maskDiag=$dataset_maskDiag
     
     echo "Submitting job for dataset: $dataset (sessions: $dataset_isses, group: $dataset_combat_group)"
-    sbatch --job-name=GLM_VBM_${dataset} runGLM_batch.sh
+    sbatch --job-name=GLM_VBM_${dataset} "$SCRIPT_DIR/runGLM_batch.sh"
 done
 
 echo "All jobs submitted successfully"
