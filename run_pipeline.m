@@ -698,8 +698,7 @@ if exist(stat_script, 'file')
             error('Configuration file must contain execution_mode.hpc_enabled');
         end
         setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
-        fprintf('  HPC mode: %s\n', config.execution_mode.hpc_enabled ? 'enabled' : 'disabled');
-        
+              
         % Determine whether to consider sessions based on dataset configs
         enabled_names = get_enabled_datasets(config);
         consider_sessions = false;

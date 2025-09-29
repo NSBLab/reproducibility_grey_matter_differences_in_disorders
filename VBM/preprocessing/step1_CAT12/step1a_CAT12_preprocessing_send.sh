@@ -9,9 +9,6 @@ fi
 
 echo "Using DATA_ROOT from environment: $DATA_ROOT"
 
-# Extract enabled datasets from config file and create persistent list
-echo "Extracting enabled datasets from config..."
-
 # Create persistent file for enabled datasets in data root
 ENABLED_DATASETS_FILE="$DATA_ROOT/dataset_list_step1a.txt"
 
