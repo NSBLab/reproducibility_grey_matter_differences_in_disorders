@@ -5,7 +5,8 @@
       "data_BIDS": "./data_BIDS",
       "VBM": "./VBM",
       "SBM": "./SBM",
-      "utils": "./utils"
+      "utils": "./utils",
+      "conda_env": "/scratch/kg98/trangc/miniconda/bin/activate"
     },
     
     "datasets": {
@@ -14,196 +15,224 @@
         "bids_script": "BIDS_Myelin.m",
         "vbm_extract_script": "extract_sub_Myelin.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "psy"
       },
       "RestDepress": {
         "path": "${dataset_root}/RD",
         "bids_script": "BIDS_RD.m",
         "vbm_extract_script": "extract_sub_RD.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "ABIDEI": {
         "path": "${dataset_root}/ABIDEI",
         "bids_script": "BIDS_ABIDEI.m",
         "vbm_extract_script": "extract_sub_ABIDEI.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "ABIDEII": {
         "path": "${dataset_root}/ABIDEII",
         "bids_script": "BIDS_ABIDEII.m",
         "vbm_extract_script": "extract_sub_ABIDEII.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "Advan_inno": {
         "path": "${dataset_root}/Advan_inno",
         "bids_script": "BIDS_Advan_inno.m",
         "vbm_extract_script": "extract_sub_Advan_inno.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "AIBL": {
         "path": "${dataset_root}/AIBL",
         "bids_script": "BIDS_AIBL.m",
         "vbm_extract_script": "extract_sub_AIBL.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "AD"
       },
       "Brain45": {
         "path": "${dataset_root}/Brain45",
         "bids_script": "BIDS_Brain45.m",
         "vbm_extract_script": "extract_sub_Brain45.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "psy"
       },
       "BrainGluSchi": {
         "path": "${dataset_root}/BrainGluSchi",
         "bids_script": "BIDS_BrainGluSchi.m",
         "vbm_extract_script": "extract_sub_BrainGluSchi.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "BSNIP": {
         "path": "${dataset_root}/BSNIP",
         "bids_script": "BIDS_BSNIP.m",
         "vbm_extract_script": "extract_sub_BSNIP.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "BSNIP2": {
         "path": "${dataset_root}/BSNIP2",
         "bids_script": "BIDS_BSNIP2.m",
         "vbm_extract_script": "extract_sub_BSNIP2.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
 	  "COBRE": {
         "path": "${dataset_root}/COBRE",
         "bids_script": "BIDS_COBRE.m",
         "vbm_extract_script": "extract_sub_COBRE.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "Harmonisation": {
         "path": "${dataset_root}/Harmonisation",
         "bids_script": "BIDS_Harmonisation.m",
         "vbm_extract_script": "extract_sub_Harmonisation.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "AD"
       },
       "HCP": {
         "path": "${dataset_root}/HCP",
         "bids_script": "BIDS_HCP.m",
         "vbm_extract_script": "extract_sub_HCP.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "Inhi_dys": {
         "path": "${dataset_root}/Inhi_dys",
         "bids_script": "BIDS_Inhi_dys.m",
         "vbm_extract_script": "extract_sub_Inhi_dys.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "psy"
       },
       "MBBP": {
         "path": "${dataset_root}/MBBP",
         "bids_script": "BIDS_MBBP.m",
         "vbm_extract_script": "extract_sub_MBBP.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "MCIC": {
         "path": "${dataset_root}/MCIC",
         "bids_script": "BIDS_MCIC.m",
         "vbm_extract_script": "extract_sub_MCIC.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "psy"
       },
       "miriad": {
         "path": "${dataset_root}/miriad",
         "bids_script": "BIDS_miriad.m",
         "vbm_extract_script": "extract_sub_miriad.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "AD"
       },
       "Modul_vent": {
         "path": "${dataset_root}/Modul_vent",
         "bids_script": "BIDS_Modul_vent.m",
         "vbm_extract_script": "extract_sub_Modul_vent.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "psy"
       },
       "MultidimCog": {
         "path": "${dataset_root}/MultidimCog",
         "bids_script": "BIDS_MultidimCog.m",
         "vbm_extract_script": "extract_sub_MultidimCog.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
 	  "OASIS3": {
         "path": "${dataset_root}/OASIS3",
         "bids_script": "BIDS_OASIS3.m",
         "vbm_extract_script": "extract_sub_OASIS3.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "AD"
       },
 	  "OASIS4": {
         "path": "${dataset_root}/OASIS4",
         "bids_script": "BIDS_OASIS4.m",
         "vbm_extract_script": "extract_sub_OASIS4.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "AD
       },
       "PARDIP": {
         "path": "${dataset_root}/PARDIP",
         "bids_script": "BIDS_PARDIP.m",
         "vbm_extract_script": "extract_sub_PARDIP.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "speech": {
         "path": "${dataset_root}/speech",
         "bids_script": "BIDS_speech.m",
         "vbm_extract_script": "extract_sub_speech.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "SRPBS": {
         "path": "${dataset_root}/SRPBS",
         "bids_script": "BIDS_SRPBS.m",
         "vbm_extract_script": "extract_sub_SRPBS.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "Study_neura": {
         "path": "${dataset_root}/Study_neura",
         "bids_script": "BIDS_Study_neura.m",
         "vbm_extract_script": "extract_sub_Study_neura.m",
         "enabled": true,
-        "longitudinal": true
+        "longitudinal": true,
+        "combat_group": "psy"
       },
       "Transdiagnostic": {
         "path": "${dataset_root}/Transdiagnostic",
         "bids_script": "BIDS_Transdiagnostic.m",
         "vbm_extract_script": "extract_sub_Transdiagnostic.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "UCLA": {
         "path": "${dataset_root}/UCLA",
         "bids_script": "BIDS_UCLA.m",
         "vbm_extract_script": "extract_sub_UCLA.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       },
       "YMDD": {
         "path": "${dataset_root}/YMDD",
         "bids_script": "BIDS_YMDD.m",
         "vbm_extract_script": "extract_sub_YMDD.m",
         "enabled": true,
-        "longitudinal": false
+        "longitudinal": false,
+        "combat_group": "psy"
       }
     },
     
@@ -243,6 +272,7 @@
     
     "execution_mode": {
       "type": "local",
+      "hpc_enabled": true,
       "slurm_settings": {
         "partition": "default",
         "time": "24:00:00",
@@ -264,7 +294,12 @@
         "max": 60
       },
       "minimum_subjects_per_site": 20,
-      "masking_threshold": 0.2
+      "masking_threshold": 0.2,
+      "cat12_quality_threshold": 2.8,
+      "smoothing_kernel": 6,
+      "harmonize": 1,
+      "mask_diagnostic_group": "psy",
+      "num_permutations": 10
     },
     
     "software_paths": {

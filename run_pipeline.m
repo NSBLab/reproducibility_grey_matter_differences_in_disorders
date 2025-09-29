@@ -19,7 +19,7 @@ end
 % Load configuration
 config = load_config(config_file);
 
-% Validate stage - Updated to include all stages from config.json
+% Validate stage - Updated to include all stages from config_hpc.json
 valid_stages = {'step0a_create_dataset_list', 'step0b_organize_bids',  ...
                 'step1a_VBM_CAT12_preprocess', 'step1b_VBM_CAT12_report_concat', 'step1c_VBM_CAT12_visualisation', ...
                 'step2_VBM_extract_subjects', 'step3_VBM_smoothing', ...5
@@ -877,6 +877,12 @@ if exist(step6b_script, 'file')
             error('No enabled datasets found in config');
         end
         setenv('ENABLED_DATASETS', strjoin(enabled_datasets, ','));
+        
+        % Set number of permutations from config
+        if ~isfield(config.analysis_settings, 'num_permutations')
+            error('Configuration file must contain analysis_settings.num_permutations');
+        end
+        setenv('NUM_PERMUTATIONS', num2str(config.analysis_settings.num_permutations));
         
         % Set HPC flag from config
         if ~isfield(config.execution_mode, 'hpc_enabled')

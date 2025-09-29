@@ -95,7 +95,8 @@
       "cat12_quality_threshold": 2.8,
       "smoothing_kernel": 6,
       "harmonize": 1,
-      "mask_diagnostic_group": "psy"
+      "mask_diagnostic_group": "psy",
+      "num_permutations": 10
     },
     
     "software_paths": {

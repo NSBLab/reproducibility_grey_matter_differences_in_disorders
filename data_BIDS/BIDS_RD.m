@@ -9,8 +9,7 @@ study = 'RD';
 
 % Use config passed as parameter, or load from file if not provided
 if nargin < 1 || isempty(config)
-    % Fallback: Load configuration from config.json file
-    config = jsondecode(fileread('../config.json'));
+    error('No config passed');
 end
 
 % Get destination paths from config

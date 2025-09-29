@@ -65,8 +65,14 @@ mkdir -p "$SCRIPT_DIR/logs"
 # Parse enabled datasets (comma-separated)
 IFS=',' read -ra DATASETS <<< "$ENABLED_DATASETS"
 
-# Number of permutations
-NUM_PERMUTATIONS=2
+# Get number of permutations from environment variable
+if [ -z "$NUM_PERMUTATIONS" ]; then
+    echo "Error: NUM_PERMUTATIONS environment variable not set"
+    echo "Please ensure the pipeline sets the NUM_PERMUTATIONS environment variable."
+    exit 1
+fi
+
+echo "Number of permutations: $NUM_PERMUTATIONS"
 
 echo "Submitting $NUM_PERMUTATIONS permutations for each dataset..."
 
