@@ -1,36 +1,13 @@
 #!/bin/bash
 
-# Read the configuration file to get enabled datasets
-# Use CONFIG_FILE environment variable passed from MATLAB
-if [ -z "$CONFIG_FILE" ]; then
-    echo "Error: CONFIG_FILE environment variable not set"
-    echo "Please ensure the pipeline sets the CONFIG_FILE environment variable."
-    exit 1
-fi
-echo "Using config file passed from MATLAB: $CONFIG_FILE"
-
-# Check if config file exists
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Error: Configuration file $CONFIG_FILE not found!"
-    exit 1
-fi
-
-# Extract data root from config file using jq (JSON processor)
-# If jq is not available, we'll use a simple grep approach
-if command -v jq &> /dev/null; then
-    echo "Using jq to parse JSON config..."
-    DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-else
-    echo "jq not available, using grep to parse JSON config..."
-    # Extract data root using grep and sed
-    DATA_ROOT=$(grep '"dataset_root"' "$CONFIG_FILE" | sed 's/.*"dataset_root": *"\([^\"]*\)".*/\1/')
-fi
-
-# Check if we got the data root
+# Use environment variables passed from MATLAB
 if [ -z "$DATA_ROOT" ]; then
-    echo "Error: Could not extract data root from configuration!"
+    echo "Error: DATA_ROOT environment variable not set"
+    echo "Please ensure the pipeline sets the DATA_ROOT environment variable."
     exit 1
 fi
+
+echo "Using DATA_ROOT from environment: $DATA_ROOT"
 
 # Extract enabled datasets from config file and create persistent list
 echo "Extracting enabled datasets from config..."

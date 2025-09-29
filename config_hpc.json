@@ -69,6 +69,7 @@
     
     "execution_mode": {
       "type": "local",
+      "hpc_enabled": true,
       "slurm_settings": {
         "partition": "default",
         "time": "24:00:00",

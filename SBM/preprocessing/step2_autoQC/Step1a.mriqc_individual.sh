@@ -40,9 +40,14 @@ N_SUBJECTS=$(wc -l < "$SUBJECT_LIST")
 	if [ ! -d $OUT_DIR ]; then mkdir $OUT_DIR; echo "making output directory"; fi
 	if [ ! -d $WORK_DIR ]; then mkdir $WORK_DIR; echo "making work directory"; fi
 
-	#load MRIQC
-	module purge
-	module load mriqc/0.15.2.rc1.1 #mriqc/0.15.2.rc1
+	# Load MRIQC modules conditionally
+	if [ "$HPC_ENABLED" = "true" ]; then
+		echo "Loading MRIQC modules (HPC mode enabled)..."
+		module purge
+		module load mriqc/0.15.2.rc1.1 #mriqc/0.15.2.rc1
+	else
+		echo "Skipping module loading (HPC mode disabled)..."
+	fi
 
 	#run MRIQC for single subject analysis
 	if [ -z "$SESSION" ]

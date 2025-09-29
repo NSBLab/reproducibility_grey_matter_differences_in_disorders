@@ -16,9 +16,14 @@ if [ -z "$DATA_ROOT" ]; then
 fi
 
 
-# Load required modules
-module unload matlab
-module load spm12/matlab2021a.r7771-v1
+# Load MATLAB modules conditionally
+if [ "$HPC_ENABLED" = "true" ]; then
+    echo "Loading MATLAB modules (HPC mode enabled)..."
+    module unload matlab
+    module load spm12/matlab2021a.r7771-v1
+else
+    echo "Skipping module loading (HPC mode disabled)..."
+fi
 
 
 

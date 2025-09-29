@@ -24,8 +24,14 @@ ses=${subject: -5}
 subj=${subject:0:${#subject}-5}
 
 
-module purge
-module load freesurfer/7.1.0
+# Load FreeSurfer modules conditionally
+if [ "$HPC_ENABLED" = "true" ]; then
+    echo "Loading FreeSurfer modules (HPC mode enabled)..."
+    module purge
+    module load freesurfer/7.1.0
+else
+    echo "Skipping module loading (HPC mode disabled)..."
+fi
 
 BIDS_DIR=/projects/kg98/trangc/VBM/data/${DATASET}
 export SUBJECTS_DIR=${BIDS_DIR}/derivatives/freesurfer

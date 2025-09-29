@@ -20,8 +20,14 @@ else
 export T1_name=$DATA_ROOT/${DATASET}/${i}/${ses}/anat/${i}_${ses}_T1w.nii
 fi
 
-module unload matlab
-module load  spm12/matlab2021a.r7771-v1
+# Load MATLAB modules conditionally
+if [ "$HPC_ENABLED" = "true" ]; then
+    echo "Loading MATLAB modules (HPC mode enabled)..."
+    module unload matlab
+    module load  spm12/matlab2021a.r7771-v1
+else
+    echo "Skipping module loading (HPC mode disabled)..."
+fi
 
 matlab -nodisplay -r "cd ('$SCRIPT_DIR');   CAT12_preprocessing_job('$T1_name')"
 

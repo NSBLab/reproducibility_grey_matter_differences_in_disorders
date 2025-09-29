@@ -113,7 +113,7 @@ switch stage
     case 'step4e_VBM_combat_output'
         success = run_vbm_combat_step4e(config);
     case 'step5_VBM_statistical_analysis'
-        success = run_vbm_statistical_analysis(config);
+        success = run_vbm_statistical_analysis_step5(config);
     case 'VBM_parcellation'
         success = run_vbm_parcellation(config);
     case 'VBM_nulltest'
@@ -317,10 +317,13 @@ end
 try
     dataset_root = config.data_directories.dataset_root;
     setenv('DATA_ROOT', dataset_root);
-    % Allow passing config file to shell if desired
-    if isfield(config, 'config_file')
-        setenv('CONFIG_FILE', config.config_file);
+    
+    % Set HPC flag from config
+    if ~isfield(config.execution_mode, 'hpc_enabled')
+        error('Configuration file must contain execution_mode.hpc_enabled');
     end
+    setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+    
     system(['bash ', cat12_script]);
     success = true;
 catch ME
@@ -343,10 +346,6 @@ end
 try
     dataset_root = config.data_directories.dataset_root;
     setenv('DATA_ROOT', dataset_root);
-    % Pass config file to shell script
-    if isfield(config, 'config_file')
-        setenv('CONFIG_FILE', config.config_file);
-    end
     % Determine whether to consider sessions based on dataset configs
     enabled_names = get_enabled_datasets(config);
     consider_sessions = false;
@@ -388,10 +387,13 @@ end
 try
     dataset_root = config.data_directories.dataset_root;
     setenv('DATA_ROOT', dataset_root);
-    % Pass config file to shell script
-    if isfield(config, 'config_file')
-        setenv('CONFIG_FILE', config.config_file);
+    
+    % Set HPC flag from config
+    if ~isfield(config.execution_mode, 'hpc_enabled')
+        error('Configuration file must contain execution_mode.hpc_enabled');
     end
+    setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+    
     % Run the visualization script (handles both rendering and PDF concatenation)
     cmd = sprintf('bash %s', viz_script);
     [status, output] = system(cmd);
@@ -458,6 +460,12 @@ if exist(smooth_script, 'file')
         dataset_root = config.data_directories.dataset_root;
         setenv('DATA_ROOT', dataset_root);
         
+        % Set HPC flag from config
+        if ~isfield(config.execution_mode, 'hpc_enabled')
+            error('Configuration file must contain execution_mode.hpc_enabled');
+        end
+        setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+        
         % Set smoothing kernel from config
         if ~isfield(config.analysis_settings, 'smoothing_kernel')
             error('Configuration file must contain analysis_settings.smoothing_kernel');
@@ -482,10 +490,6 @@ if exist(smooth_script, 'file')
             fprintf('  Session-aware smoothing: no longitudinal datasets enabled; ignoring sessions.\n');
         end
         
-        % Pass config file to shell script
-        if isfield(config, 'config_file')
-            setenv('CONFIG_FILE', config.config_file);
-        end
         
         system(['bash ', smooth_script]);
         success = true;
@@ -600,10 +604,6 @@ if exist(send_script, 'file')
             error('Configuration file must contain data_directories.conda_env');
         end
         
-        % Pass config file to shell script
-        if isfield(config, 'config_file')
-            setenv('CONFIG_FILE', config.config_file);
-        end
         
         fprintf('  Data root: %s\n', dataset_root);
         fprintf('  Smoothing kernel: %s\n', getenv('smoothKernel'));
@@ -659,67 +659,8 @@ else
 end
 end
 
-function success = run_vbm_metadata(config)
-fprintf('=== VBM COMBINE METADATA ===\n');
-vbm_dir = config.data_directories.VBM;
-combine_script = fullfile(vbm_dir, 'preprocessing', 'step5_combine_metadata.m');
-if exist(combine_script, 'file')
-    fprintf('  Combining metadata...\n');
-    try
-        run(combine_script);
-    catch ME
-        fprintf('  Error combining metadata: %s\n', ME.message);
-        success = false;
-        return;
-    end
-else
-    fprintf('  Warning: Combine metadata script not found: %s\n', combine_script);
-end
-success = true;
-end
-
-function success = run_vbm_voxelwise(config)
-fprintf('=== VBM VOXELWISE ANALYSIS ===\n');
-vbm_dir = config.data_directories.VBM;
-analysis_dir = fullfile(vbm_dir, 'analysis');
-voxelwise_script = fullfile(analysis_dir, 'runGLM_send.sh');
-if exist(voxelwise_script, 'file')
-    fprintf('  Running voxelwise analysis...\n');
-    try
-        system(['bash ', voxelwise_script]);
-    catch ME
-        fprintf('  Error running voxelwise analysis: %s\n', ME.message);
-        success = false;
-        return;
-    end
-else
-    fprintf('  Warning: Voxelwise script not found: %s\n', voxelwise_script);
-end
-success = true;
-end
-
-function success = run_vbm_roi(config)
-fprintf('=== VBM ROI ANALYSIS ===\n');
-vbm_dir = config.data_directories.VBM;
-analysis_dir = fullfile(vbm_dir, 'analysis');
-roi_script = fullfile(analysis_dir, 'roi', 'runGLM_send.sh');
-if exist(roi_script, 'file')
-    fprintf('  Running ROI analysis...\n');
-    try
-        system(['bash ', roi_script]);
-    catch ME
-        fprintf('  Error running ROI analysis: %s\n', ME.message);
-        success = false;
-        return;
-    end
-else
-    fprintf('  Warning: ROI script not found: %s\n', roi_script);
-end
-success = true;
-end
-
-function success = run_vbm_statistical_analysis(config)
-fprintf('=== VBM STATISTICAL ANALYSIS ===\n');
+function success = run_vbm_statistical_analysis_step5(config)
+fprintf('=== VBM STATISTICAL ANALYSIS STEP 5 ===\n');
 vbm_dir = config.data_directories.VBM;
 analysis_dir = fullfile(vbm_dir, 'analysis', 'step5_statistical_analysis');
 stat_script = fullfile(analysis_dir, 'runGLM_send.sh');
@@ -752,6 +693,13 @@ if exist(stat_script, 'file')
         % Set script_dir
         setenv('SCRIPT_DIR', analysis_dir);
         
+        % Set HPC flag from config
+        if ~isfield(config.execution_mode, 'hpc_enabled')
+            error('Configuration file must contain execution_mode.hpc_enabled');
+        end
+        setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+        fprintf('  HPC mode: %s\n', config.execution_mode.hpc_enabled ? 'enabled' : 'disabled');
+        
         % Determine whether to consider sessions based on dataset configs
         enabled_names = get_enabled_datasets(config);
         consider_sessions = false;
@@ -770,10 +718,6 @@ if exist(stat_script, 'file')
             fprintf('  Session-aware analysis: no longitudinal datasets enabled; ignoring sessions.\n');
         end
         
-        % Pass config file to shell script
-        if isfield(config, 'config_file')
-            setenv('CONFIG_FILE', config.config_file);
-        end
         
         system(['bash ', stat_script]);
         success = true;
@@ -898,6 +842,12 @@ recon_script = fullfile(step1_dir, 'Step0.recon_all.sh');
 if exist(recon_script, 'file')
     fprintf('  Running recon-all...\n');
     try
+        % Set HPC flag from config
+        if ~isfield(config.execution_mode, 'hpc_enabled')
+            error('Configuration file must contain execution_mode.hpc_enabled');
+        end
+        setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+        
         system(['bash ', recon_script]);
     catch ME
         fprintf('  Error running recon-all: %s\n', ME.message);
@@ -918,6 +868,12 @@ qc_script = fullfile(step2_dir, 'Step1a.mriqc_individual.sh');
 if exist(qc_script, 'file')
     fprintf('  Running auto QC...\n');
     try
+        % Set HPC flag from config
+        if ~isfield(config.execution_mode, 'hpc_enabled')
+            error('Configuration file must contain execution_mode.hpc_enabled');
+        end
+        setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+        
         system(['bash ', qc_script]);
     catch ME
         fprintf('  Error running auto QC: %s\n', ME.message);

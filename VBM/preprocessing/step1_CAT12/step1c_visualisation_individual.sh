@@ -73,9 +73,13 @@ cat "$ENABLED_DATASETS_FILE"
 # Export DATA_ROOT so batch jobs can see it
 export DATA_ROOT
 
-# load visualisation package
-#module purge
-module load fsleyes
+# Load visualization modules conditionally
+if [ "$HPC_ENABLED" = "true" ]; then
+    echo "Loading fsleyes modules (HPC mode enabled)..."
+    module load fsleyes
+else
+    echo "Skipping module loading (HPC mode disabled)..."
+fi
 
 # Process each enabled dataset
 while IFS= read -r DATASET; do

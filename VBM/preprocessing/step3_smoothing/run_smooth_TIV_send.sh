@@ -1,47 +1,20 @@
 #!/bin/bash
 
-# Read the configuration file to get enabled datasets and settings
-# Use CONFIG_FILE environment variable if passed from MATLAB, otherwise use default
-if [ -z "$CONFIG_FILE" ]; then
-    export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-    CONFIG_FILE="$SCRIPT_DIR/../../../config_hpc.json"
-    echo "Using default config file: $CONFIG_FILE"
-else
-    echo "Using config file passed from MATLAB: $CONFIG_FILE"
-fi
-
-# Check if config file exists
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Error: Configuration file $CONFIG_FILE not found!"
-    exit 1
-fi
-
-# Extract data root from config file using jq (JSON processor)
-# If jq is not available, we'll use a simple grep approach
-if command -v jq &> /dev/null; then
-    echo "Using jq to parse JSON config..."
-    DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-    SMOOTHING_KERNEL=$(jq -r '.analysis_settings.smoothing_kernel' "$CONFIG_FILE")
-else
-    echo "jq not available, using grep to parse JSON config..."
-    # Extract data root using grep and sed
-    DATA_ROOT=$(grep '"dataset_root"' "$CONFIG_FILE" | sed 's/.*"dataset_root": *"\([^\"]*\)".*/\1/')
-    SMOOTHING_KERNEL=$(grep '"smoothing_kernel"' "$CONFIG_FILE" | sed 's/.*"smoothing_kernel": *\([0-9]*\).*/\1/')
-fi
-
-# Check if we got the data root
+# Use environment variables passed from MATLAB
 if [ -z "$DATA_ROOT" ]; then
-    echo "Error: Could not extract data root from configuration!"
+    echo "Error: DATA_ROOT environment variable not set"
+    echo "Please ensure the pipeline sets the DATA_ROOT environment variable."
     exit 1
 fi
 
-# Set smoothing kernel from config
-if [ -z "$SMOOTHING_KERNEL" ]; then
-    echo "Error: SMOOTHING_KERNEL environment variable not set"
+if [ -z "$smoothKernel" ]; then
+    echo "Error: smoothKernel environment variable not set"
+    echo "Please ensure the pipeline sets the smoothKernel environment variable."
     exit 1
 fi
-export smoothKernel=$SMOOTHING_KERNEL
-echo "Using smoothing kernel from config: ${smoothKernel}mm"
+
+echo "Using DATA_ROOT from environment: $DATA_ROOT"
+echo "Using smoothKernel from environment: ${smoothKernel}mm"
 
 # Get session flag from environment variable
 if [ -z "$isses" ]; then
