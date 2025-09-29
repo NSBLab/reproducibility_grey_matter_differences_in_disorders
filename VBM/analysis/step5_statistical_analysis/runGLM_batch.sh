@@ -20,7 +20,7 @@ if [ -z "$DATA_ROOT" ] || [ -z "$smoothKernel" ] || [ -z "$SCRIPT_DIR" ] || [ -z
 fi
 
 # Load required modules only if HPC is enabled
-if [ "$HPC_ENABLED" = "true" ]; then
+if [ "$HPC_ENABLED" = "1" ]; then
     echo "Loading required modules (HPC mode enabled)..."
     module unload matlab 
     module load spm12/matlab2021a.r7771-v1

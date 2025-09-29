@@ -9,8 +9,7 @@ function step4c_combat_input(config)
 
 % Use config passed as parameter, or load from file if not provided
 if nargin < 1 || isempty(config)
-    % Fallback: Load configuration from config.json file
-    config = jsondecode(fileread('../../config.json'));
+    error('No config found');
 end
 
 fprintf('=== STEP4C: COMBAT INPUT PREPARATION ===\n');
@@ -138,7 +137,7 @@ for k = 1:numel(dataset_names)
         if ~isfield(datasets_by_group, group)
             datasets_by_group.(group) = {};
         end
-        datasets_by_group.(group){end+1} = name_k; %#ok<AGROW>
+        datasets_by_group.(group){end+1} = name_k;
     end
 end
 end

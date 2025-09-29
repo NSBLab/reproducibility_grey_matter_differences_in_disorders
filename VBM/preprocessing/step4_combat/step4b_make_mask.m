@@ -39,13 +39,13 @@ for g = 1:length(group_names)
     fprintf('Creating mask for combat group: %s\n', group_name);
     
     % Process this group
-    process_mask_group(config, group_name, dataset_root, smoothKernel);
+    process_mask_group(group_name, dataset_root, smoothKernel);
 end
 
 fprintf('=== STEP4B COMPLETED ===\n');
 end
 
-function process_mask_group(config, group_name, dataset_root, smoothKernel)
+function process_mask_group(group_name, dataset_root, smoothKernel)
 % Process mask creation for a single combat group using SPM approach
 
 % Set up directories
