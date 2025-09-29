@@ -1,4 +1,4 @@
-function step5a_statistical_analysis(inDir, dataset, isses, smoothKernel, maskDiag, harmonize)
+function step5a_statistical_analysis(inDir, dataset, isses, smoothKernel, maskDiag, harmonize, varargin)
 % STEP5A: Statistical Analysis - GLM Analysis
 % This function performs GLM analysis for VBM data, with or without COMBAT harmonization
 %
@@ -9,6 +9,7 @@ function step5a_statistical_analysis(inDir, dataset, isses, smoothKernel, maskDi
 %   smoothKernel - Smoothing kernel size
 %   maskDiag - Mask diagnostic group ('psy' or 'AD')
 %   harmonize - Harmonization flag (1 for COMBAT, 0 for no harmonization)
+%   varargin - Optional permutation ID for permutation testing
 
 
 fprintf('=== STEP5A: STATISTICAL ANALYSIS ===\n');
@@ -17,18 +18,37 @@ fprintf('Sessions: %d\n', isses);
 fprintf('Smoothing kernel: %d\n', smoothKernel);
 fprintf('Mask diagnostic group: %s\n', maskDiag);
 fprintf('Harmonization: %d\n', harmonize);
+
+% Check if this is a permutation test
+perm_id = [];
+if nargin > 6 && ~isempty(varargin{1})
+    perm_id = varargin{1};
+    fprintf('Permutation ID: %d\n', perm_id);
+end
+
 addpath(pwd)
 
 % Set random seed for reproducibility
 rng('default');
 
-% Define output directories based on harmonization flag
-if harmonize == 1
-    outDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel), 'COMBAT']);
-    fprintf('Using COMBAT harmonized data\n');
+% Define output directories based on harmonization flag and permutation
+if ~isempty(perm_id)
+    % Permutation test - use permuted directory
+    if harmonize == 1
+        outDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel), 'COMBAT_perm', num2str(perm_id)]);
+    else
+        outDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel), '_perm', num2str(perm_id)]);
+    end
+    fprintf('Using permuted data (permutation %d)\n', perm_id);
 else
-    outDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)]);
-    fprintf('Using non-harmonized data\n');
+    % Regular analysis
+    if harmonize == 1
+        outDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel), 'COMBAT']);
+        fprintf('Using COMBAT harmonized data\n');
+    else
+        outDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)]);
+        fprintf('Using non-harmonized data\n');
+    end
 end
 
 % Create output directory if it doesn't exist
@@ -43,13 +63,21 @@ maskDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)], ['mask_',
 TIVDir = fullfile(inDir, 'derivatives', ['s', num2str(smoothKernel)]);
 tiv_filename = fullfile(TIVDir, [dataset, '_TIV.txt']);
 
-% Load metadata
-metadataFilename = fullfile(inDir, dataset, [dataset, '_dems.csv']);
-if ~exist(metadataFilename, 'file')
-    error('Metadata file not found: %s', metadataFilename);
+% Load metadata (use permuted version if available)
+if ~isempty(perm_id)
+    metadataFilename = fullfile(outDir, [dataset, '_dems_perm', num2str(perm_id), '.csv']);
+    if ~exist(metadataFilename, 'file')
+        error('Permuted metadata file not found: %s', metadataFilename);
+    end
+    fprintf('Loading permuted metadata from: %s\n', metadataFilename);
+else
+    metadataFilename = fullfile(inDir, dataset, [dataset, '_dems.csv']);
+    if ~exist(metadataFilename, 'file')
+        error('Metadata file not found: %s', metadataFilename);
+    end
+    fprintf('Loading metadata from: %s\n', metadataFilename);
 end
 
-fprintf('Loading metadata from: %s\n', metadataFilename);
 metadata = readtable(metadataFilename, 'delimiter', ',');
 
 % Read TIV data

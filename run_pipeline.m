@@ -24,7 +24,7 @@ valid_stages = {'step0a_create_dataset_list', 'step0b_organize_bids',  ...
                 'step1a_VBM_CAT12_preprocess', 'step1b_VBM_CAT12_report_concat', 'step1c_VBM_CAT12_visualisation', ...
                 'step2_VBM_extract_subjects', 'step3_VBM_smoothing', ...5
                 'step4a_VBM_combine_metadata', 'step4b_VBM_make_mask', 'step4c_VBM_combat_input', 'step4d_VBM_combat', 'step4e_VBM_combat_output', ...
-                'step5_VBM_statistical_analysis', 'step6a_VBM_nulltest_vol_dense', ...
+                'step5_VBM_statistical_analysis', 'step6a_VBM_nulltest_vol_dense', 'step6b_VBM_permutation', ...
                 'step7_VBM_parcellation', 'step8_VBM_nulltest', 'step9_VBM_consistency', ...
                 'step10_VBM_covariates', 'step11_VBM_figures', ...
                 'SBM_recon_all', 'SBM_autoQC', 'SBM_surfacevis', ...
@@ -116,6 +116,8 @@ switch stage
         success = run_vbm_statistical_analysis_step5(config);
     case 'step6a_VBM_nulltest_vol_dense'
         success = run_vbm_nulltest_step6a(config);
+    case 'step6b_VBM_permutation'
+        success = run_vbm_permutation_step6b(config);
     case 'VBM_parcellation'
         success = run_vbm_parcellation(config);
     case 'VBM_nulltest'
@@ -822,6 +824,75 @@ if exist(step6a_script, 'file')
     end
 else
     fprintf('  Warning: Volume dense generation script not found: %s\n', step6a_script);
+    success = false;
+end
+end
+
+function success = run_vbm_permutation_step6b(config)
+fprintf('=== VBM PERMUTATION STEP 6B: PERMUTATION TESTING ===\n');
+vbm_dir = config.data_directories.VBM;
+analysis_dir = fullfile(vbm_dir, 'analysis', 'step6_nulltest');
+step6b_script = fullfile(analysis_dir, 'step6b_permutation.sh');
+
+if exist(step6b_script, 'file')
+    fprintf('  Running permutation testing...\n');
+    try
+        % Set environment variables for step6b
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
+        
+        % Set analysis parameters from config
+        if ~isfield(config.analysis_settings, 'smoothing_kernel')
+            error('Configuration file must contain analysis_settings.smoothing_kernel');
+        end
+        setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
+        
+        % Set harmonization flag from config
+        if ~isfield(config.analysis_settings, 'harmonize')
+            error('Configuration file must contain analysis_settings.harmonize');
+        end
+        setenv('harmonize', num2str(config.analysis_settings.harmonize));
+        
+        % Set mask diagnostic group from config
+        if ~isfield(config.analysis_settings, 'mask_diagnostic_group')
+            error('Configuration file must contain analysis_settings.mask_diagnostic_group');
+        end
+        setenv('maskDiag', config.analysis_settings.mask_diagnostic_group);
+        
+        % Set session flag
+        enabled_names = get_enabled_datasets(config);
+        consider_sessions = false;
+        for ii = 1:numel(enabled_names)
+            ds_name = enabled_names{ii};
+            if isfield(config.datasets.(ds_name), 'longitudinal') && logical(config.datasets.(ds_name).longitudinal)
+                consider_sessions = true;
+                break;
+            end
+        end
+        setenv('isses', num2str(consider_sessions));
+        
+        % Set enabled datasets
+        enabled_datasets = get_enabled_datasets(config);
+        if isempty(enabled_datasets)
+            error('No enabled datasets found in config');
+        end
+        setenv('ENABLED_DATASETS', strjoin(enabled_datasets, ','));
+        
+        % Set HPC flag from config
+        if ~isfield(config.execution_mode, 'hpc_enabled')
+            error('Configuration file must contain execution_mode.hpc_enabled');
+        end
+        setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+        
+        system(['bash ', step6b_script]);
+        success = true;
+    catch ME
+        fprintf('  Error running permutation testing: %s\n', ME.message);
+        success = false;
+        return;
+    end
+else
+    fprintf('  Warning: Permutation testing script not found: %s\n', step6b_script);
     success = false;
 end
 end
