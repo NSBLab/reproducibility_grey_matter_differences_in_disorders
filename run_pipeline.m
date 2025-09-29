@@ -562,17 +562,24 @@ function success = run_vbm_make_mask_step4b(config)
 fprintf('=== VBM MAKE MASK STEP 4B ===\n');
 vbm_dir = config.data_directories.VBM;
 step4_dir = fullfile(vbm_dir, 'preprocessing', 'step4_combat');
-step4b_script = fullfile(step4_dir, 'step4b_make_mask.m');
+step4b_script = fullfile(step4_dir, 'step4b_make_mask.sh');
 if exist(step4b_script, 'file')
     fprintf('  Running mask creation...\n');
     try
-        addpath(step4_dir);
-        step4b_make_mask(config);
-        rmpath(step4_dir);
+        % Set HPC flag from config
+        if ~isfield(config.execution_mode, 'hpc_enabled')
+            error('Configuration file must contain execution_mode.hpc_enabled');
+        end
+        setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+        
+        % Pass specific variables needed by step4b_make_mask
+        setenv('DATA_ROOT', config.data_directories.dataset_root);
+        setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
+        
+        system(['bash ', step4b_script]);
         success = true;
     catch ME
         fprintf('  Error running make mask step4b: %s\n', ME.message);
-        rmpath(step4_dir);
         success = false;
         return;
     end
