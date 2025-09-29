@@ -48,14 +48,7 @@ echo "Using harmonize from environment: $harmonize"
 echo "Using maskDiag from environment: $maskDiag"
 echo "Using isses from environment: $isses"
 
-# Load modules conditionally
-if [ "$HPC_ENABLED" = "true" ]; then
-    echo "Loading required modules (HPC mode enabled)..."
-    module unload matlab 
-    module load spm12/matlab2021a.r7771-v1
-else
-    echo "Skipping module loading (HPC mode disabled)..."
-fi
+
 
 # Get enabled datasets from environment
 if [ -z "$ENABLED_DATASETS" ]; then
@@ -90,10 +83,7 @@ for dataset in "${DATASETS[@]}"; do
         export DATASET=$dataset
         
         # Submit permutation job
-        sbatch --job-name=perm${perm}_${dataset} \
-               --output=${SCRIPT_DIR}/logs/perm_${dataset}_${perm}.out \
-               --error=${SCRIPT_DIR}/logs/perm_${dataset}_${perm}.err \
-               $SCRIPT_DIR/permutation_job.sh
+        sbatch --job-name=perm${perm}_${dataset} "$SCRIPT_DIR/permutation_job.sh"
     done
 done
 
