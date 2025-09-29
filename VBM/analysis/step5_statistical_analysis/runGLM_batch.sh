@@ -38,8 +38,8 @@ echo "Smoothing kernel: $smoothKernel"
 echo "Mask diagnostic group: $maskDiag"
 echo "Sessions: $isses"
 echo "Data Root: $DATA_ROOT"
-
-matlab -nodisplay -r "cd ('$SCRIPT_DIR'); step5a_statistical_analysis('$DATA_ROOT', '$dataset', $isses, $smoothKernel, '$maskDiag', $harmonize); quit;"
+echo "SCRIPT_DIR: $SCRIPT_DIR"
+matlab -nodisplay -r "cd ('$SCRIPT_DIR'); $SCRIPT_DIR/step5a_statistical_analysis('$DATA_ROOT', '$dataset', $isses, $smoothKernel, '$maskDiag', $harmonize); quit;"
 
 # Check exit status
 if [ $? -eq 0 ]; then

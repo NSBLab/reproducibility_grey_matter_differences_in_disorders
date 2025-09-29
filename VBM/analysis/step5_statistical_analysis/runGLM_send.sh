@@ -2,6 +2,8 @@
 
 # Simple script to submit GLM jobs
 # All parameters are passed via environment variables from run_pipeline.m
+# Get script directory
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Check if required environment variables are set
 if [ -z "$DATA_ROOT" ] || [ -z "$smoothKernel" ] || [ -z "$SCRIPT_DIR" ]; then
