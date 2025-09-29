@@ -9,27 +9,22 @@ fi
 
 echo "Using DATA_ROOT from environment: $DATA_ROOT"
 
-# Create persistent file for enabled datasets in data root
-ENABLED_DATASETS_FILE="$DATA_ROOT/dataset_list_step1a.txt"
-
-if command -v jq &> /dev/null; then
-    echo "Using jq to extract enabled datasets..."
-    # Use jq to extract dataset names where enabled == true
-    jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE" > "$ENABLED_DATASETS_FILE"
-else
-    echo "jq not available, using grep/sed to extract enabled datasets..."
-    # Extract enabled datasets using grep and sed (more complex but works without jq)
-    # This approach looks for dataset blocks with "enabled": true
-    grep -A 20 '"datasets"' "$CONFIG_FILE" | \
-    grep -B 5 -A 15 '"enabled": *true' | \
-    grep '"[^"]*":' | \
-    sed 's/.*"\([^"]*\)":.*/\1/' | \
-    grep -v 'datasets\|enabled' > "$ENABLED_DATASETS_FILE" || true
+# Get enabled datasets file path from environment variable
+if [ -z "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: ENABLED_DATASETS_FILE environment variable not set"
+    echo "Please ensure the pipeline sets the ENABLED_DATASETS_FILE environment variable."
+    exit 1
 fi
 
-# Check if we found any enabled datasets
+# Check if the dataset list file exists
+if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: Dataset list file not found: $ENABLED_DATASETS_FILE"
+    exit 1
+fi
+
+# Check if the file has any content
 if [ ! -s "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: No enabled datasets found in configuration!"
+    echo "Error: Dataset list file is empty: $ENABLED_DATASETS_FILE"
     exit 1
 fi
 

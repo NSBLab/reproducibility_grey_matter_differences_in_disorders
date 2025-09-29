@@ -324,6 +324,27 @@ try
     end
     setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
     
+    % Get enabled datasets and create dataset list file
+    enabled_datasets = get_enabled_datasets(config);
+    if isempty(enabled_datasets)
+        error('No enabled datasets found in config');
+    end
+    
+    % Create dataset list file
+    dataset_list_file = fullfile(dataset_root, 'dataset_list_step1a.txt');
+    fid = fopen(dataset_list_file, 'w');
+    if fid == -1
+        error('Could not create dataset list file: %s', dataset_list_file);
+    end
+    
+    for i = 1:length(enabled_datasets)
+        fprintf(fid, '%s\n', enabled_datasets{i});
+    end
+    fclose(fid);
+    
+    % Pass the file path to bash script
+    setenv('ENABLED_DATASETS_FILE', dataset_list_file);
+    
     system(['bash ', cat12_script]);
     success = true;
 catch ME
