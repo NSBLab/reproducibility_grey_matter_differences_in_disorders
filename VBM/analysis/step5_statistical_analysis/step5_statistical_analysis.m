@@ -1,4 +1,4 @@
-function step5a_statistical_analysis(inDir, dataset, isses, smoothKernel, maskDiag, harmonize, varargin)
+function step5_statistical_analysis(inDir, dataset, isses, smoothKernel, maskDiag, harmonize, varargin)
 % STEP5A: Statistical Analysis - GLM Analysis
 % This function performs GLM analysis for VBM data, with or without COMBAT harmonization
 %

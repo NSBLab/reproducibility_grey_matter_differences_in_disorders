@@ -1,12 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=permutation_job
-#SBATCH --time=02:00:00
-#SBATCH --mem=8G
+#SBATCH --time=0-2:00:00
+#SBATCH --job-name=permutation_VBM_${dataset}
+#SBATCH --account=kg98
 #SBATCH --cpus-per-task=1
-#SBATCH --partition=normal
+#SBATCH --mem=80000
+# SBATCH --mail-user=youremail@monash.edu
+# SBATCH --mail-type=FAIL
+# SBATCH --mail-type=BEGIN
+# SBATCH --mail-type=END
 
-# Get script directory
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+
+TARGET_DIR=$(realpath "$SCRIPT_DIR/../step5_statistical_analysis")
 
 echo "=== PERMUTATION JOB ==="
 echo "Permutation ID: $PERM_ID"
@@ -14,7 +19,7 @@ echo "Dataset: $DATASET"
 echo "Script directory: $SCRIPT_DIR"
 
 # Load modules conditionally
-if [ "$HPC_ENABLED" = "true" ]; then
+if [ "$HPC_ENABLED" = "1" ]; then
     echo "Loading required modules (HPC mode enabled)..."
     module unload matlab 
     module load spm12/matlab2021a.r7771-v1
@@ -29,19 +34,7 @@ mkdir -p "$PERM_OUT_DIR"
 echo "Permutation output directory: $PERM_OUT_DIR"
 
 # Run MATLAB script to create permuted metadata and run statistical analysis
-matlab -nodisplay -r "
-    addpath('$SCRIPT_DIR');
-    addpath('$DATA_ROOT/../VBM/analysis/step5_statistical_analysis');
-    
-    % Create permuted metadata for this dataset
-    permuted_metadata_file = create_permuted_metadata('$DATA_ROOT', '$DATASET', $PERM_ID, $harmonize, $smoothKernel);
-    
-    % Run statistical analysis with permuted labels
-    step5a_statistical_analysis('$DATA_ROOT', '$DATASET', $isses, $smoothKernel, '$maskDiag', $harmonize, $PERM_ID);
-    
-    fprintf('Permutation %d completed for dataset %s\n', $PERM_ID, '$DATASET');
-    quit;
-"
+matlab -nodisplay -r "cd('$SCRIPT_DIR'); create_permuted_metadata('$DATA_ROOT', '$DATASET', $PERM_ID, $harmonize, $smoothKernel);  cd('$TARGET_DIR');  step5_statistical_analysis('$DATA_ROOT', '$DATASET', $isses, $smoothKernel, '$maskDiag', $harmonize, $PERM_ID);    fprintf('Permutation %d completed for dataset %s\n', $PERM_ID, '$DATASET'); quit;"
 
 # Check exit status
 if [ $? -eq 0 ]; then

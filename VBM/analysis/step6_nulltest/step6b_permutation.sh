@@ -66,7 +66,7 @@ mkdir -p "$SCRIPT_DIR/logs"
 IFS=',' read -ra DATASETS <<< "$ENABLED_DATASETS"
 
 # Number of permutations
-NUM_PERMUTATIONS=10
+NUM_PERMUTATIONS=2
 
 echo "Submitting $NUM_PERMUTATIONS permutations for each dataset..."
 
