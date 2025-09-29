@@ -10,25 +10,6 @@ function step5a_statistical_analysis(inDir, dataset, isses, smoothKernel, maskDi
 %   maskDiag - Mask diagnostic group ('psy' or 'AD')
 %   harmonize - Harmonization flag (1 for COMBAT, 0 for no harmonization)
 
-% Validate required parameters
-if nargin < 1 || isempty(inDir)
-    error('Data root directory is required');
-end
-if nargin < 2 || isempty(dataset)
-    error('Dataset name is required');
-end
-if nargin < 3 || isempty(isses)
-    error('Session flag (isses) is required');
-end
-if nargin < 4 || isempty(smoothKernel)
-    error('Smoothing kernel is required');
-end
-if nargin < 5 || isempty(maskDiag)
-    error('Mask diagnostic group is required');
-end
-if nargin < 6 || isempty(harmonize)
-    error('Harmonization flag is required');
-end
 
 fprintf('=== STEP5A: STATISTICAL ANALYSIS ===\n');
 fprintf('Dataset: %s\n', dataset);
@@ -36,11 +17,7 @@ fprintf('Sessions: %d\n', isses);
 fprintf('Smoothing kernel: %d\n', smoothKernel);
 fprintf('Mask diagnostic group: %s\n', maskDiag);
 fprintf('Harmonization: %d\n', harmonize);
-
-% Initialize SPM
-fprintf('Initializing SPM...\n');
-spm('defaults', 'FMRI');
-spm_jobman('initcfg');
+addpath(pwd)
 
 % Set random seed for reproducibility
 rng('default');
@@ -88,7 +65,7 @@ tiv_all = table2array(tiv);
 subNiftiSmooth_cell = {};
 for i = 1:size(metadata, 1)
     subj_id = metadata.subj_id{i};
-    if isses == 1
+       if isses == 1 && ismember('ses', metadata.Properties.VariableNames)
         ses = metadata.ses{i};
         if harmonize == 1
             subNiftiSmooth = fullfile(inDir, dataset, subj_id, ses, 'anat', ...
@@ -171,36 +148,25 @@ for s = 1:numSite
         fprintf('    Processing: %s vs %s\n', diagnosisName, siteName);
         
         % Run the appropriate GLM analysis based on harmonization flag
-        if harmonize == 1
-            % Use COMBAT-specific functions
-            factorial_design_ttest_combat_job(newSubFolder, hcCell, patCell, age, sex, tiv, maskDir);
-            
-            % Estimate the model
-            spm_file = fullfile(newSubFolder, 'SPM.mat');
-            model_estimation_combat_job(spm_file);
-        else
+
             % Use standard functions
             factorial_design_ttest_job(newSubFolder, hcCell, patCell, age, sex, tiv, maskDir);
             
             % Estimate the model
             spm_file = fullfile(newSubFolder, 'SPM.mat');
             model_estimation_job(spm_file);
-        end
-        
+   
         % Run contrast and reporting jobs (common for both harmonized and non-harmonized)
         spm_file = fullfile(newSubFolder, 'SPM.mat');
         contr_job(spm_file);
         spm('defaults', 'PET');
         report_thres_job(spm_file);
-        
-        % Add path for additional functions
-        addpath(fullfile(fileparts(mfilename('fullpath')), '..', '..', '..', 'utils'));
+
         report_fwe_job(spm_file);
     end
 end
 
 fprintf('=== STEP5A COMPLETED ===\n');
 fprintf('Statistical analysis completed for dataset: %s\n', dataset);
-fprintf('Harmonization: %s\n', harmonize == 1 ? 'Yes' : 'No');
 fprintf('Output directory: %s\n', outDir);
 end

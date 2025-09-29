@@ -42,6 +42,7 @@ while IFS= read -r dataset; do
     
     echo "Submitting job for dataset: $dataset (sessions: $isses, group: $maskDiag)"
     sbatch --job-name=GLM_VBM_${dataset} "$SCRIPT_DIR/runGLM_batch.sh"
+	#sh $SCRIPT_DIR/runGLM_batch.sh
 done < "$dataset_list_file"
 
 echo "All jobs submitted successfully"

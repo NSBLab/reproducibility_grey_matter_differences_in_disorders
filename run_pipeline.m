@@ -749,6 +749,9 @@ if exist(stat_script, 'file')
         end
         setenv('harmonize', num2str(config.analysis_settings.harmonize));
         
+        % Set script_dir
+        setenv('SCRIPT_DIR', analysis_dir);
+        
         % Determine whether to consider sessions based on dataset configs
         enabled_names = get_enabled_datasets(config);
         consider_sessions = false;
