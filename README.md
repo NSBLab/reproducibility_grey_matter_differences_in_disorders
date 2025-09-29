@@ -53,11 +53,7 @@ run_pipeline('VBM_CAT12_step1a');
 
 ### Organising downloaded data into BIDS format
 
-The pipeline calls `data_BIDS/BIDS_<Dataset>.m` for each enabled dataset in the config. These scripts read `dataset_root` from the config and write per-dataset `subject_use.txt` under `<dataset_root>/<Dataset>/`.
-
-### SBM
-
-### VBM
+The pipeline calls `data_BIDS/BIDS_<Dataset>.m` for each enabled dataset in the config. These scripts read `dataset_root` from the config and write per-dataset `subject_use.txt` under `<dataset_root>/<Datas
 
 #### step1 preprocessing (VBM/CAT12)
 - The CAT12 step is launched by the pipeline via `VBM/preprocessing/step1_CAT12/step1a_CAT12_preprocessing_send.sh`.

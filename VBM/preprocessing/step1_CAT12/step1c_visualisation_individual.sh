@@ -20,12 +20,12 @@ fi
 if command -v jq &> /dev/null; then
     echo "Using jq to parse JSON config..."
     DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-    
+    HPC_ENABLED=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
 else
     echo "jq not available, using grep to parse JSON config..."
     # Extract data root using grep and sed
     DATA_ROOT=$(grep '"dataset_root"' "$CONFIG_FILE" | sed 's/.*"dataset_root": *"\([^\"]*\)".*/\1/')
-    
+    HPC_ENABLED=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
 fi
 
 # Check if we got the data root
@@ -70,9 +70,6 @@ echo "Data root: $DATA_ROOT"
 echo "Found enabled datasets:"
 cat "$ENABLED_DATASETS_FILE"
 
-# Export DATA_ROOT so batch jobs can see it
-export DATA_ROOT
-
 # Load visualization modules conditionally
 if [ "$HPC_ENABLED" = "true" ]; then
     echo "Loading fsleyes modules (HPC mode enabled)..."
@@ -80,6 +77,7 @@ if [ "$HPC_ENABLED" = "true" ]; then
 else
     echo "Skipping module loading (HPC mode disabled)..."
 fi
+
 
 # Process each enabled dataset
 while IFS= read -r DATASET; do

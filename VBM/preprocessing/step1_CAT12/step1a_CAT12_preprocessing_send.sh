@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Get script directory (same directory as this script file)
+export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
 # Use environment variables passed from MATLAB
 if [ -z "$DATA_ROOT" ]; then
     echo "Error: DATA_ROOT environment variable not set"
@@ -28,13 +31,24 @@ if [ ! -s "$ENABLED_DATASETS_FILE" ]; then
     exit 1
 fi
 
+if [ -z "$HPC_ENABLED" ]; then
+    echo "Error: HPC_ENABLED environment variable not set"
+    echo "Please ensure the pipeline sets the HPC_ENABLED environment variable."
+    exit 1
+fi
+
+echo "Using HPC_ENABLED from environment: $HPC_ENABLED"
+
 echo "Data root: $DATA_ROOT"
 echo "Created persistent dataset list: $ENABLED_DATASETS_FILE"
 echo "Found enabled datasets:"
 cat "$ENABLED_DATASETS_FILE"
+echo "SCRIPT DIR: $SCRIPT_DIR"
+echo "HPC_ENABLED: $HPC_ENABLED"
 
 # Export DATA_ROOT so batch jobs can see it
-export DATA_ROOT
+export $DATA_ROOT
+export $HPC_ENABLED
 
 # Process each enabled dataset
 while IFS= read -r DATASET; do
@@ -85,7 +99,7 @@ while IFS= read -r DATASET; do
         fi
         
         # Check if CAT12 report already exists
-        #if [ ! -f "$FILENAME" ]; then
+        if [ ! -f "$FILENAME" ]; then
             echo "Submitting CAT12 job for subject: $SUBJECT"
             
             # Export variables for the job
@@ -94,9 +108,9 @@ while IFS= read -r DATASET; do
             
             # Submit SLURM job
             sbatch --job-name=CAT_${DATASET}_${SUBJECT} $SCRIPT_DIR/CAT12_preprocessing.sh
-        #else
-           # echo "CAT12 report already exists for subject $SUBJECT, skipping..."
-       # fi
+        else
+           echo "CAT12 report already exists for subject $SUBJECT, skipping..."
+       fi
         
     done < "$SUBJECTS_FILE"
     

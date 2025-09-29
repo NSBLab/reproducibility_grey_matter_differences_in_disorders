@@ -11,7 +11,10 @@
 
 
 if [ -z "$DATA_ROOT" ]; then
-echo "Error: DATA_ROOT is not set. Please run via CAT12_preprocessing_send.sh"; exit 1; fi
+echo "Error: DATA_ROOT is not set"; exit 1; fi
+
+if [ -z "$HPC_ENABLED" ]; then
+echo "Error: HPC_ENABLED is not set"; exit 1; fi
 
 if [ -z "$ses" ]
 then
@@ -21,7 +24,7 @@ export T1_name=$DATA_ROOT/${DATASET}/${i}/${ses}/anat/${i}_${ses}_T1w.nii
 fi
 
 # Load MATLAB modules conditionally
-if [ "$HPC_ENABLED" = "true" ]; then
+if [ "$HPC_ENABLED" = "1" ]; then
     echo "Loading MATLAB modules (HPC mode enabled)..."
     module unload matlab
     module load  spm12/matlab2021a.r7771-v1

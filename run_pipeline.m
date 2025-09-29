@@ -395,7 +395,7 @@ end
 end
 
 function success = run_vbm_cat12_step1c(config)
-fprintf('=== VBM CAT12 STEP 1C: RENDER IMAGES FOR QC PASSED SUBJECTS ===\n');
+fprintf('=== VBM CAT12 STEP 1C: RENDER IMAGES FOR QC PASSED SUBJECTS===\n');
 vbm_dir = config.data_directories.VBM;
 step1_dir = fullfile(vbm_dir, 'preprocessing', 'step1_CAT12');
 % Use the step1c script name
@@ -413,7 +413,13 @@ try
     if ~isfield(config.execution_mode, 'hpc_enabled')
         error('Configuration file must contain execution_mode.hpc_enabled');
     end
+
+    if config.execution_mode.hpc_enabled == 1
+        warning('run step1c_visualisation_individual.sh directly from bash on a system with UI to be able to render images, set CONFIG_FILE to your config file address');
+        success = false;
+    else
     setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+    setenv('CONFIG_FILE', num2str(config.config_file));
     
     % Run the visualization script (handles both rendering and PDF concatenation)
     cmd = sprintf('bash %s', viz_script);
@@ -425,6 +431,7 @@ try
         fprintf('  Warning: Image rendering and PDF concatenation failed with status %d\n', status);
         fprintf('  Output: %s\n', output);
         success = false;
+    end
     end
 catch ME
     fprintf('  Warning: CAT12 step1c failed: %s\n', ME.message);

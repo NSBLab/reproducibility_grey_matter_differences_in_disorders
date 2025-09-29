@@ -17,7 +17,7 @@ fi
 
 
 # Load MATLAB modules conditionally
-if [ "$HPC_ENABLED" = "true" ]; then
+if [ "$HPC_ENABLED" = "1" ]; then
     echo "Loading MATLAB modules (HPC mode enabled)..."
     module unload matlab
     module load spm12/matlab2021a.r7771-v1

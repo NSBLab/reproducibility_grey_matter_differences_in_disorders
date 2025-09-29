@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Get script directory (same directory as this script file)
+export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
 # Use environment variables passed from MATLAB
 if [ -z "$DATA_ROOT" ]; then
     echo "Error: DATA_ROOT environment variable not set"
@@ -15,6 +18,14 @@ fi
 
 echo "Using DATA_ROOT from environment: $DATA_ROOT"
 echo "Using smoothKernel from environment: ${smoothKernel}mm"
+
+if [ -z "$HPC_ENABLED" ]; then
+    echo "Error: HPC_ENABLED environment variable not set"
+    echo "Please ensure the pipeline sets the HPC_ENABLED environment variable."
+    exit 1
+fi
+
+echo "Using HPC_ENABLED from environment: $HPC_ENABLED"
 
 # Get session flag from environment variable
 if [ -z "$isses" ]; then
@@ -38,9 +49,6 @@ echo "Data root: $DATA_ROOT"
 echo "Running smoothing for datasets in: $SUBJLIST"
 echo "Smoothing kernel: $smoothKernel"
 echo "Sessions enabled: $isses"
-
-# Export DATA_ROOT so batch jobs can see it
-export DATA_ROOT
 
 for dataset in `cat ${SUBJLIST}`
 do
