@@ -35,22 +35,19 @@ fi
 export isses=$isses
 echo "Sessions setting: $isses"
 
-# Create dataset list file path
-SUBJLIST="${DATA_ROOT}/dataset_list_VBM.txt"
-
 # Check if dataset list exists
-if [ ! -f "$SUBJLIST" ]; then
-    echo "Error: Dataset list not found at $SUBJLIST"
-    echo "Please run step1a first to create the dataset list."
+if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: Dataset list not found at $ENABLED_DATASETS_FILE"
+    echo "Please run the pipeline to create the dataset list."
     exit 1
 fi
 
 echo "Data root: $DATA_ROOT"
-echo "Running smoothing for datasets in: $SUBJLIST"
+echo "Running smoothing for datasets in: $ENABLED_DATASETS_FILE"
 echo "Smoothing kernel: $smoothKernel"
 echo "Sessions enabled: $isses"
 
-for dataset in `cat ${SUBJLIST}`
+for dataset in `cat ${ENABLED_DATASETS_FILE}`
 do
     export dataset=$dataset
     echo "Submitting smoothing job for dataset: $dataset"

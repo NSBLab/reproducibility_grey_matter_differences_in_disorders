@@ -1,9 +1,25 @@
 #!/bin/bash
 
-SUBJLIST=/home/trangc/kg98/trangc/VBM/data/dataset_list_VBM_psy_ses.txt
+# Use environment variable for dataset list
+if [ -z "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: ENABLED_DATASETS_FILE environment variable not set"
+    echo "Please ensure the pipeline sets the ENABLED_DATASETS_FILE environment variable."
+    exit 1
+fi
+
+# Check if the dataset list file exists
+if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: Dataset list file not found: $ENABLED_DATASETS_FILE"
+    exit 1
+fi
+
 export isses=1
 
-for dataset in `cat ${SUBJLIST}`
+echo "Processing datasets from file: $ENABLED_DATASETS_FILE"
+echo "Found datasets:"
+cat "$ENABLED_DATASETS_FILE"
+
+for dataset in `cat ${ENABLED_DATASETS_FILE}`
 do
 
 export dataset=$dataset

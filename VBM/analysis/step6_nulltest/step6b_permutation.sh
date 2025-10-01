@@ -50,20 +50,40 @@ echo "Using isses from environment: $isses"
 
 
 
-# Get enabled datasets from environment
-if [ -z "$ENABLED_DATASETS" ]; then
-    echo "Error: ENABLED_DATASETS environment variable not set"
-    echo "Please ensure the pipeline sets the ENABLED_DATASETS environment variable."
+# Get enabled datasets file path from environment variable
+if [ -z "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: ENABLED_DATASETS_FILE environment variable not set"
+    echo "Please ensure the pipeline sets the ENABLED_DATASETS_FILE environment variable."
     exit 1
 fi
 
-echo "Processing enabled datasets: $ENABLED_DATASETS"
+# Check if the dataset list file exists
+if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: Dataset list file not found: $ENABLED_DATASETS_FILE"
+    exit 1
+fi
+
+# Check if the file has any content
+if [ ! -s "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: Dataset list file is empty: $ENABLED_DATASETS_FILE"
+    exit 1
+fi
+
+echo "Processing enabled datasets from file: $ENABLED_DATASETS_FILE"
+echo "Found enabled datasets:"
+cat "$ENABLED_DATASETS_FILE"
 
 # Create logs directory
 mkdir -p "$SCRIPT_DIR/logs"
 
-# Parse enabled datasets (comma-separated)
-IFS=',' read -ra DATASETS <<< "$ENABLED_DATASETS"
+# Read datasets from file
+DATASETS=()
+while IFS= read -r dataset; do
+    # Skip empty lines
+    if [ -n "$dataset" ]; then
+        DATASETS+=("$dataset")
+    fi
+done < "$ENABLED_DATASETS_FILE"
 
 # Get number of permutations from environment variable
 if [ -z "$NUM_PERMUTATIONS" ]; then

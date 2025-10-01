@@ -368,29 +368,50 @@ if ~exist(qc_script, 'file')
     success = false;
     return;
 end
-try
-    dataset_root = config.data_directories.dataset_root;
-    setenv('DATA_ROOT', dataset_root);
-    % Determine whether to consider sessions based on dataset configs
-    enabled_names = get_enabled_datasets(config);
-    consider_sessions = false;
-    for ii = 1:numel(enabled_names)
-        ds_name = enabled_names{ii};
-        if isfield(config.datasets.(ds_name), 'longitudinal') && logical(config.datasets.(ds_name).longitudinal)
-            consider_sessions = true;
-            break;
+    try
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
+        
+        % Get enabled datasets and create dataset list file
+        enabled_datasets = get_enabled_datasets(config);
+        if isempty(enabled_datasets)
+            error('No enabled datasets found in config');
         end
-    end
-    if consider_sessions
-        % Signal the shell script to handle sessions
-        setenv('ses', 'ses-1');
-        fprintf('  Session-aware QC: considering sessions for longitudinal datasets.\n');
-    else
-        % Ensure session var is not set so script treats data as single-session
-        setenv('ses', '');
-        fprintf('  Session-aware QC: no longitudinal datasets enabled; ignoring sessions.\n');
-    end
-    system(['bash ', qc_script]);
+        
+        % Create dataset list file
+        dataset_list_file = fullfile(dataset_root, 'dataset_list_step1b.txt');
+        fid = fopen(dataset_list_file, 'w');
+        if fid == -1
+            error('Could not create dataset list file: %s', dataset_list_file);
+        end
+        
+        for i = 1:length(enabled_datasets)
+            fprintf(fid, '%s\n', enabled_datasets{i});
+        end
+        fclose(fid);
+        
+        % Pass the file path to bash script
+        setenv('ENABLED_DATASETS_FILE', dataset_list_file);
+        
+        % Determine whether to consider sessions based on dataset configs
+        consider_sessions = false;
+        for ii = 1:numel(enabled_datasets)
+            ds_name = enabled_datasets{ii};
+            if isfield(config.datasets.(ds_name), 'longitudinal') && logical(config.datasets.(ds_name).longitudinal)
+                consider_sessions = true;
+                break;
+            end
+        end
+        if consider_sessions
+            % Signal the shell script to handle sessions
+            setenv('ses', 'ses-1');
+            fprintf('  Session-aware QC: considering sessions for longitudinal datasets.\n');
+        else
+            % Ensure session var is not set so script treats data as single-session
+            setenv('ses', '');
+            fprintf('  Session-aware QC: no longitudinal datasets enabled; ignoring sessions.\n');
+        end
+        system(['bash ', qc_script]);
     success = true;
 catch ME
     fprintf('  Warning: CAT12 step1b failed: %s\n', ME.message);
@@ -413,6 +434,27 @@ try
     dataset_root = config.data_directories.dataset_root;
     setenv('DATA_ROOT', dataset_root);
     
+    % Get enabled datasets and create dataset list file
+    enabled_datasets = get_enabled_datasets(config);
+    if isempty(enabled_datasets)
+        error('No enabled datasets found in config');
+    end
+    
+    % Create dataset list file
+    dataset_list_file = fullfile(dataset_root, 'dataset_list_step1c.txt');
+    fid = fopen(dataset_list_file, 'w');
+    if fid == -1
+        error('Could not create dataset list file: %s', dataset_list_file);
+    end
+    
+    for i = 1:length(enabled_datasets)
+        fprintf(fid, '%s\n', enabled_datasets{i});
+    end
+    fclose(fid);
+    
+    % Pass the file path to bash script
+    setenv('ENABLED_DATASETS_FILE', dataset_list_file);
+    
     % Set HPC flag from config
     if ~isfield(config.execution_mode, 'hpc_enabled')
         error('Configuration file must contain execution_mode.hpc_enabled');
@@ -423,7 +465,6 @@ try
         success = false;
     else
     setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
-    setenv('CONFIG_FILE', num2str(config.config_file));
     
     % Run the visualization script (handles both rendering and PDF concatenation)
     cmd = sprintf('bash %s', viz_script);
@@ -504,11 +545,31 @@ if exist(smooth_script, 'file')
         end
         setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
         
+        % Get enabled datasets and create dataset list file
+        enabled_datasets = get_enabled_datasets(config);
+        if isempty(enabled_datasets)
+            error('No enabled datasets found in config');
+        end
+        
+        % Create dataset list file
+        dataset_list_file = fullfile(dataset_root, 'dataset_list_step3.txt');
+        fid = fopen(dataset_list_file, 'w');
+        if fid == -1
+            error('Could not create dataset list file: %s', dataset_list_file);
+        end
+        
+        for i = 1:length(enabled_datasets)
+            fprintf(fid, '%s\n', enabled_datasets{i});
+        end
+        fclose(fid);
+        
+        % Pass the file path to bash script
+        setenv('ENABLED_DATASETS_FILE', dataset_list_file);
+        
         % Determine whether to consider sessions based on dataset configs
-        enabled_names = get_enabled_datasets(config);
         consider_sessions = false;
-        for ii = 1:numel(enabled_names)
-            ds_name = enabled_names{ii};
+        for ii = 1:numel(enabled_datasets)
+            ds_name = enabled_datasets{ii};
             if isfield(config.datasets.(ds_name), 'longitudinal') && logical(config.datasets.(ds_name).longitudinal)
                 consider_sessions = true;
                 break;
@@ -521,7 +582,6 @@ if exist(smooth_script, 'file')
             setenv('isses', '0');
             fprintf('  Session-aware smoothing: no longitudinal datasets enabled; ignoring sessions.\n');
         end
-        
         
         system(['bash ', smooth_script]);
         success = true;
@@ -738,11 +798,31 @@ if exist(stat_script, 'file')
         end
         setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
               
+        % Get enabled datasets and create dataset list file
+        enabled_datasets = get_enabled_datasets(config);
+        if isempty(enabled_datasets)
+            error('No enabled datasets found in config');
+        end
+        
+        % Create dataset list file
+        dataset_list_file = fullfile(dataset_root, 'dataset_list_step5.txt');
+        fid = fopen(dataset_list_file, 'w');
+        if fid == -1
+            error('Could not create dataset list file: %s', dataset_list_file);
+        end
+        
+        for i = 1:length(enabled_datasets)
+            fprintf(fid, '%s\n', enabled_datasets{i});
+        end
+        fclose(fid);
+        
+        % Pass the file path to bash script
+        setenv('ENABLED_DATASETS_FILE', dataset_list_file);
+        
         % Determine whether to consider sessions based on dataset configs
-        enabled_names = get_enabled_datasets(config);
         consider_sessions = false;
-        for ii = 1:numel(enabled_names)
-            ds_name = enabled_names{ii};
+        for ii = 1:numel(enabled_datasets)
+            ds_name = enabled_datasets{ii};
             if isfield(config.datasets.(ds_name), 'longitudinal') && logical(config.datasets.(ds_name).longitudinal)
                 consider_sessions = true;
                 break;
@@ -755,7 +835,6 @@ if exist(stat_script, 'file')
             setenv('isses', '0');
             fprintf('  Session-aware analysis: no longitudinal datasets enabled; ignoring sessions.\n');
         end
-        
         
         system(['bash ', stat_script]);
         success = true;
@@ -773,12 +852,38 @@ end
 function success = run_vbm_parcellation(config)
 fprintf('=== VBM PARCELLATION ===\n');
 vbm_dir = config.data_directories.VBM;
-analysis_dir = fullfile(vbm_dir, 'analysis', 'step2_parcellation');
-parc_script = fullfile(analysis_dir, 'parcellation_batch.sh');
+analysis_dir = fullfile(vbm_dir, 'analysis', 'step7_parcellation');
+parc_script = fullfile(analysis_dir, 'parcellate_maps_send.sh');
+
 if exist(parc_script, 'file')
     fprintf('  Running parcellation...\n');
     try
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
+        
+        % Get enabled datasets and create dataset list file
+        enabled_datasets = get_enabled_datasets(config);
+        if isempty(enabled_datasets)
+            error('No enabled datasets found in config');
+        end
+        
+        % Create dataset list file
+        dataset_list_file = fullfile(dataset_root, 'dataset_list_parcellation.txt');
+        fid = fopen(dataset_list_file, 'w');
+        if fid == -1
+            error('Could not create dataset list file: %s', dataset_list_file);
+        end
+        
+        for i = 1:length(enabled_datasets)
+            fprintf(fid, '%s\n', enabled_datasets{i});
+        end
+        fclose(fid);
+        
+        % Pass the file path to bash script
+        setenv('ENABLED_DATASETS_FILE', dataset_list_file);
+        
         system(['bash ', parc_script]);
+        success = true;
     catch ME
         fprintf('  Error running parcellation: %s\n', ME.message);
         success = false;
@@ -786,8 +891,8 @@ if exist(parc_script, 'file')
     end
 else
     fprintf('  Warning: Parcellation script not found: %s\n', parc_script);
+    success = false;
 end
-success = true;
 end
 
 function success = run_vbm_nulltest_step6a(config)
@@ -871,12 +976,26 @@ if exist(step6b_script, 'file')
         end
         setenv('isses', num2str(consider_sessions));
         
-        % Set enabled datasets
+        % Get enabled datasets and create dataset list file
         enabled_datasets = get_enabled_datasets(config);
         if isempty(enabled_datasets)
             error('No enabled datasets found in config');
         end
-        setenv('ENABLED_DATASETS', strjoin(enabled_datasets, ','));
+        
+        % Create dataset list file
+        dataset_list_file = fullfile(dataset_root, 'dataset_list_step6b.txt');
+        fid = fopen(dataset_list_file, 'w');
+        if fid == -1
+            error('Could not create dataset list file: %s', dataset_list_file);
+        end
+        
+        for i = 1:length(enabled_datasets)
+            fprintf(fid, '%s\n', enabled_datasets{i});
+        end
+        fclose(fid);
+        
+        % Pass the file path to bash script
+        setenv('ENABLED_DATASETS_FILE', dataset_list_file);
         
         % Set number of permutations from config
         if ~isfield(config.analysis_settings, 'num_permutations')

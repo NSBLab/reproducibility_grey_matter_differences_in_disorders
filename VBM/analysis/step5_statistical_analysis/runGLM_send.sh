@@ -20,15 +20,12 @@ echo "Harmonization: $harmonize"
 echo "Data root: $DATA_ROOT"
 echo "Script directory: $SCRIPT_DIR"
 
-# Use a simple dataset list file instead of parsing config
-dataset_list_file="$DATA_ROOT/dataset_list_VBM.txt"
-
-if [ ! -f "$dataset_list_file" ]; then
-    echo "Error: Dataset list file not found: $dataset_list_file"
+if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
+    echo "Error: Dataset list file not found: $ENABLED_DATASETS_FILE"
     exit 1
 fi
 
-echo "Using dataset list file: $dataset_list_file"
+echo "Using dataset list file: $ENABLED_DATASETS_FILE"
 
 # Read datasets from file
 while IFS= read -r dataset; do
@@ -45,6 +42,6 @@ while IFS= read -r dataset; do
     echo "Submitting job for dataset: $dataset (sessions: $isses, group: $maskDiag)"
     sbatch --job-name=GLM_VBM_${dataset} "$SCRIPT_DIR/runGLM_batch.sh"
 	#sh $SCRIPT_DIR/runGLM_batch.sh
-done < "$dataset_list_file"
+done < "$ENABLED_DATASETS_FILE"
 
 echo "All jobs submitted successfully"
