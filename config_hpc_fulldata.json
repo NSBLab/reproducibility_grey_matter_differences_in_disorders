@@ -176,7 +176,7 @@
         "vbm_extract_script": "extract_sub_OASIS4.m",
         "enabled": true,
         "longitudinal": true,
-        "combat_group": "AD
+        "combat_group": "AD"
       },
       "PARDIP": {
         "path": "${dataset_root}/PARDIP",
@@ -299,7 +299,7 @@
       "smoothing_kernel": 6,
       "harmonize": 1,
       "mask_diagnostic_group": "psy",
-      "num_permutations": 10
+      "num_permutations": 1000
     },
     
     "software_paths": {
