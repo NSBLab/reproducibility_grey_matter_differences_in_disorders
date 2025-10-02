@@ -21,11 +21,17 @@ if command -v jq &> /dev/null; then
     echo "Using jq to parse JSON config..."
     DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
     HPC_ENABLED=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
+    
+    # Extract enabled datasets directly from config file
+    ENABLED_DATASETS=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE")
 else
     echo "jq not available, using grep to parse JSON config..."
     # Extract data root using grep and sed
     DATA_ROOT=$(grep '"dataset_root"' "$CONFIG_FILE" | sed 's/.*"dataset_root": *"\([^\"]*\)".*/\1/')
-    HPC_ENABLED=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
+    HPC_ENABLED=$(grep '"hpc_enabled"' "$CONFIG_FILE" | sed 's/.*"hpc_enabled": *\([^,}]*\).*/\1/' | tr -d ' "')
+    
+    # Extract enabled datasets using grep and awk
+    ENABLED_DATASETS=$(grep -A 10 '"datasets"' "$CONFIG_FILE" | grep -B 5 '"enabled": *true' | grep '^[[:space:]]*"[^"]*": *{' | sed 's/.*"\([^"]*\)": *{.*/\1/')
 fi
 
 # Check if we got the data root
@@ -34,10 +40,16 @@ if [ -z "$DATA_ROOT" ]; then
     exit 1
 fi
 
+# Check if we found any enabled datasets
+if [ -z "$ENABLED_DATASETS" ]; then
+    echo "Error: No enabled datasets found in configuration!"
+    exit 1
+fi
 
 echo "Data root: $DATA_ROOT"
+echo "HPC enabled: $HPC_ENABLED"
 echo "Found enabled datasets:"
-cat "$ENABLED_DATASETS_FILE"
+echo "$ENABLED_DATASETS"
 
 # Load visualization modules conditionally
 if [ "$HPC_ENABLED" = "true" ]; then
@@ -49,7 +61,7 @@ fi
 
 
 # Process each enabled dataset
-while IFS= read -r DATASET; do
+for DATASET in $ENABLED_DATASETS; do
     echo "Processing dataset: $DATASET"
     
     # Check if dataset directory exists
@@ -202,7 +214,7 @@ while IFS= read -r DATASET; do
 	# Clean up temporary files
 	#rm -f "$OUT_DIR/temp_missing_cat12_passed.txt"
     
-done < "$ENABLED_DATASETS_FILE"
+done
 
 
 
