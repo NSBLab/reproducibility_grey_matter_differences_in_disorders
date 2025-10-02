@@ -88,13 +88,27 @@ for DATASET in $ENABLED_DATASETS; do
 
 	if [ -f "$PREV_P0_MISSING_FILE" ]; then
 		echo "Found previous missing list: $PREV_P0_MISSING_FILE"
+		echo "Number of subjects in previous missing list: $(wc -l < "$PREV_P0_MISSING_FILE")"
+		echo "Number of subjects in CAT12 passed list: $(wc -l < "$CAT12_PASSED_FILE")"
 
 		TEMP_MISSING_FILE="$OUT_DIR/temp_missing_cat12_passed.txt"
 		comm -12 <(sort "$PREV_P0_MISSING_FILE") <(sort "$CAT12_PASSED_FILE") > "$TEMP_MISSING_FILE"
-
-	    RENDER_SUBJECTS_FILE="$TEMP_MISSING_FILE"
-
-	
+		
+		# Check if temp file has content
+		if [ -s "$TEMP_MISSING_FILE" ]; then
+			echo "Found $(wc -l < "$TEMP_MISSING_FILE") subjects that were missing p0 and passed CAT12"
+			echo "Subjects to render:"
+			cat "$TEMP_MISSING_FILE"
+			RENDER_SUBJECTS_FILE="$TEMP_MISSING_FILE"
+		else
+			echo "No subjects found in intersection of missing p0 and CAT12 passed lists."
+			echo "This could mean:"
+			echo "  1. All previously missing subjects now have p0 images"
+			echo "  2. No subjects from the missing list passed CAT12 QC"
+			echo "  3. The files have different subject ID formats"
+			echo "Using all CAT12 passed subjects instead."
+			RENDER_SUBJECTS_FILE="$CAT12_PASSED_FILE"
+		fi
 	else
 		echo "No previous missing-subjects list found. Using all CAT12 passed subjects."
 		RENDER_SUBJECTS_FILE="$CAT12_PASSED_FILE"
