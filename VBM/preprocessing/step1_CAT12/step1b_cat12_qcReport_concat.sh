@@ -40,6 +40,7 @@ cat "$ENABLED_DATASETS_FILE"
 while IFS= read -r dataset; do
 
 	echo ${dataset}
+	sleep 1
 	cd "$DATA_ROOT/$dataset/" || continue
 	rm -f "$DATA_ROOT/$dataset/cat12_qcReport_${dataset}.txt"
 	rm -f "$DATA_ROOT/$dataset/subjects_cat12_passed.txt"
@@ -51,7 +52,7 @@ while IFS= read -r dataset; do
 	for sub in `cat subject_use.txt`; do
 
 		# Auto-detect session directories for this subject (do not rely on external $ses)
-		first_ses_dir=$(find "$DATA_ROOT/$dataset/${sub}" -maxdepth 1 -type d -name "ses-*" | head -1)
+		first_ses_dir=$(find "$DATA_ROOT/$dataset/${sub}" -maxdepth 1 -type d -name "ses-*" | sort -V | head -1)
 		if [ -n "$first_ses_dir" ]; then
 			ses=$(basename "$first_ses_dir")
 			
@@ -78,7 +79,7 @@ while IFS= read -r dataset; do
 			iqr=${iqr:15:7}
 			echo $iqr
 
-			printf "\n${sub}\t${iqr}\t${ses}" >> "$DATA_ROOT/$dataset/cat12_qcReport_$dataset.txt"
+			printf "\n${sub}\t${iqr}\t${ses}" >> "$DATA_ROOT/$dataset/cat12_qcReport_${dataset}.txt"
 			
 			# Check if IQR passes threshold
 			if (( $(echo "$iqr <= $IQR_THRESHOLD" | bc -l) )); then

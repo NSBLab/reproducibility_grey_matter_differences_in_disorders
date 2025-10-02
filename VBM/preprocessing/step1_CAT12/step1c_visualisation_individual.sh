@@ -34,26 +34,6 @@ if [ -z "$DATA_ROOT" ]; then
     exit 1
 fi
 
-# Get enabled datasets file path from environment variable
-if [ -z "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: ENABLED_DATASETS_FILE environment variable not set"
-    echo "Please ensure the pipeline sets the ENABLED_DATASETS_FILE environment variable."
-    exit 1
-fi
-
-# Check if the dataset list file exists
-if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: Dataset list file not found: $ENABLED_DATASETS_FILE"
-    exit 1
-fi
-
-# Check if the file has any content
-if [ ! -s "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: Dataset list file is empty: $ENABLED_DATASETS_FILE"
-    exit 1
-fi
-
-echo "Using dataset list: $ENABLED_DATASETS_FILE"
 
 echo "Data root: $DATA_ROOT"
 echo "Found enabled datasets:"
