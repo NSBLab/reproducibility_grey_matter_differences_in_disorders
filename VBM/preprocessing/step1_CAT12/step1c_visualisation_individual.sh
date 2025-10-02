@@ -82,36 +82,36 @@ for DATASET in $ENABLED_DATASETS; do
         continue
     fi
 
-	# Prefer re-rendering only subjects that were missing in the previous run
-	RENDER_SUBJECTS_FILE="$CAT12_PASSED_FILE"
-	PREV_P0_MISSING_FILE="$OUT_DIR/subjects_missing_p0.txt"
-
-	if [ -f "$PREV_P0_MISSING_FILE" ]; then
-		echo "Found previous missing list: $PREV_P0_MISSING_FILE"
-		echo "Number of subjects in previous missing list: $(wc -l < "$PREV_P0_MISSING_FILE")"
-		echo "Number of subjects in CAT12 passed list: $(wc -l < "$CAT12_PASSED_FILE")"
-
-		TEMP_MISSING_FILE="$OUT_DIR/temp_missing_cat12_passed.txt"
-		comm -12 <(sort "$PREV_P0_MISSING_FILE") <(sort "$CAT12_PASSED_FILE") > "$TEMP_MISSING_FILE"
+	# Only render subjects that don't already have p0 images
+	echo "Checking for existing p0 images to avoid re-rendering..."
+	TEMP_MISSING_P0_FILE="$OUT_DIR/temp_subjects_missing_p0.txt"
+	: > "$TEMP_MISSING_P0_FILE"  # Clear the temp file
+	
+	# Check each CAT12 passed subject for existing p0 images
+	while IFS= read -r SUBJECT; do
+		[ -z "$SUBJECT" ] && continue
 		
-		# Check if temp file has content
-		if [ -s "$TEMP_MISSING_FILE" ]; then
-			echo "Found $(wc -l < "$TEMP_MISSING_FILE") subjects that were missing p0 and passed CAT12"
-			echo "Subjects to render:"
-			cat "$TEMP_MISSING_FILE"
-			RENDER_SUBJECTS_FILE="$TEMP_MISSING_FILE"
+		# Check if p0 images already exist for this subject
+		SAG_P0="${WORK_DIR}/${SUBJECT}_sagittal.png"
+		AX_P0="${WORK_DIR}/${SUBJECT}_axial.png"
+		COR_P0="${WORK_DIR}/${SUBJECT}_coronal.png"
+		
+		if [ -f "$SAG_P0" ] && [ -f "$AX_P0" ] && [ -f "$COR_P0" ]; then
+			echo "Subject $SUBJECT already has p0 images, skipping..."
 		else
-			echo "No subjects found in intersection of missing p0 and CAT12 passed lists."
-			echo "This could mean:"
-			echo "  1. All previously missing subjects now have p0 images"
-			echo "  2. No subjects from the missing list passed CAT12 QC"
-			echo "  3. The files have different subject ID formats"
-			echo "Using all CAT12 passed subjects instead."
-			RENDER_SUBJECTS_FILE="$CAT12_PASSED_FILE"
+			echo "Subject $SUBJECT missing p0 images, will render..."
+			echo "$SUBJECT" >> "$TEMP_MISSING_P0_FILE"
 		fi
+	done < "$CAT12_PASSED_FILE"
+	
+	# Use the list of subjects missing p0 images
+	if [ -s "$TEMP_MISSING_P0_FILE" ]; then
+		echo "Found $(wc -l < "$TEMP_MISSING_P0_FILE") subjects missing p0 images"
+		RENDER_SUBJECTS_FILE="$TEMP_MISSING_P0_FILE"
 	else
-		echo "No previous missing-subjects list found. Using all CAT12 passed subjects."
-		RENDER_SUBJECTS_FILE="$CAT12_PASSED_FILE"
+		echo "All CAT12 passed subjects already have p0 images. Nothing to render."
+		# Still need to generate the summary files, so continue with empty processing
+		RENDER_SUBJECTS_FILE="$TEMP_MISSING_P0_FILE"
 	fi
 
     
@@ -226,7 +226,7 @@ for DATASET in $ENABLED_DATASETS; do
 	fi
 
 	# Clean up temporary files
-	#rm -f "$OUT_DIR/temp_missing_cat12_passed.txt"
+	#rm -f "$TEMP_MISSING_P0_FILE"
     
 done
 

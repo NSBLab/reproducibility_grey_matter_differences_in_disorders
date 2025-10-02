@@ -13,11 +13,12 @@ NSUB = 20;
 
 % read demographic filefile:///home/trangc/kg98/trangc/VBM/code/freesurfer/freesurfer_holmesQC/step4_qdec/combine_corr_zmap_resample.m
 
-subject = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS3_demographics.csv','Delimiter',',');
-image = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS3_MR_json.csv','Delimiter',',');
-dayses = readtable('/projects/kg98/trangc/VBM/data/OASIS3/day_ses.txt','Delimiter',' ');
-diagfile = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS_diag.csv','Delimiter',',');
+subject = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS3_demographics.csv','Delimiter',',','VariableNamingRule','preserve');
+image = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS3_MR_json.csv','Delimiter',',','VariableNamingRule','preserve');
+dayses = readtable('/projects/kg98/trangc/VBM/data/OASIS3/day_ses.txt','Delimiter',' ','VariableNamingRule','preserve');
+diagfile = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS_diag.csv','Delimiter',',','VariableNamingRule','preserve');
 diag = unique(diagfile.dx1);
+
 
 subsplit = cellfun(@(x) strsplit(x,'_'),image.label, UniformOutput=false);
 image.daytemp = cellfun(@(x) x(3), subsplit,UniformOutput=false);

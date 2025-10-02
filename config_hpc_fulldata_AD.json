@@ -9,10 +9,42 @@
       "conda_env": "/scratch/kg98/trangc/miniconda/bin/activate"
     },
    "datasets": {
-      "OASIS3": {
+      "AIBL": {
+        "path": "${dataset_root}/AIBL",
+        "bids_script": "BIDS_AIBL.m",
+        "vbm_extract_script": "extract_sub_AIBL.m",
+        "enabled": true,
+        "longitudinal": true,
+        "combat_group": "AD"
+      },
+      "Harmonisation": {
+        "path": "${dataset_root}/Harmonisation",
+        "bids_script": "BIDS_Harmonisation.m",
+        "vbm_extract_script": "extract_sub_Harmonisation.m",
+        "enabled": true,
+        "longitudinal": true,
+        "combat_group": "AD"
+      },
+      "miriad": {
+        "path": "${dataset_root}/miriad",
+        "bids_script": "BIDS_miriad.m",
+        "vbm_extract_script": "extract_sub_miriad.m",
+        "enabled": true,
+        "longitudinal": true,
+        "combat_group": "AD"
+      },
+	  "OASIS3": {
         "path": "${dataset_root}/OASIS3",
         "bids_script": "BIDS_OASIS3.m",
         "vbm_extract_script": "extract_sub_OASIS3.m",
+        "enabled": true,
+        "longitudinal": true,
+        "combat_group": "AD"
+      },
+	  "OASIS4": {
+        "path": "${dataset_root}/OASIS4",
+        "bids_script": "BIDS_OASIS4.m",
+        "vbm_extract_script": "extract_sub_OASIS4.m",
         "enabled": true,
         "longitudinal": true,
         "combat_group": "AD"
