@@ -16,8 +16,8 @@ NSUB = 20;
 subject = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS3_demographics.csv','Delimiter',',','VariableNamingRule','preserve');
 image = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS3_MR_json.csv','Delimiter',',','VariableNamingRule','preserve');
 dayses = readtable('/projects/kg98/trangc/VBM/data/OASIS3/day_ses.txt','Delimiter',' ','VariableNamingRule','preserve');
-diagfile = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS_diag.csv','Delimiter',',','VariableNamingRule','preserve');
-diag = unique(diagfile.dx1);
+diagfile = readtable('/projects/kg98/trangc/VBM/data/OASIS3/OASIS3_UDSd1_diagnoses.csv','Delimiter',',','VariableNamingRule','preserve');
+
 
 
 subsplit = cellfun(@(x) strsplit(x,'_'),image.label, UniformOutput=false);
@@ -27,8 +27,8 @@ image.day = cellfun(@(x) str2num(x{:}(2:end)), image.daytemp);
 image.age = image.day./365 + subject.AgeatEntry(loSub);
 image.sex = subject.GENDER_1_M_2_F(loSub);
 
-[lia loSub] = ismember(image.subject_id, diagfile.Subject);
-image.diag = diagfile.dx1(loSub);
+[lia loSub] = ismember(image.subject_id, diagfile.OASISID);
+image.diag = (diagfile.NORMCOG(loSub)==1)*1+(diagfile.alzdis(loSub)==1)*7;
 
 daysplit = cellfun(@(x) strsplit(x,'/'),dayses.folder, UniformOutput=false);
 dayses.file = cellfun(@(x) x(6), daysplit);
