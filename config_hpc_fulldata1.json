@@ -9,10 +9,10 @@
       "conda_env": "/scratch/kg98/trangc/miniconda/bin/activate"
     },
    "datasets": {
-      "OASIS3": {
-        "path": "${dataset_root}/OASIS3",
-        "bids_script": "BIDS_OASIS3.m",
-        "vbm_extract_script": "extract_sub_OASIS3.m",
+      "OASIS4": {
+        "path": "${dataset_root}/OASIS4",
+        "bids_script": "BIDS_OASIS4.m",
+        "vbm_extract_script": "extract_sub_OASIS4.m",
         "enabled": true,
         "longitudinal": true,
         "combat_group": "AD"

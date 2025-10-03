@@ -10,10 +10,10 @@
     },
     
     "datasets": {
-      "Inhi_dys": {
-        "path": "${dataset_root}/Inhi_dys",
-        "bids_script": "BIDS_Inhi_dys.m",
-        "vbm_extract_script": "extract_sub_Inhi_dys.m",
+      "Study_neura": {
+        "path": "${dataset_root}/Study_neura",
+        "bids_script": "BIDS_Study_neura.m",
+        "vbm_extract_script": "extract_sub_Study_neura.m",
         "enabled": true,
         "longitudinal": true,
         "combat_group": "psy"

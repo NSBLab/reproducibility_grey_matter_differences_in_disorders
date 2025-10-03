@@ -75,17 +75,19 @@ image.ses = "ses-" + dayses.ses(lofile);
 image.subses="sub-"+image.subject_id+image.ses;
 
 % Filter subjects by age criteria
-adult_idx = image.age >= LOWAGE & image.age <= UPAGE;
+adult_idx = image.age >= LOWAGE & image.age;
 adult_subjects = image.subject_id(adult_idx);
 
-fprintf('Found %d subjects in age range %d-%d\n', length(adult_subjects), LOWAGE, UPAGE);
+fprintf('Found %d subjects in age range %d-\n', length(adult_subjects), LOWAGE);
 
 % Get unique subjects (for site/diagnosis counting)
 [unique_subjects, ~, unique_idx] = unique(adult_subjects);
-
+adult_subjects = adult_subjects(unique_idx);
 % Count subjects by site and diagnosis
 site_device = image.DeviceSerialNumber(adult_idx);
+site_device = site_device(unique_idx);
 unique_sites = unique(site_device);
+unique_sites = unique_sites(~isnan(unique_sites));
 diagCat = [1,7]; % Control (1) and AD (7)
 
 % Initialize counting arrays
@@ -102,7 +104,7 @@ for iSite = 1:length(unique_sites)
         site_sub_diag = [];
         for j = 1:length(site_subjects)
             sub_diag = image.diag(strcmp(image.subject_id, site_subjects{j}));
-            if ~isnan(sub_diag) && sub_diag == diagCat(iDiag)
+            if (~isnan(sub_diag)) & (sub_diag == diagCat(iDiag))
                 site_sub_diag(end+1) = j;
             end
         end

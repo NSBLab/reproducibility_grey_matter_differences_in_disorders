@@ -128,7 +128,7 @@ for DATASET in $ENABLED_DATASETS; do
         SUBJECT_DIR="$DATASET_DIR/$SUBJECT"
         if [ -d "$SUBJECT_DIR" ]; then
             # Check if there are subdirectories (sessions)
-            SESSION_DIRS=$(find "$SUBJECT_DIR" -maxdepth 1 -type d -name "ses-*" | head -1)
+            SESSION_DIRS=$(find "$SUBJECT_DIR" -maxdepth 1 -type d -name "ses-*" | sort -V | head -1)
             
             if [ -n "$SESSION_DIRS" ]; then
                 # Multiple sessions - use first session
