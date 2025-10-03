@@ -34,6 +34,14 @@
       "bids_script": "BIDS_RD.m",
       "extract_script": "extract_sub_RD.m",
       "enabled": false
+    },
+    "OASIS3": {
+      "path": "${dataset_root}/OASIS3",
+      "bids_script": "BIDS_OASIS3.m",
+      "extract_script": "extract_sub_OASIS3.m",
+      "enabled": false,
+      "longitudinal": true,
+      "combat_group": "psy"
     }
     
     "_comment_add_more_datasets": "To add more datasets, copy the structure above and modify:",

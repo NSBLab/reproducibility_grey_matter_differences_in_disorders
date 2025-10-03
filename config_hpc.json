@@ -25,7 +25,8 @@
         "enabled": true,
         "longitudinal": false,
         "combat_group": "psy"
-      }
+      },
+
     },
     
     "pipeline_stages": {
