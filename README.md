@@ -79,7 +79,7 @@ sh ./step1c_visualisation.sh
 ## run glm model
 run combine_metadata.m 
 smooth maps by run run_smooth_TIV_send.sh
-run make_mask.m (need to load VPM), one mask for all psychosis and one mask for AD. Threshold masking: At each voxel, if a value in any of the images falls below the threshold (0.2), then that voxel is excluded from the analysis.
+run make_mask.m (need to load VPM), one mask for all psychosis and one mask for AD. Threshold masking: At each voxel, if a value in any of the images falls below the threshold (0.2), then that voxel is excluded from the analysis.Best to run directly from bash. If run from Matlab and the mask already exist from past run, SPM will pop up a promt to ask for overwirte, which cannot appear when running bash from Matlab and thus error. SPM still not have na option of not asking for overwrite we 8/2025.
 .run glm_func.m from runGLM_batch.m by runGLM_send.sh, check runGLM_batch.m (use the same mask created for psychosis (or AD))
 
 

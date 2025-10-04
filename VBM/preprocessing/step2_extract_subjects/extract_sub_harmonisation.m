@@ -9,7 +9,7 @@ clear all
 close all
 
 study = 'Harmonisation';
-
+study_path = '/projects/kg98/trangc/VBM/data/Harmonisation';
 % define const
 
 NSUB = 20; % lowest number of subject per site per phenotype
@@ -86,10 +86,29 @@ IQRthres = 2.8; % threshold to determine good quality images
 % read cat report
 catFile = readtable(['/projects/kg98/trangc/VBM/data/', study, '/cat12_qcReport_', study, '.txt']);
 subHighQR = catFile.Var1(catFile.Var2 <= IQRthres & ismember(catFile.Var1,useFolder));
-[La indexHighQRinUseFolder] = ismember(subHighQR, useFolder); % index in use Folder is same as in iUnique
+sesHishHQ =  catFile.Var3(catFile.Var2 <= IQRthres & ismember(catFile.Var1,useFolder));
+% Check if visual inspection exclusion list exists
+visual_exclusion_file = fullfile(study_path, 'derivatives','volume_visualisation','subject_list_excluded_after_visualisation.txt');
+if exist(visual_exclusion_file, 'file')
+    visual_excluded_subjects = readlines(visual_exclusion_file);
+     % Remove empty lines that may be created by bash
+    visual_excluded_subjects = visual_excluded_subjects(~strcmp(visual_excluded_subjects, ''));
+   fprintf('Found %d subjects excluded after visual inspection\n', length(visual_excluded_subjects));
+    
+    % Remove visually excluded subjects from CAT12 passed list
+    [useFoldervis ia] = setdiff(subHighQR, visual_excluded_subjects);
+    fprintf('After visual inspection exclusion: %d subjects remaining\n', length(useFoldervis));
+else
+    fprintf('No visual inspection exclusion list found. Using all CAT12 passed subjects.\n');
+    useFoldervis = cat12_passed_subjects;
+end
+
+% [LiSub indexHighQRinUseFolder] = ismember(useFolder, image.subses); % index in use Folder is same as in iUnique
+
+[La indexHighQRinUseFolder] = ismember(useFoldervis, useFolder); % index in use Folder is same as in iUnique
 
 metadata.subj_id = cellstr(useFolder(indexHighQRinUseFolder));
-metadata.ses = catFile.Var3(catFile.Var2 <= IQRthres & ismember(catFile.Var1,useFolder));
+metadata.ses = sesHishHQ(ia);
 % matchIDHighQR = cellstr(matchID(indexHighQRinUseFolder));
 metadata.dataset = cellstr(repmat(study,size(indexHighQRinUseFolder)));
 metadata.site_string = metadata.dataset;
