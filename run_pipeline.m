@@ -1266,9 +1266,36 @@ stat_script = fullfile(analysis_dir, 'glmfit_send.sh');
 if exist(stat_script, 'file')
     fprintf('  Running statistical analysis...\n');
     try
-        % Set environment variable for config file path
-        config_file_path = get_config_file_path();
-        setenv('CONFIG_FILE', config_file_path);
+        % Set environment variables for the statistical analysis
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
+        
+        % Set HPC flag from config
+        if ~isfield(config.execution_mode, 'hpc_enabled')
+            error('Configuration file must contain execution_mode.hpc_enabled');
+        end
+        setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+        
+        % Get enabled datasets and create dataset list file
+        enabled_datasets = get_enabled_datasets(config);
+        if isempty(enabled_datasets)
+            error('No enabled datasets found in config');
+        end
+        
+        % Create dataset list file
+        dataset_list_file = fullfile(dataset_root, 'dataset_list_sbm_step6.txt');
+        fid = fopen(dataset_list_file, 'w');
+        if fid == -1
+            error('Could not create dataset list file: %s', dataset_list_file);
+        end
+        
+        for i = 1:length(enabled_datasets)
+            fprintf(fid, '%s\n', enabled_datasets{i});
+        end
+        fclose(fid);
+        
+        % Set dataset list file environment variable
+        setenv('DATASET_LIST', dataset_list_file);
         
         % Run the script
         system(['bash ', stat_script]);
@@ -1291,9 +1318,60 @@ perm_script = fullfile(analysis_dir, 'step7b_permutation_nulltest_send.sh');
 if exist(perm_script, 'file')
     fprintf('  Running permutation null test...\n');
     try
-        % Set environment variable for config file path
-        config_file_path = get_config_file_path();
-        setenv('CONFIG_FILE', config_file_path);
+        % Set environment variables for the permutation null test
+        dataset_root = config.data_directories.dataset_root;
+        setenv('DATA_ROOT', dataset_root);
+        
+        % Set HPC flag from config
+        if ~isfield(config.execution_mode, 'hpc_enabled')
+            error('Configuration file must contain execution_mode.hpc_enabled');
+        end
+        setenv('HPC_ENABLED', num2str(config.execution_mode.hpc_enabled));
+        
+        % Set analysis parameters from config
+        if ~isfield(config.analysis_settings, 'smoothing_kernel')
+            error('Configuration file must contain analysis_settings.smoothing_kernel');
+        end
+        setenv('smoothKernel', num2str(config.analysis_settings.smoothing_kernel));
+        
+        % Set harmonization flag from config
+        if ~isfield(config.analysis_settings, 'harmonize')
+            error('Configuration file must contain analysis_settings.harmonize');
+        end
+        setenv('harmonize', num2str(config.analysis_settings.harmonize));
+        
+        % Set mask diagnostic group from config
+        if ~isfield(config.analysis_settings, 'mask_diagnostic_group')
+            error('Configuration file must contain analysis_settings.mask_diagnostic_group');
+        end
+        setenv('combat_group', config.analysis_settings.mask_diagnostic_group);
+        
+        % Set number of permutations from config
+        if ~isfield(config.analysis_settings, 'num_permutations')
+            error('Configuration file must contain analysis_settings.num_permutations');
+        end
+        setenv('NUM_PERMUTATIONS', num2str(config.analysis_settings.num_permutations));
+        
+        % Get enabled datasets and create dataset list file
+        enabled_datasets = get_enabled_datasets(config);
+        if isempty(enabled_datasets)
+            error('No enabled datasets found in config');
+        end
+        
+        % Create dataset list file
+        dataset_list_file = fullfile(dataset_root, 'dataset_list_sbm_step7b.txt');
+        fid = fopen(dataset_list_file, 'w');
+        if fid == -1
+            error('Could not create dataset list file: %s', dataset_list_file);
+        end
+        
+        for i = 1:length(enabled_datasets)
+            fprintf(fid, '%s\n', enabled_datasets{i});
+        end
+        fclose(fid);
+        
+        % Set dataset list file environment variable
+        setenv('DATASET_LIST', dataset_list_file);
         
         % Run the script
         system(['bash ', perm_script]);

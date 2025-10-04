@@ -1,57 +1,40 @@
 #!/bin/bash
 
-# Read the configuration file to get data directories and enabled datasets
-# Use CONFIG_FILE environment variable passed from MATLAB
-if [ -z "$CONFIG_FILE" ]; then
-    echo "Error: CONFIG_FILE environment variable not set"
-    echo "Please ensure the pipeline sets the CONFIG_FILE environment variable."
-    exit 1
-fi
-echo "Using config file passed from MATLAB: $CONFIG_FILE"
-
-# Check if config file exists
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Error: Configuration file $CONFIG_FILE not found!"
+# Use environment variables passed from MATLAB pipeline
+if [ -z "$DATA_ROOT" ]; then
+    echo "Error: DATA_ROOT environment variable not set"
+    echo "Please ensure the pipeline sets the DATA_ROOT environment variable."
     exit 1
 fi
 
-# Extract data root and enabled datasets from config file using jq (JSON processor)
-# If jq is not available, we'll use a simple grep approach
-if command -v jq &> /dev/null; then
-    echo "Using jq to parse JSON config..."
-    datadir=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-    HPC_ENABLED=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
-    
-    # Extract enabled datasets directly from config file
-    ENABLED_DATASETS=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE")
-else
-    echo "jq not available, using grep to parse JSON config..."
-    # Extract data root using grep and sed
-    datadir=$(grep '"dataset_root"' "$CONFIG_FILE" | sed 's/.*"dataset_root": *"\([^\"]*\)".*/\1/')
-    HPC_ENABLED=$(grep '"hpc_enabled"' "$CONFIG_FILE" | sed 's/.*"hpc_enabled": *\([^,}]*\).*/\1/' | tr -d ' "')
-    
-    # Extract enabled datasets using grep and awk
-    ENABLED_DATASETS=$(grep -A 10 '"datasets"' "$CONFIG_FILE" | grep -B 5 '"enabled": *true' | grep '^[[:space:]]*"[^"]*": *{' | sed 's/.*"\([^"]*\)": *{.*/\1/')
-fi
-
-# Check if we got the data root
-if [ -z "$datadir" ]; then
-    echo "Error: Could not extract data root from configuration!"
+if [ -z "$HPC_ENABLED" ]; then
+    echo "Error: HPC_ENABLED environment variable not set"
+    echo "Please ensure the pipeline sets the HPC_ENABLED environment variable."
     exit 1
 fi
 
-# Check if we found any enabled datasets
-if [ -z "$ENABLED_DATASETS" ]; then
-    echo "Error: No enabled datasets found in configuration!"
+if [ -z "$DATASET_LIST" ]; then
+    echo "Error: DATASET_LIST environment variable not set"
+    echo "Please ensure the pipeline sets the DATASET_LIST environment variable."
     exit 1
 fi
 
-echo "Data root: $datadir"
+# Check if dataset list file exists
+if [ ! -f "$DATASET_LIST" ]; then
+    echo "Error: Dataset list file $DATASET_LIST not found!"
+    exit 1
+fi
+
+# Read enabled datasets from the dataset list file
+ENABLED_DATASETS=$(cat "$DATASET_LIST")
+
+echo "Data root: $DATA_ROOT"
 echo "HPC enabled: $HPC_ENABLED"
+echo "Dataset list file: $DATASET_LIST"
 echo "Found enabled datasets:"
 echo "$ENABLED_DATASETS"
 
-export datadir=$datadir
+export datadir=$DATA_ROOT
 
 export smoothKernel=0
 export measure=thickness
