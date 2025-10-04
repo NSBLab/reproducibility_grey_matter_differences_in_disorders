@@ -29,7 +29,7 @@ valid_stages = {'step0a_create_dataset_list', 'step0b_organize_bids',  ...
                 'step9_VBM_covariates', 'step10_VBM_figures', ...
                 'step1_SBM_recon_all', 'step2_SBM_autoQC', 'step3_SBM_surfacevis', ...
                 'step4_SBM_extract_subjects', 'step5a_SBM_combine_metadata','step5b_SBM_combat_input', 'step5c_SBM_combat', 'step5d_SBM_combat_output',  ...
-                'step6_SBM_statistical_analysis', 'step7a_SBM_nulltest_eigentrapping', ...
+                'step6_SBM_statistical_analysis', 'step7a_SBM_nulltest_eigentrapping', 'step7b_SBM_permutation_nulltest', ...
                 'step8_SBM_parcellation', 'step9_SBM_consistency', ...
                 'step10_SBM_covariates', 'step11_SBM_sample_size_effect', ...
                 'step12_SBM_figures'};
@@ -141,8 +141,10 @@ switch stage
         success = run_sbm_combat(config);
     case 'SBM_metadata'
         success = run_sbm_metadata(config);
-    case 'SBM_statistical_analysis'
+    case 'step6_SBM_statistical_analysis'
         success = run_sbm_statistical_analysis(config);
+    case 'step7b_SBM_permutation_nulltest'
+        success = run_sbm_permutation_nulltest(config);
     case 'SBM_parcellation'
         success = run_sbm_parcellation(config);
     case 'SBM_nulltest'
@@ -1259,11 +1261,16 @@ end
 function success = run_sbm_statistical_analysis(config)
 fprintf('=== SBM STATISTICAL ANALYSIS ===\n');
 sbm_dir = config.data_directories.SBM;
-analysis_dir = fullfile(sbm_dir, 'analysis', 'step1_statistical_analysis');
+analysis_dir = fullfile(sbm_dir, 'analysis', 'step6_statistical_analysis');
 stat_script = fullfile(analysis_dir, 'glmfit_send.sh');
 if exist(stat_script, 'file')
     fprintf('  Running statistical analysis...\n');
     try
+        % Set environment variable for config file path
+        config_file_path = get_config_file_path();
+        setenv('CONFIG_FILE', config_file_path);
+        
+        % Run the script
         system(['bash ', stat_script]);
     catch ME
         fprintf('  Error running statistical analysis: %s\n', ME.message);
@@ -1272,6 +1279,31 @@ if exist(stat_script, 'file')
     end
 else
     fprintf('  Warning: Statistical analysis script not found: %s\n', stat_script);
+end
+success = true;
+end
+
+function success = run_sbm_permutation_nulltest(config)
+fprintf('=== SBM PERMUTATION NULL TEST ===\n');
+sbm_dir = config.data_directories.SBM;
+analysis_dir = fullfile(sbm_dir, 'analysis', 'step7b_permutation_nulltest');
+perm_script = fullfile(analysis_dir, 'step7b_permutation_nulltest_send.sh');
+if exist(perm_script, 'file')
+    fprintf('  Running permutation null test...\n');
+    try
+        % Set environment variable for config file path
+        config_file_path = get_config_file_path();
+        setenv('CONFIG_FILE', config_file_path);
+        
+        % Run the script
+        system(['bash ', perm_script]);
+    catch ME
+        fprintf('  Error running permutation null test: %s\n', ME.message);
+        success = false;
+        return;
+    end
+else
+    fprintf('  Warning: Permutation null test script not found: %s\n', perm_script);
 end
 success = true;
 end
