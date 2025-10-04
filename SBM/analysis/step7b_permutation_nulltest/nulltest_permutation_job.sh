@@ -9,20 +9,21 @@
 # SBATCH --mail-type=BEGIN
 # SBATCH --mail-type=END
 
-module load freesurfer/7.1.0
+# Load FreeSurfer module (already loaded by send script if HPC_ENABLED=true, but good for local testing)
+if [ -z "$HPC_ENABLED" ] || [ "$HPC_ENABLED" = "false" ]; then
+    module load freesurfer/7.1.0
+fi
 
 # Get script directory (same directory as this script file)
 export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-# Set parameters
+# Set parameters (some from environment, some fixed)
 export measure=thickness
 export measureShort=thick
 export hemis=rh
 export control=1
 export covariance1=sex
 export covariance2=age
-export harmonize=1
-export smoothKernel=10
 
 # Create title for this permutation
 if [ "$harmonize" -eq 1 ]; then 

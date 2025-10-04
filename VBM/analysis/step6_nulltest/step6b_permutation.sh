@@ -94,7 +94,8 @@ fi
 
 echo "Number of permutations: $NUM_PERMUTATIONS"
 
-echo "Submitting $NUM_PERMUTATIONS permutations for each dataset..."
+echo "Checking and submitting permutations for each dataset..."
+echo "Note: Will skip permutations that already have existing results"
 
 # Loop through each dataset
 for dataset in "${DATASETS[@]}"; do
@@ -102,17 +103,34 @@ for dataset in "${DATASETS[@]}"; do
     
     # Loop through permutations
     for perm in $(seq 1 $NUM_PERMUTATIONS); do
-        echo "  Submitting permutation $perm for dataset $dataset"
-        
         # Set environment variables for this permutation
         export PERM_ID=$perm
         export DATASET=$dataset
+        
+        # Create permutation output directory path (same as in permutation_job.sh)
+        PERM_OUT_DIR="$DATA_ROOT/derivatives/s${smoothKernel}COMBAT_perm${perm}"
+        
+        # Check if permutation results already exist
+        # Look for SPM contrast files (spmT_0001.nii and spmT_0002.nii) in any diagnosis/site subdirectories
+        existing_files=$(find "$PERM_OUT_DIR" -type f \( -name "spmT_0001.nii" -o -name "spmT_0002.nii" \) 2>/dev/null | wc -l)
+        
+        if [ "$existing_files" -gt 0 ]; then
+            echo "  Permutation $perm results already exist for dataset $dataset, skipping..."
+            continue
+        fi
+        
+        echo "  Permutation $perm results not found for dataset $dataset, will submit job..."
         
         # Submit permutation job
         sbatch --job-name=perm${perm}_${dataset} "$SCRIPT_DIR/permutation_job.sh"
     done
 done
 
+echo ""
 echo "=== STEP6B: PERMUTATION SUBMISSION COMPLETED ==="
-echo "Submitted $NUM_PERMUTATIONS permutations for each of ${#DATASETS[@]} datasets"
-echo "Total jobs submitted: $(($NUM_PERMUTATIONS * ${#DATASETS[@]}))"
+echo "Summary:"
+echo "- Total permutations requested per dataset: $NUM_PERMUTATIONS"
+echo "- Checked for existing SPM contrast files before submitting jobs"
+echo "- Only missing permutations were submitted"
+echo "- Total datasets processed: ${#DATASETS[@]}"
+echo ""

@@ -137,7 +137,7 @@ for DATASET in $ENABLED_DATASETS; do
 		fi
 		
 		# Run permutation jobs for this site
-		for ranseed in $(seq 1 $nResample); do
+		for ranseed in $(seq 1 $NUM_PERMUTATIONS); do
 			export ranseed=${ranseed}
 			export diag=${diag}
 			export site=${site}
@@ -145,9 +145,11 @@ for DATASET in $ENABLED_DATASETS; do
 			# Check if permutation result already exists
 			perm_result="$site_perm_dir/surrogate_${ranseed}.mgh"
 			if [ -f "$perm_result" ]; then
-				echo "Permutation result already exists for seed $ranseed, skipping..."
+				echo "  Permutation result already exists for seed $ranseed (${diag}_${site}), skipping..."
 				continue
 			fi
+			
+			echo "  Permutation result not found for seed $ranseed (${diag}_${site}), will submit job..."
 			
 			# Submit permutation job
 			if [ "$HPC_ENABLED" = "true" ]; then
@@ -161,4 +163,10 @@ for DATASET in $ENABLED_DATASETS; do
 	done
 done
 
-echo "Permutation null testing submission completed!"
+echo ""
+echo "=== PERMUTATION NULL TEST SUBMISSION COMPLETED ==="
+echo "Summary:"
+echo "- Total permutations requested per site: $NUM_PERMUTATIONS"
+echo "- Checked for existing outputs before submitting jobs"
+echo "- Only missing permutations were submitted"
+echo ""
