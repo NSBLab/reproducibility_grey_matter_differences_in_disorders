@@ -107,19 +107,8 @@ for dataset in "${DATASETS[@]}"; do
         export PERM_ID=$perm
         export DATASET=$dataset
         
-        # Create permutation output directory path (same as in permutation_job.sh)
-        PERM_OUT_DIR="$DATA_ROOT/derivatives/s${smoothKernel}COMBAT_perm${perm}"
-        
-        # Check if permutation results already exist
-        # Look for SPM contrast files (spmT_0001.nii and spmT_0002.nii) in any diagnosis/site subdirectories
-        existing_files=$(find "$PERM_OUT_DIR" -type f \( -name "spmT_0001.nii" -o -name "spmT_0002.nii" \) 2>/dev/null | wc -l)
-        
-        if [ "$existing_files" -gt 0 ]; then
-            echo "  Permutation $perm results already exist for dataset $dataset, skipping..."
-            continue
-        fi
-        
-        echo "  Permutation $perm results not found for dataset $dataset, will submit job..."
+               
+echo "submit job ${perm}_${dataset}"
         
         # Submit permutation job
         sbatch --job-name=perm${perm}_${dataset} "$SCRIPT_DIR/permutation_job.sh"

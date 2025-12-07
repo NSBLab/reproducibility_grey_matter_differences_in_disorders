@@ -85,7 +85,7 @@ do
 		fi 
 		
 		if [ "$harmonize" -eq 1 ]; then 
-			echo "${reconOutDir}/${sub}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage_combat.mgh" >> $inputfile
+			echo "$datadir/$DATASET/derivatives/freesurfer/${sub}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage_combat.mgh" >> $inputfile
 		else
 			echo "${reconOutDir}/${sub}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage.mgh" >> $inputfile
 		fi
