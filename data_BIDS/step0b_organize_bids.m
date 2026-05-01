@@ -9,8 +9,8 @@ if nargin < 1
     config_file = 'config.json';
 end
 
-repo_utils = fullfile(fileparts(mfilename('fullpath')), '..', 'utils');
-addpath(repo_utils);
+repo_main = fullfile(fileparts(mfilename('fullpath')), '..');
+addpath(genpath(repo_main));
 pipeline_ensure_paths();
 
 config = pipeline_load_config(config_file);
