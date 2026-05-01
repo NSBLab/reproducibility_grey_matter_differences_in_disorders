@@ -3,55 +3,64 @@
 # Get script directory (same directory as this script file)
 export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-# Use environment variables passed from MATLAB
-if [ -z "$DATA_ROOT" ]; then
-    echo "Error: DATA_ROOT environment variable not set"
-    echo "Please ensure the pipeline sets the DATA_ROOT environment variable."
+# Resolve CONFIG_FILE from env or sensible defaults
+if [ -z "$CONFIG_FILE" ]; then
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    if [ -f "$REPO_ROOT/config_hpc.json" ]; then
+        CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+    elif [ -f "$REPO_ROOT/config.json" ]; then
+        CONFIG_FILE="$REPO_ROOT/config.json"
+    elif [ -f "config_hpc.json" ]; then
+        CONFIG_FILE="config_hpc.json"
+    elif [ -f "config.json" ]; then
+        CONFIG_FILE="config.json"
+    else
+        echo "Error: CONFIG_FILE not set and no default config found."
+        echo "Checked: $REPO_ROOT/config_hpc.json, $REPO_ROOT/config.json, ./config_hpc.json, ./config.json"
+        exit 1
+    fi
+fi
+
+echo "Using CONFIG_FILE: $CONFIG_FILE"
+
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is required to parse config file in step1a."
     exit 1
 fi
 
-echo "Using DATA_ROOT from environment: $DATA_ROOT"
-
-# Get enabled datasets file path from environment variable
-if [ -z "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: ENABLED_DATASETS_FILE environment variable not set"
-    echo "Please ensure the pipeline sets the ENABLED_DATASETS_FILE environment variable."
+DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
+if [ -z "$DATA_ROOT" ] || [ "$DATA_ROOT" = "null" ]; then
+    echo "Error: Could not read data_directories.dataset_root from $CONFIG_FILE"
     exit 1
 fi
 
-# Check if the dataset list file exists
-if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: Dataset list file not found: $ENABLED_DATASETS_FILE"
+ENABLED_DATASETS=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE")
+if [ -z "$ENABLED_DATASETS" ]; then
+    echo "Error: No enabled datasets found in $CONFIG_FILE"
     exit 1
 fi
 
-# Check if the file has any content
-if [ ! -s "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: Dataset list file is empty: $ENABLED_DATASETS_FILE"
+HPC_ENABLED=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
+if [ -z "$HPC_ENABLED" ] || [ "$HPC_ENABLED" = "null" ]; then
+    echo "Error: Could not read execution_mode.hpc_enabled from $CONFIG_FILE"
     exit 1
 fi
 
-if [ -z "$HPC_ENABLED" ]; then
-    echo "Error: HPC_ENABLED environment variable not set"
-    echo "Please ensure the pipeline sets the HPC_ENABLED environment variable."
-    exit 1
-fi
-
-echo "Using HPC_ENABLED from environment: $HPC_ENABLED"
+echo "Using HPC_ENABLED from config: $HPC_ENABLED"
 
 echo "Data root: $DATA_ROOT"
-echo "Created persistent dataset list: $ENABLED_DATASETS_FILE"
 echo "Found enabled datasets:"
-cat "$ENABLED_DATASETS_FILE"
+echo "$ENABLED_DATASETS"
 echo "SCRIPT DIR: $SCRIPT_DIR"
 echo "HPC_ENABLED: $HPC_ENABLED"
 
 # Export DATA_ROOT so batch jobs can see it
-export $DATA_ROOT
-export $HPC_ENABLED
+export DATA_ROOT
+export HPC_ENABLED
 
 # Process each enabled dataset
 while IFS= read -r DATASET; do
+    [ -z "$DATASET" ] && continue
     echo "Processing dataset: $DATASET"
     
     # Check if dataset directory exists
@@ -61,8 +70,15 @@ while IFS= read -r DATASET; do
         continue
     fi
     
-    # Get list of subjects in the dataset
-    SUBJECTS_FILE="$DATASET_DIR/subject_use.txt"
+    # Resolve subject list for dataset from config, fallback to dataset/subject_use.txt
+    SUBJECTS_FILE=$(jq -r --arg ds "$DATASET" '.datasets[$ds].subject_list_file // empty' "$CONFIG_FILE")
+    if [ -n "$SUBJECTS_FILE" ]; then
+        if [[ "$SUBJECTS_FILE" != /* ]]; then
+            SUBJECTS_FILE="$DATASET_DIR/$SUBJECTS_FILE"
+        fi
+    else
+        SUBJECTS_FILE="$DATASET_DIR/subject_use.txt"
+    fi
     if [ ! -f "$SUBJECTS_FILE" ]; then
         echo "Warning: Subject list file $SUBJECTS_FILE not found, skipping dataset $DATASET"
         continue
@@ -114,7 +130,7 @@ while IFS= read -r DATASET; do
         
     done < "$SUBJECTS_FILE"
     
-done < "$ENABLED_DATASETS_FILE"
+done <<< "$ENABLED_DATASETS"
 
 echo "CAT12 preprocessing job submission completed!"
-echo "Dataset list saved to: $ENABLED_DATASETS_FILE"
+echo "Datasets were read from config: $CONFIG_FILE"
