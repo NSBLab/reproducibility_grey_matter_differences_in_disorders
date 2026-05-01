@@ -20,7 +20,7 @@ In this package, we provide the codes that were used to obtain the results in th
 2) Choose and edit a config file to match your environment:
    - `config_windows.json` (Windows)
    - `config_hpc.json` (HPC/cluster)
-   - `config.json` (WSL/Linux example)
+   - `config_linux.json` (WSL/Linux example)
    Ensure `data_directories.dataset_root` points to the folder containing your datasets (e.g., `.../multiple_dataset`).
 3) The pipeline accepts a config struct and internal scripts read relative to their own locations.
 
@@ -32,46 +32,111 @@ Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/
 
 ## Usage
 
-### Run the pipeline from MATLAB
+The pipeline uses the configuration file to:
+- Organize enabled datasets into BIDS format (code is in `data_BIDS`)
+- Run SBM including FreeSurfer preprocessing and group analysis (code is in `data_BIDS`)
+- Run VBM including CAT12 preprocessing and group analysis (code is in `data_BIDS`)
 
-Open MATLAB in the repo root and run:
+### Prepare config and environment
 
+- Choose one config file (for example `config_windows.json`).
+- Ensure dataset switches (`enabled`) and paths are correct.
+- For bash steps, export the variables used by scripts (at minimum `DATA_ROOT`; many steps also need `HPC_ENABLED`, `smoothKernel`, `harmonize`, `maskDiag`, `NUM_PERMUTATIONS`).
+
+### Dataset list and BIDS organization
+
+In MATLAB,
 ```matlab
-run_pipeline('full',<config_file>);
+step0a_create_dataset_list('config_windows.json'); % create enabled dataset list from config.
+step0b_organize_bids('config_windows.json'); % run dataset-specific BIDS scripts in `data_BIDS/` (`BIDS_<dataset>.m`).
 ```
 
-This uses the configuration file to:
-- Organize enabled datasets into BIDS
-- Run VBM CAT12 preprocessing (step1)
-- Continue with later VBM stages if enabled
-
-You can also run specific stages, e.g.:
-
-```matlab
-run_pipeline('VBM_CAT12_step1a');
-```
-
-### Organising downloaded data into BIDS format
-
-The pipeline calls `data_BIDS/BIDS_<Dataset>.m` for each enabled dataset in the config. These scripts read `dataset_root` from the config and write per-dataset `subject_use.txt` under `<dataset_root>/<Datas
-
-#### step1 preprocessing (VBM/CAT12)
+### VBM pipeline
+Step 1 preprocessing (VBM/CAT12)
 - The CAT12 step is launched by the pipeline via `VBM/preprocessing/step1_CAT12/step1a_CAT12_preprocessing_send.sh`.
-- It reads the config, determines enabled datasets, writes the list to `<dataset_root>/dataset_list_VBM.txt`, and submits one job per subject.
-- The environment variable `DATA_ROOT` is set automatically by the pipeline so downstream shell scripts can find your data.
-- After CAT12 jobs have finished, the QC concatenation script `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.sh` is run to aggregate CAT12 QC values per dataset.
-- The segmentation on native space and the normalisation on MRI space are concatinated for visualisation (quality control) by `step1c_visualisation.sh`. THIS HAS TO BE RUN DIRECTLY FROM BASH (as bash called from MATLAB doesn't provide visualisation-the function need to render a displayed image).
+- It reads the config, determines enabled datasets, writes the list to `<dataset_root>/dataset_list_VBM.txt`, and submits 
+one job per subject.
+- The environment variable `DATA_ROOT` is set automatically by the pipeline so downstream shell scripts can find your 
+data.
+- After CAT12 jobs have finished, the QC concatenation script `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.
+sh` is run to aggregate CAT12 QC values per dataset.
+- The segmentation on native space and the normalisation on MRI space are concatinated for visualisation (quality 
+control) by `step1c_visualisation.sh`. THIS HAS TO BE RUN DIRECTLY FROM BASH (as bash called from MATLAB doesn't provide 
+visualisation-the function need to render a displayed image).
 
-Manual usage (optional):
-```bash
-cd VBM/preprocessing/step1_CAT12
+- `step1a_VBM_CAT12_preprocess`  
+  Run: `VBM/preprocessing/step1_CAT12/step1a_CAT12_preprocessing_send.sh`
+- `step1b_VBM_CAT12_report_concat`  
+  Run: `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.sh`
+- `step1c_VBM_CAT12_visualisation`  
+  Run: `VBM/preprocessing/step1_CAT12/step1c_visualisation_individual.sh`  
+  Note: run this directly in bash on a machine with UI rendering support.
+- `step2_VBM_extract_subjects`  
+  Run dataset-specific extract functions in `VBM/preprocessing/step2_extract_subjects/`:
+  `extract_sub_<dataset>.m`
+- `step3_VBM_smoothing`  
+  Run: `VBM/preprocessing/step3_smoothing/run_smooth_TIV_send.sh`
+- `step4a_VBM_combine_metadata`  
+  Run: `VBM/preprocessing/step4_combat/step4a_combine_metadata.m`
+- `step4b_VBM_make_mask`  
+  Run: `VBM/preprocessing/step4_combat/step4b_make_mask.sh`
+- `step4c_VBM_combat_input`  
+  Run: `VBM/preprocessing/step4_combat/step4c_combat_input.m`
+- `step4d_VBM_combat`  
+  Run: `VBM/preprocessing/step4_combat/step4d_COMBAT_run_sbatch_send.sh`
+- `step4e_VBM_combat_output`  
+  Run: `VBM/preprocessing/step4_combat/step4e_combat_output.m`
+- `step5_VBM_statistical_analysis`  
+  Run: `VBM/analysis/step5_statistical_analysis/runGLM_send.sh`
+- `step6a_VBM_nulltest_vol_dense`  
+  Run: `VBM/analysis/step6_nulltest/step6a_vol_dense_gen_send.sh`
+- `step6b_VBM_permutation`  
+  Run: `VBM/analysis/step6_nulltest/step6b_permutation.sh`
+- `step7_VBM_parcellation`  
+  Run: `VBM/analysis/step7_parcellation/parcellate_maps_send.sh`
+- `step8_VBM_consistency`  
+  Run consistency scripts in the VBM analysis folder.
+- `step9_VBM_covariates`  
+  Run covariate scripts in the VBM analysis folder.
+- `step10_VBM_figures`  
+  Run figure-generation scripts in the VBM analysis folder.
 
-# To manually run, DATA_ROOT must be set:
-sh ./step1a_CAT12_preprocessing_send.sh
+### SBM pipeline
 
-# After CAT12 jobs have finished 
-sh ./step1b_cat12_qcReport_concat.sh
-sh ./step1c_visualisation.sh
+- `step1_SBM_recon_all`  
+  Run: `SBM/preprocessing/step1_recon_all/Step0.recon_all.sh`
+- `step2_SBM_autoQC`  
+  Run: `SBM/preprocessing/step2_autoQC/Step1a.mriqc_individual.sh`
+- `step3_SBM_surfacevis`  
+  Run: `SBM/preprocessing/step3_surfacevis/Step2.freeview_job.sh`
+- `step4_SBM_extract_subjects`  
+  Run: `SBM/preprocessing/step4_extract_subjects/extract_subjects_batch.sh`
+- `step5a_SBM_combine_metadata`  
+  Run metadata combine script in SBM preprocessing.
+- `step5b_SBM_combat_input`  
+  Run SBM COMBAT input script.
+- `step5c_SBM_combat`  
+  Run SBM COMBAT sbatch script.
+- `step5d_SBM_combat_output`  
+  Run SBM COMBAT output script.
+- `step6_SBM_statistical_analysis`  
+  Run: `SBM/analysis/step6_statistical_analysis/glmfit_send.sh`
+- `step7a_SBM_nulltest_eigentrapping`  
+  Run eigentrapping/null generation scripts for SBM.
+- `step7b_SBM_permutation_nulltest`  
+  Run: `SBM/analysis/step7b_permutation_nulltest/step7b_permutation_nulltest_send.sh`
+- `step8_SBM_parcellation`  
+  Run SBM parcellation scripts.
+- `step9_SBM_consistency`  
+  Run SBM consistency scripts.
+- `step10_SBM_covariates`  
+  Run SBM covariate scripts.
+- `step11_SBM_sample_size_effect`  
+  Run SBM sample-size scripts.
+- `step12_SBM_figures`  
+  Run SBM figure-generation scripts.
+
+
 ```
 #### step2
 
@@ -91,7 +156,7 @@ The codes run on versions of MATLAB from R2023a to R2025a.
 
 If you use our code in your research, please cite us as follows:
 
-Trang Cao, James C. Pang, Mehul Gajwani, Ashlea Segal, Alex Holmes,  Joshua Wiley, Sidhant Chopra,  Juan Helen Zhou, Christopher CH Chen, Fang Ji, Ben J Harrison, Christopher G Davey, Toby Constable, Jeggan Tiego, Bree Hartshorn, Jessica Kwee, Mark A. Bellgrove, Alex Fornito, Are neuroanatomical phenotypes for psychiatric disorders robust? An assessment of the reproducibility of grey matter differences in mental illness, (DOI: [2025.07.09.25331220](https://doi.org/10.1101/2025.07.09.25331220))
+Trang Cao, James C. Pang, Mehul Gajwani, Ashlea Segal, Alex Holmes, Joshua Wiley, Sidhant Chopra, Juan Helen Zhou, Christopher CH Chen, Fang Ji, Ben J Harrison, Christopher G Davey, Toby Constable, Jeggan Tiego, Bree Hartshorn, Jessica Kwee, Mark A. Bellgrove, Alex Fornito, Are neuroanatomical phenotypes for psychiatric disorders robust? An assessment of the reproducibility of grey matter differences in mental illness, (DOI: [2025.07.09.25331220](https://doi.org/10.1101/2025.07.09.25331220))
 
 ## Further details
 
@@ -227,6 +292,7 @@ run corr_parc_resample_2sitegroup_subdivide_samesize_send for correlating each r
 run corr_zmap_parc_subdivide_2sitegroup_samesize.m
 run figure_corr_zmap_subdivide_2sitegroup_samesize_combine.m
 run figure_corr_zmap_subdivide_2sitegroup_samesize_combine_sub.m
+
 
 
 
