@@ -24,7 +24,7 @@ export T1_name=$DATA_ROOT/${DATASET}/${i}/${ses}/anat/${i}_${ses}_T1w.nii
 fi
 
 # Load MATLAB modules conditionally
-if [ "$HPC_ENABLED" = "1" ]; then
+if [ "$HPC_ENABLED" = "1" ] || [ "$(echo "$HPC_ENABLED" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
     echo "Loading MATLAB modules (HPC mode enabled)..."
     module unload matlab
     module load  spm12/matlab2021a.r7771-v1

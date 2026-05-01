@@ -3,41 +3,42 @@
 # Get script directory (same directory as this script file)
 export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-# Use environment variables passed from MATLAB
-if [ -z "$DATA_ROOT" ]; then
-    echo "Error: DATA_ROOT environment variable not set"
-    echo "Please ensure the pipeline sets the DATA_ROOT environment variable."
+# Use CONFIG_FILE passed from MATLAB as source of truth
+if [ -z "$CONFIG_FILE" ]; then
+    echo "Error: CONFIG_FILE environment variable not set"
+    echo "Please ensure the pipeline sets CONFIG_FILE."
     exit 1
 fi
 
-echo "Using DATA_ROOT from environment: $DATA_ROOT"
-
-# Get enabled datasets file path from environment variable
-if [ -z "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: ENABLED_DATASETS_FILE environment variable not set"
-    echo "Please ensure the pipeline sets the ENABLED_DATASETS_FILE environment variable."
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: Configuration file not found: $CONFIG_FILE"
     exit 1
 fi
 
-# Check if the dataset list file exists
-if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: Dataset list file not found: $ENABLED_DATASETS_FILE"
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is required to parse config file in step1b."
     exit 1
 fi
 
-# Check if the file has any content
-if [ ! -s "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: Dataset list file is empty: $ENABLED_DATASETS_FILE"
+DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
+if [ -z "$DATA_ROOT" ] || [ "$DATA_ROOT" = "null" ]; then
+    echo "Error: Could not read data_directories.dataset_root from $CONFIG_FILE"
+    exit 1
+fi
+
+ENABLED_DATASETS=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE")
+if [ -z "$ENABLED_DATASETS" ]; then
+    echo "Error: No enabled datasets found in $CONFIG_FILE"
     exit 1
 fi
 
 echo "Data root: $DATA_ROOT"
-echo "Created persistent dataset list: $ENABLED_DATASETS_FILE"
 echo "Found enabled datasets:"
-cat "$ENABLED_DATASETS_FILE"
+echo "$ENABLED_DATASETS"
 
 # Process each enabled dataset
 while IFS= read -r dataset; do
+    [ -z "$dataset" ] && continue
 
 	echo ${dataset}
 	sleep 1
@@ -49,7 +50,21 @@ while IFS= read -r dataset; do
 	# CAT12 IQR threshold (adjust as needed)
 	IQR_THRESHOLD=2.8
 
-	for sub in `cat subject_use.txt`; do
+	SUBJECTS_FILE=$(jq -r --arg ds "$dataset" '.datasets[$ds].subject_list_file // empty' "$CONFIG_FILE")
+	if [ -n "$SUBJECTS_FILE" ]; then
+		if [[ "$SUBJECTS_FILE" != /* ]]; then
+			SUBJECTS_FILE="$DATA_ROOT/$dataset/$SUBJECTS_FILE"
+		fi
+	else
+		SUBJECTS_FILE="$DATA_ROOT/$dataset/subject_use.txt"
+	fi
+
+	if [ ! -f "$SUBJECTS_FILE" ]; then
+		echo "Warning: Subject list file $SUBJECTS_FILE not found, skipping dataset $dataset"
+		continue
+	fi
+
+	for sub in $(cat "$SUBJECTS_FILE"); do
 
 		# Auto-detect session directories for this subject (do not rely on external $ses)
 		first_ses_dir=$(find "$DATA_ROOT/$dataset/${sub}" -maxdepth 1 -type d -name "ses-*" | sort -V | head -1)
@@ -94,7 +109,7 @@ while IFS= read -r dataset; do
 	echo "Passed subjects: $(wc -l < "$DATA_ROOT/$dataset/subjects_cat12_passed.txt" 2>/dev/null || echo 0)"
 	echo "Failed subjects: $(wc -l < "$DATA_ROOT/$dataset/subjects_cat12_failed.txt" 2>/dev/null || echo 0)"
 
-done < "$ENABLED_DATASETS_FILE"
+done <<< "$ENABLED_DATASETS"
 
 rm -f temp.txt
 

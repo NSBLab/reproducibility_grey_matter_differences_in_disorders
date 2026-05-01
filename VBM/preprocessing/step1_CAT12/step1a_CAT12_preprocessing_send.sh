@@ -40,11 +40,20 @@ if [ -z "$ENABLED_DATASETS" ]; then
     exit 1
 fi
 
-HPC_ENABLED=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
-if [ -z "$HPC_ENABLED" ] || [ "$HPC_ENABLED" = "null" ]; then
+HPC_ENABLED_RAW=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
+if [ -z "$HPC_ENABLED_RAW" ] || [ "$HPC_ENABLED_RAW" = "null" ]; then
     echo "Error: Could not read execution_mode.hpc_enabled from $CONFIG_FILE"
     exit 1
 fi
+
+case "$(echo "$HPC_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in
+    1|true) HPC_ENABLED="1" ;;
+    0|false) HPC_ENABLED="0" ;;
+    *)
+        echo "Error: Invalid execution_mode.hpc_enabled value: $HPC_ENABLED_RAW (expected true/false or 1/0)"
+        exit 1
+        ;;
+esac
 
 echo "Using HPC_ENABLED from config: $HPC_ENABLED"
 
