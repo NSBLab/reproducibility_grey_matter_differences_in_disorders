@@ -3,17 +3,25 @@
 # Get script directory (same directory as this script file)
 export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-# Use CONFIG_FILE passed from MATLAB as source of truth
+# Resolve CONFIG_FILE from env or sensible defaults
 if [ -z "$CONFIG_FILE" ]; then
-    echo "Error: CONFIG_FILE environment variable not set"
-    echo "Please ensure the pipeline sets CONFIG_FILE."
-    exit 1
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    if [ -f "$REPO_ROOT/config_hpc.json" ]; then
+        CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+    elif [ -f "$REPO_ROOT/config.json" ]; then
+        CONFIG_FILE="$REPO_ROOT/config.json"
+    elif [ -f "config_hpc.json" ]; then
+        CONFIG_FILE="config_hpc.json"
+    elif [ -f "config.json" ]; then
+        CONFIG_FILE="config.json"
+    else
+        echo "Error: CONFIG_FILE not set and no default config found."
+        echo "Checked: $REPO_ROOT/config_hpc.json, $REPO_ROOT/config.json, ./config_hpc.json, ./config.json"
+        exit 1
+    fi
 fi
 
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Error: Configuration file not found: $CONFIG_FILE"
-    exit 1
-fi
+echo "Using CONFIG_FILE: $CONFIG_FILE"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "Error: jq is required to parse config file in step1b."
