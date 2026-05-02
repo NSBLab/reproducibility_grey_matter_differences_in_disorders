@@ -23,34 +23,6 @@
       }
     },
     
-    "pipeline_stages": {
-      "organize_bids": { "enabled": true, "description": "Convert datasets to BIDS format" },
-      "organize_extract": { "enabled": true, "description": "Extract subjects from BIDS datasets" },
-      "VBM_CAT12": { "enabled": true, "description": "VBM CAT12 preprocessing" },
-      "VBM_extract_subjects": { "enabled": true, "description": "VBM extract subjects" },
-      "VBM_smoothing": { "enabled": true, "description": "VBM smoothing" },
-      "VBM_combat": { "enabled": true, "description": "VBM COMBAT harmonization" },
-      "VBM_metadata": { "enabled": true, "description": "VBM combine metadata" },
-      "VBM_statistical_analysis": { "enabled": true, "description": "VBM statistical analysis" },
-      "VBM_parcellation": { "enabled": true, "description": "VBM parcellation" },
-      "VBM_nulltest": { "enabled": true, "description": "VBM null testing" },
-      "VBM_consistency": { "enabled": true, "description": "VBM consistency analysis" },
-      "VBM_covariates": { "enabled": true, "description": "VBM covariate analysis" },
-      "VBM_figures": { "enabled": true, "description": "VBM figure generation" },
-      "SBM_recon_all": { "enabled": true, "description": "SBM recon-all" },
-      "SBM_autoQC": { "enabled": true, "description": "SBM auto QC" },
-      "SBM_surfacevis": { "enabled": true, "description": "SBM surface visualization" },
-      "SBM_extract_subjects": { "enabled": true, "description": "SBM extract subjects" },
-      "SBM_combat": { "enabled": true, "description": "SBM COMBAT harmonization" },
-      "SBM_metadata": { "enabled": true, "description": "SBM combine metadata" },
-      "SBM_statistical_analysis": { "enabled": true, "description": "SBM statistical analysis" },
-      "SBM_parcellation": { "enabled": true, "description": "SBM parcellation" },
-      "SBM_nulltest": { "enabled": true, "description": "SBM null testing" },
-      "SBM_consistency": { "enabled": true, "description": "SBM consistency analysis" },
-      "SBM_covariates": { "enabled": true, "description": "SBM covariate analysis" },
-      "SBM_sample_size_effect": { "enabled": true, "description": "SBM sample size effect" },
-      "SBM_figures": { "enabled": true, "description": "SBM figure generation" }
-    },
     
     "output_directories": {
       "results": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data\\results",

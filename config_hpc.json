@@ -28,40 +28,7 @@
       }
 
     },
-    
-    "pipeline_stages": {
-      "organize_bids": { "enabled": true, "description": "Convert datasets to BIDS format" },
-      "step1a_VBM_CAT12_preprocess": { "enabled": true, "description": "VBM CAT12 preprocessing" },
-      "step1b_VBM_CAT12_report_concat": { "enabled": true, "description": "VBM CAT12 QC report concatenation" },
-      "step1c_VBM_CAT12_visualisation": { "enabled": true, "description": "VBM CAT12 visualization" },
-      "step2_VBM_extract_subjects": { "enabled": true, "description": "VBM extract subjects for analysis" },
-      "step3_VBM_smoothing": { "enabled": true, "description": "VBM smoothing" },
-      "step4a_VBM_combat_input": { "enabled": true, "description": "VBM prepare input for COMBAT harmonization" },
-      "step4b_VBM_combat": { "enabled": true, "description": "VBM COMBAT harmonization" },
-      "step4c_VBM_combat_output": { "enabled": true, "description": "VBM output COMBAT harmonization" },
-      "step5_VBM_metadata": { "enabled": true, "description": "VBM combine metadata" },
-      "step6_VBM_statistical_analysis": { "enabled": true, "description": "VBM statistical analysis" },
-      "VBM_statistical_analysis": { "enabled": true, "description": "VBM statistical analysis" },
-      "VBM_parcellation": { "enabled": true, "description": "VBM parcellation" },
-      "VBM_nulltest": { "enabled": true, "description": "VBM null testing" },
-      "VBM_consistency": { "enabled": true, "description": "VBM consistency analysis" },
-      "VBM_covariates": { "enabled": true, "description": "VBM covariate analysis" },
-      "VBM_figures": { "enabled": true, "description": "VBM figure generation" },
-      "SBM_recon_all": { "enabled": true, "description": "SBM recon-all" },
-      "SBM_autoQC": { "enabled": true, "description": "SBM auto QC" },
-      "SBM_surfacevis": { "enabled": true, "description": "SBM surface visualization" },
-      "SBM_extract_subjects": { "enabled": true, "description": "SBM extract subjects" },
-      "SBM_combat": { "enabled": true, "description": "SBM COMBAT harmonization" },
-      "SBM_metadata": { "enabled": true, "description": "SBM combine metadata" },
-      "SBM_statistical_analysis": { "enabled": true, "description": "SBM statistical analysis" },
-      "SBM_parcellation": { "enabled": true, "description": "SBM parcellation" },
-      "SBM_nulltest": { "enabled": true, "description": "SBM null testing" },
-      "SBM_consistency": { "enabled": true, "description": "SBM consistency analysis" },
-      "SBM_covariates": { "enabled": true, "description": "SBM covariate analysis" },
-      "SBM_sample_size_effect": { "enabled": true, "description": "SBM sample size effect" },
-      "SBM_figures": { "enabled": true, "description": "SBM figure generation" }
-    },
-    
+        
     "output_directories": {
       "results": "${dataset_root}/results",
       "figures": "${dataset_root}/figures",

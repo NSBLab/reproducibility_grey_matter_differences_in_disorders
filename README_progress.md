@@ -68,8 +68,7 @@ check_output_recon.sh to create a list of subject for recon
 
 freesurfer/freesurfer_holmesQC/step0_recon_all for segmentation
 freesurfer/check_output_recon.sh
-freesurfer/check_MRIQC_output.sh
-freesurfer/freesurfer_holmesQC/step1_autoQC/Step1a.mriqc_individual.sh
+SBM/preprocessing/step2_autoQC/step2a.mriqc_individual.sh
 freesurfer/freesurfer_holmesQC/step1_autoQC/Step1b.mriqc_group.sh
 freesurfer/freesurfer_holmesQC/step1_autoQC/Step1c.euler.sh
 freesurfer/freesurfer_holmesQC/step1_autoQC/Step1d.mriqc_PCA.py in python for each dataset (PyCharm in Massive, config input and output in configuration Parameters for each dataset)

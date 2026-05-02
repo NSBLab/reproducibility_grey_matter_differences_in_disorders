@@ -4,153 +4,77 @@ Despite thousands of magnetic resonance imaging (MRI) studies reporting grey mat
 
 See "[Are neuroanatomical phenotypes for psychiatric disorders robust? An assessment of the reproducibility of grey matter differences in mental illness](https://medrxiv.org/cgi/content/short/2025.07.09.25331220v1)" for more details.
 
-## File descriptions
+## Repository layout
 
 In this package, we provide the codes that were used to obtain the results in the project. The main folders are:
-
   1. `data/`: sample data to run the pipeline.
   2. `utils/`: dependent packages and functions.
   3. `data_BIDS/`:  organising downloaded data into BIDS format and selecting subjects for the analysis.
-  4. `SBM/`: analysing cortical thickness alteration maps using surface-based morphometry and evaluating their consistency.
+  4. `SBM/`: analysing cortical thickness alteration maps using surface-based morphometry and evaluating their 
+  consistency.
   5. `VBM/`: analysing grey matter volume alteration maps using voxel-based morphometry and evaluating their consistency.
+  
+Root JSON configs (e.g. `config_hpc.json`, `config_windows.json`, `config_linux.json`) define `data_directories.dataset_root`, enabled datasets, and analysis/HPC settings. Bash steps read the config with `jq` (install `jq` on the login/compute environment used for those scripts).
 
 ## Installation
 
-1) Download/clone this repository.
-2) Choose and edit a config file to match your environment:
-   - `config_windows.json` (Windows)
-   - `config_hpc.json` (HPC/cluster)
-   - `config_linux.json` (WSL/Linux example)
-   Ensure `data_directories.dataset_root` points to the folder containing your datasets (e.g., `.../multiple_dataset`).
-3) The pipeline accepts a config struct and internal scripts read relative to their own locations.
+1. Clone this repository.
+2. Copy or edit a config file so `data_directories.dataset_root` points at the parent folder of your dataset directories (each dataset is `${dataset_root}/<DatasetName>/`).
+3. Set `datasets.<name>.enabled` and paths per dataset as needed (see comments in the JSON and dataset-specific scripts for optional keys such as `longitudinal`).
+4. For cluster bash jobs, ensure `execution_mode.hpc_enabled` matches your intent (`true`/`1` vs local); optional `FREESURFER_SUBJECTS_DIR` if FreeSurfer outputs are not under `<dataset>/derivatives/freesurfer`.
 
-Read the comments in the config for details on paths, stages, and datasets.
+## Data (example datasets)
 
 ## Data
 
 Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/1.0.0) and [RD](https://openneuro.org/datasets/ds002748/versions/1.0.5) that are openly available from openneuro.org and put them in `data/` with folder name `Myelin` and `RD`, respectively. Please consult the link for detailed information about access, licensing, and terms and conditions of usage.
 
-## Usage
+1. **BIDS** — Build the enabled-dataset list and run dataset-specific BIDS scripts from `data_BIDS/`:
 
-The pipeline uses the configuration file to:
-- Organize enabled datasets into BIDS format (code is in `data_BIDS`)
-- Run SBM including FreeSurfer preprocessing and group analysis (code is in `data_BIDS`)
-- Run VBM including CAT12 preprocessing and group analysis (code is in `data_BIDS`)
+   ```matlab
+   step0a_create_dataset_list('config_windows.json');
+   step0b_organize_bids('config_windows.json');
+   ```
 
-### Prepare config and environment
+   Use your chosen config filename in place of `config_windows.json`.
 
-- Choose one config file (for example `config_windows.json`).
-- Ensure dataset switches (`enabled`) and paths are correct.
-- For bash steps, export the variables used by scripts (at minimum `DATA_ROOT`; many steps also need `HPC_ENABLED`, `smoothKernel`, `harmonize`, `maskDiag`, `NUM_PERMUTATIONS`).
+2. **VBM** — Shell scripts resolve `CONFIG_FILE` automatically (`config_hpc.json` / `config.json` next to the repo or cwd) or use `export CONFIG_FILE=/path/to/config.json`. They read `DATA_ROOT` from the JSON.
 
-### Dataset list and BIDS organization
+3. **SBM** — FreeSurfer `recon-all` is driven by `SBM/preprocessing/step1_recon_all/step1.recon_all.sh` (login node: builds `sub_to_recon.txt` from `subject_use.txt` or longitudinal `ses_subject_use.txt`, then submits a SLURM array). Optional: `export FREESURFER_SUBJECTS_DIR=...` if subject folders are not under each dataset’s `derivatives/freesurfer`.
 
-In MATLAB,
-```matlab
-step0a_create_dataset_list('config_windows.json'); % create enabled dataset list from config.
-step0b_organize_bids('config_windows.json'); % run dataset-specific BIDS scripts in `data_BIDS/` (`BIDS_<dataset>.m`).
-```
+### VBM pipeline (main scripts)
 
-### VBM pipeline
-Step 1 preprocessing (VBM/CAT12)
-- The CAT12 step is launched by the pipeline via `VBM/preprocessing/step1_CAT12/step1a_CAT12_preprocessing_send.sh`.
-- It reads the config, determines enabled datasets, writes the list to `<dataset_root>/dataset_list_VBM.txt`, and submits 
-one job per subject.
-- The environment variable `DATA_ROOT` is set automatically by the pipeline so downstream shell scripts can find your 
-data.
-- After CAT12 jobs have finished, the QC concatenation script `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.
-sh` is run to aggregate CAT12 QC values per dataset.
-- The segmentation on native space and the normalisation on MRI space are concatinated for visualisation (quality 
-control) by `step1c_visualisation.sh`. THIS HAS TO BE RUN DIRECTLY FROM BASH (as bash called from MATLAB doesn't provide 
-visualisation-the function need to render a displayed image).
+| Step | Run |
+|------|-----|
+| 1a CAT12 preprocess | `VBM/preprocessing/step1_CAT12/step1a_CAT12_preprocessing_send.sh` |
+| 1b CAT12 QC concat | `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.sh` |
+| 1c CAT12 visualisation | `VBM/preprocessing/step1_CAT12/step1c_visualisation_individual.sh` (bash with display; not via MATLAB) |
+| 2 Extract subjects | `VBM/preprocessing/step2_extract_subjects/extract_sub_<dataset>.m` |
+| 3 Smoothing | `VBM/preprocessing/step3_smoothing/run_smooth_TIV_send.sh` |
+| 4a–e COMBAT / metadata | `VBM/preprocessing/step4_combat/` (`step4a_combine_metadata.m`, `step4b_make_mask.sh`, `step4c_combat_input.m`, `step4d_COMBAT_run_sbatch_send.sh`, `step4e_combat_output.m`) |
+| 5 Statistical analysis | `VBM/analysis/step5_statistical_analysis/runGLM_send.sh` |
+| 6 Null test | `VBM/analysis/step6_nulltest/step6a_vol_dense_gen_send.sh`, `step6b_permutation.sh` |
+| 7 Parcellation | `VBM/analysis/step7_parcellation/parcellate_maps_send.sh` |
+| 8–10 | Consistency, covariates, figures — scripts under `VBM/analysis/` |
 
-- `step1a_VBM_CAT12_preprocess`  
-  Run: `VBM/preprocessing/step1_CAT12/step1a_CAT12_preprocessing_send.sh`
-- `step1b_VBM_CAT12_report_concat`  
-  Run: `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.sh`
-- `step1c_VBM_CAT12_visualisation`  
-  Run: `VBM/preprocessing/step1_CAT12/step1c_visualisation_individual.sh`  
-  Note: run this directly in bash on a machine with UI rendering support.
-- `step2_VBM_extract_subjects`  
-  Run dataset-specific extract functions in `VBM/preprocessing/step2_extract_subjects/`:
-  `extract_sub_<dataset>.m`
-- `step3_VBM_smoothing`  
-  Run: `VBM/preprocessing/step3_smoothing/run_smooth_TIV_send.sh`
-- `step4a_VBM_combine_metadata`  
-  Run: `VBM/preprocessing/step4_combat/step4a_combine_metadata.m`
-- `step4b_VBM_make_mask`  
-  Run: `VBM/preprocessing/step4_combat/step4b_make_mask.sh`
-- `step4c_VBM_combat_input`  
-  Run: `VBM/preprocessing/step4_combat/step4c_combat_input.m`
-- `step4d_VBM_combat`  
-  Run: `VBM/preprocessing/step4_combat/step4d_COMBAT_run_sbatch_send.sh`
-- `step4e_VBM_combat_output`  
-  Run: `VBM/preprocessing/step4_combat/step4e_combat_output.m`
-- `step5_VBM_statistical_analysis`  
-  Run: `VBM/analysis/step5_statistical_analysis/runGLM_send.sh`
-- `step6a_VBM_nulltest_vol_dense`  
-  Run: `VBM/analysis/step6_nulltest/step6a_vol_dense_gen_send.sh`
-- `step6b_VBM_permutation`  
-  Run: `VBM/analysis/step6_nulltest/step6b_permutation.sh`
-- `step7_VBM_parcellation`  
-  Run: `VBM/analysis/step7_parcellation/parcellate_maps_send.sh`
-- `step8_VBM_consistency`  
-  Run consistency scripts in the VBM analysis folder.
-- `step9_VBM_covariates`  
-  Run covariate scripts in the VBM analysis folder.
-- `step10_VBM_figures`  
-  Run figure-generation scripts in the VBM analysis folder.
+### SBM pipeline (main scripts)
 
-### SBM pipeline
+| Step | Run |
+|------|-----|
+| 1 Recon-all | `SBM/preprocessing/step1_recon_all/step1.recon_all.sh` |
+| 2 Auto QC | `SBM/preprocessing/step2_autoQC/step2a.mriqc_individual.sh` (list build + MRIQC; then group steps in this folder as needed) |
+| 3 Surface vis | `SBM/preprocessing/step3_surfacevis/Step2.freeview_job.sh` |
+| 4 Extract | `SBM/preprocessing/step4_extract_subjects/extract_subjects_batch.sh` |
+| 5 COMBAT / metadata | preprocessing COMBAT and metadata scripts in `SBM/preprocessing/` |
+| 6 GLM | `SBM/analysis/step6_statistical_analysis/glmfit_send.sh` |
+| 7 Null | `SBM/analysis/step7b_permutation_nulltest/step7b_permutation_nulltest_send.sh` |
+| 8–12 | Parcellation, consistency, covariates, sample size, figures — under `SBM/analysis/` |
 
-- `step1_SBM_recon_all`  
-  Run: `SBM/preprocessing/step1_recon_all/Step0.recon_all.sh`
-- `step2_SBM_autoQC`  
-  Run: `SBM/preprocessing/step2_autoQC/Step1a.mriqc_individual.sh`
-- `step3_SBM_surfacevis`  
-  Run: `SBM/preprocessing/step3_surfacevis/Step2.freeview_job.sh`
-- `step4_SBM_extract_subjects`  
-  Run: `SBM/preprocessing/step4_extract_subjects/extract_subjects_batch.sh`
-- `step5a_SBM_combine_metadata`  
-  Run metadata combine script in SBM preprocessing.
-- `step5b_SBM_combat_input`  
-  Run SBM COMBAT input script.
-- `step5c_SBM_combat`  
-  Run SBM COMBAT sbatch script.
-- `step5d_SBM_combat_output`  
-  Run SBM COMBAT output script.
-- `step6_SBM_statistical_analysis`  
-  Run: `SBM/analysis/step6_statistical_analysis/glmfit_send.sh`
-- `step7a_SBM_nulltest_eigentrapping`  
-  Run eigentrapping/null generation scripts for SBM.
-- `step7b_SBM_permutation_nulltest`  
-  Run: `SBM/analysis/step7b_permutation_nulltest/step7b_permutation_nulltest_send.sh`
-- `step8_SBM_parcellation`  
-  Run SBM parcellation scripts.
-- `step9_SBM_consistency`  
-  Run SBM consistency scripts.
-- `step10_SBM_covariates`  
-  Run SBM covariate scripts.
-- `step11_SBM_sample_size_effect`  
-  Run SBM sample-size scripts.
-- `step12_SBM_figures`  
-  Run SBM figure-generation scripts.
-
-
-```
-#### step2
-
-#### step3
-## run glm model
-run combine_metadata.m 
-smooth maps by run run_smooth_TIV_send.sh
-run make_mask.m (need to load VPM), one mask for all psychosis and one mask for AD. Threshold masking: At each voxel, if a value in any of the images falls below the threshold (0.2), then that voxel is excluded from the analysis.Best to run directly from bash. If run from Matlab and the mask already exist from past run, SPM will pop up a promt to ask for overwirte, which cannot appear when running bash from Matlab and thus error. SPM still not have na option of not asking for overwrite we 8/2025.
-.run glm_func.m from runGLM_batch.m by runGLM_send.sh, check runGLM_batch.m (use the same mask created for psychosis (or AD))
-
+`config_hpc.json` includes `pipeline_stages` entries for documentation toggles; individual scripts still need to be invoked explicitly.
 
 ## Compatibility
 
-The codes run on versions of MATLAB from R2023a to R2025a.
+MATLAB R2023a–R2025a.
 
 ## Citation
 
@@ -222,8 +146,7 @@ run check_output_recon.sh to create a list of subject for recon
 
 run freesurfer/freesurfer_holmesQC/step0_recon_all for segmentation
 run freesurfer/check_output_recon.sh
-run freesurfer/check_MRIQC_output.sh
-run freesurfer/freesurfer_holmesQC/step1_autoQC/Step1a.mriqc_individual.sh
+run SBM/preprocessing/step2_autoQC/step2a.mriqc_individual.sh (builds `sub_to_runMRIQC.txt`, then submits MRIQC array jobs)
 run freesurfer/freesurfer_holmesQC/step1_autoQC/Step1b.mriqc_group.sh
 run freesurfer/freesurfer_holmesQC/step1_autoQC/Step1c.euler.sh
 run freesurfer/freesurfer_holmesQC/step1_autoQC/Step1d.mriqc_PCA.py in python for each dataset (PyCharm in Massive, config input and output in configuration Parameters for each dataset)
