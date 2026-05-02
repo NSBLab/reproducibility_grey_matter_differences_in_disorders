@@ -60,7 +60,7 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
         echo "=== $DATASET ==="
 
         BASE="${DATA_ROOT}/${DATASET}"
-        FS_DIR="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
+        FS_DIR="${BASE}/derivatives/freesurfer}"
 
         LONG=$(jq -r --arg ds "$DATASET" '.datasets[$ds].longitudinal // false' "$CONFIG_FILE")
         [[ "$LONG" == "true" ]] && LONG=1 || LONG=0

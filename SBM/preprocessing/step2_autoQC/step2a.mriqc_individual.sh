@@ -4,14 +4,11 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=0-1:00:00
-#SBATCH --gres=gpu:P4:1
 #SBATCH --export=ALL
 #SBATCH --mem-per-cpu=8000
-#SBATCH --qos=normal
-#SBATCH -A kg98
-# Submit from login: this script builds sub_to_runMRIQC.txt then sbatch --array=1-N (overrides any #SBATCH --array below).
-
-# subject_use.txt / ses_subject_use.txt (BIDS step) → scan FS → sub_*_with_recon_output.txt → MRIQC queue.
+# MRIQC T1w is CPU-only; do not request GPU here or sbatch may fail with "node configuration is not available".
+# Override partition/qos/account on your cluster by editing the lines above or: sbatch --partition=X --array=1-N ./step2a.mriqc_individual.sh
+# Submit from login: builds lists then sbatch --array=1-N (CLI overrides #SBATCH --array).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STEP_SCRIPT="${SCRIPT_DIR}/$(basename "$0")"
