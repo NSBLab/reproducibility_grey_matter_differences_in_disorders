@@ -37,33 +37,13 @@ fprintf('=== EXTRACTING SUBJECTS FOR %s ===\n', study);
 fprintf('Longitudinal study: %s\n', string(is_longitudinal));
 fprintf('Using CAT12 quality threshold: %.1f\n', IQRthres);
 
-% Check if CAT12 passed subjects list exists (created by step1b)
-cat12_passed_file = fullfile(study_path, 'subjects_cat12_passed.txt');
-if ~exist(cat12_passed_file, 'file')
-    error('subjects_cat12_passed.txt not found at %s. Please run step1b first to generate CAT12 QC results.', cat12_passed_file);
+fn = fullfile(study_path, 'subjects_pass_visualisation.txt');
+if ~exist(fn, 'file')
+    error('Missing %s (copy from subjects_cat12_passed.txt after step1c and edit)', fn);
 end
-
-% Read the CAT12 passed subjects list
-cat12_passed_subjects = readlines(cat12_passed_file);
-% Remove empty lines that may be created by bash
-cat12_passed_subjects = cat12_passed_subjects(~strcmp(cat12_passed_subjects, ''));
-fprintf('Found %d subjects that passed CAT12 QC\n', length(cat12_passed_subjects));
-
-% Check if visual inspection exclusion list exists
-visual_exclusion_file = fullfile(study_path, 'derivatives','volume_visualisation','subject_list_excluded_after_visualisation.txt');
-if exist(visual_exclusion_file, 'file')
-    visual_excluded_subjects = readlines(visual_exclusion_file);
-     % Remove empty lines that may be created by bash
-    visual_excluded_subjects = visual_excluded_subjects(~strcmp(visual_excluded_subjects, ''));
-   fprintf('Found %d subjects excluded after visual inspection\n', length(visual_excluded_subjects));
-    
-    % Remove visually excluded subjects from CAT12 passed list
-    useFolder = setdiff(cat12_passed_subjects, visual_excluded_subjects);
-    fprintf('After visual inspection exclusion: %d subjects remaining\n', length(useFolder));
-else
-    fprintf('No visual inspection exclusion list found. Using all CAT12 passed subjects.\n');
-    useFolder = cat12_passed_subjects;
-end
+useFolder = readlines(fn);
+useFolder = useFolder(useFolder ~= "");
+fprintf('Subject list: %d subjects\n', numel(useFolder));
 
 % For longitudinal studies, also check for ses_subject_use.txt
 ses_subject_list_file = fullfile(study_path, 'ses_subject_use.txt');

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Get script directory (same directory as this script file)
+# Concatenates CAT12 QC; writes subjects_cat12_passed.txt per dataset. After step1c, copy that file to
+# subjects_pass_visualisation.txt and delete excluded IDs before VBM step 2 extract.
 export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Resolve CONFIG_FILE from env or sensible defaults

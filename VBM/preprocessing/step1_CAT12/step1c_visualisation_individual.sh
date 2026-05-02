@@ -1,4 +1,8 @@
 #!/bin/bash
+# Renders volumes for manual QC (needs display). After review, copy subjects_cat12_passed.txt to
+# subjects_pass_visualisation.txt in each dataset folder and remove excluded IDs before step 2 extract.
+
+export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Resolve CONFIG_FILE from env or sensible defaults
 if [ -z "$CONFIG_FILE" ]; then

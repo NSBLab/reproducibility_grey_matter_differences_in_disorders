@@ -25,9 +25,7 @@ Root JSON configs (e.g. `config_hpc.json`, `config_windows.json`, `config_linux.
 
 ## Data (example datasets)
 
-## Data
-
-Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/1.0.0) and [RD](https://openneuro.org/datasets/ds002748/versions/1.0.5) that are openly available from openneuro.org and put them in `data/` with folder name `Myelin` and `RD`, respectively. Please consult the link for detailed information about access, licensing, and terms and conditions of usage.
+Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/1.0.0) and [RD](https://openneuro.org/datasets/ds002748/versions/1.0.5) from OpenNeuro and place them under your dataset root as `Myelin` and `RD`. See each dataset’s terms of use.
 
 1. **BIDS** — Build the enabled-dataset list and run dataset-specific BIDS scripts from `data_BIDS/`:
 
@@ -49,13 +47,22 @@ Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/
 | 1a CAT12 preprocess | `VBM/preprocessing/step1_CAT12/step1a_CAT12_preprocessing_send.sh` |
 | 1b CAT12 QC concat | `VBM/preprocessing/step1_CAT12/step1b_cat12_qcReport_concat.sh` |
 | 1c CAT12 visualisation | `VBM/preprocessing/step1_CAT12/step1c_visualisation_individual.sh` (bash with display; not via MATLAB) |
-| 2 Extract subjects | `VBM/preprocessing/step2_extract_subjects/extract_sub_<dataset>.m` |
+| 2 Extract subjects | `extract_sub_<dataset>.m` or `step2_run_extract_subjects.m` — see **Manual visual QC** below |
 | 3 Smoothing | `VBM/preprocessing/step3_smoothing/run_smooth_TIV_send.sh` |
 | 4a–e COMBAT / metadata | `VBM/preprocessing/step4_combat/` (`step4a_combine_metadata.m`, `step4b_make_mask.sh`, `step4c_combat_input.m`, `step4d_COMBAT_run_sbatch_send.sh`, `step4e_combat_output.m`) |
 | 5 Statistical analysis | `VBM/analysis/step5_statistical_analysis/runGLM_send.sh` |
 | 6 Null test | `VBM/analysis/step6_nulltest/step6a_vol_dense_gen_send.sh`, `step6b_permutation.sh` |
 | 7 Parcellation | `VBM/analysis/step7_parcellation/parcellate_maps_send.sh` |
 | 8–10 | Consistency, covariates, figures — scripts under `VBM/analysis/` |
+
+#### Manual visual QC before step 2
+
+After **step 1c**, inspect the generated volumes. For each dataset directory (`${dataset_root}/<Dataset>/`, e.g. `Myelin/`, `RD/`):
+
+1. Copy **`subjects_cat12_passed.txt`** to **`subjects_pass_visualisation.txt`**.
+2. Edit **`subjects_pass_visualisation.txt`**: delete participant IDs you exclude after visual QC (one BIDS participant ID per line, same format as the CAT12-passed list).
+
+**Step 2 extract** (`extract_sub_RD`, `extract_sub_Myelin`, or **`step2_run_extract_subjects`**) reads **`subjects_pass_visualisation.txt` only** (one participant ID per line).
 
 ### SBM pipeline (main scripts)
 

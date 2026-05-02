@@ -147,7 +147,7 @@ mkdir -p "$OUT_DIR" "$WORK_DIR"
 
 if [[ "$HPC_ENABLED" == "1" ]] || [[ "$(echo "$HPC_ENABLED" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
     module purge
-    module load mriqc/0.15.2.rc1.1
+    module load mriqc/24.0.2-1 
 fi
 
 if [[ "$LONG" -eq 1 ]]; then

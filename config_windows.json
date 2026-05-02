@@ -12,12 +12,14 @@
       "Myelin": {
         "path": "${dataset_root}\\Myelin",
         "bids_script": "BIDS_Myelin.m",
+        "vbm_extract_script": "extract_sub_Myelin.m",
         "enabled": true,
         "longitudinal": true
       },
       "RD": {
         "path": "${dataset_root}\\RD",
         "bids_script": "BIDS_RD.m",
+        "vbm_extract_script": "extract_sub_RD.m",
         "enabled": true,
         "longitudinal": false
       }
