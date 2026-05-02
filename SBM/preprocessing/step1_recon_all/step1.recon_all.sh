@@ -18,8 +18,9 @@
 #   3) sbatch array jobs read sub_to_recon.txt only.
 #
 # Optional:
-#   RECON_LISTS_ONLY=1   Only step (1)+(2), no sbatch.
-#   SKIP_BUILD_LISTS=1   Skip (2), use existing sub_to_recon.txt for (3).
+#   RECON_LISTS_ONLY=1              Refresh lists only; no sbatch.
+#   SKIP_BUILD_LISTS=1             Skip ses/subject_use preparation only; FS scan still runs below.
+#   SKIP_FS_REFRESH_BEFORE_SBATCH=1  Do not rebuild sub_to_recon.txt from FS (not recommended).
 #
 # Worker: skips recon-all if thickness output already exists (no redundant run).
 
@@ -31,6 +32,19 @@ parse_longitudinal_subject_session() {
     if [[ "$line" =~ ^(.+)(ses-.+)$ ]]; then
         _SUBJ_PARSE="${BASH_REMATCH[1]}"
         _SES_PARSE="${BASH_REMATCH[2]}"
+        return 0
+    fi
+    return 1
+}
+
+# Recon is "done" if qcache thickness exists OR core stats/surfaces exist (FS finished even if path differs).
+subject_fs_recon_complete() {
+    local sd="$1"
+    [ -d "$sd" ] || return 1
+    if [ -f "${sd}/surf/lh.thickness.fwhm10.fsaverage.mgh" ]; then
+        return 0
+    fi
+    if [ -f "${sd}/stats/aseg.stats" ] && [ -f "${sd}/surf/lh.white" ] && [ -f "${sd}/surf/rh.white" ]; then
         return 0
     fi
     return 1
@@ -95,13 +109,13 @@ check_output_recon_one_dataset() {
                 printf "\n%s" "${subj}" >> "${BASE}/sub_without_recon_err.txt"
             fi
 
-            if [ -f "${freesurferDir}/${subj}/surf/lh.thickness.fwhm10.fsaverage.mgh" ] && \
+            if subject_fs_recon_complete "${freesurferDir}/${subj}" && \
                [ -f "${BASE}/${subj}/${ses}/anat/${subj}_${ses}_T1w.nii" ]; then
                 printf "\n%s" "${subj}" >> "${BASE}/sub_with_recon_output.txt"
                 printf "\n%s%s" "${subj}" "${ses}" >> "${BASE}/ses_sub_with_recon_output.txt"
             fi
 
-            if [ ! -f "${freesurferDir}/${subj}/surf/lh.thickness.fwhm10.fsaverage.mgh" ] && \
+            if ! subject_fs_recon_complete "${freesurferDir}/${subj}" && \
                [ -f "${BASE}/${subj}/${ses}/anat/${subj}_${ses}_T1w.nii" ]; then
                 printf "\n%s%s" "${subj}" "${ses}" >> "${BASE}/sub_to_recon.txt"
             fi
@@ -122,12 +136,12 @@ check_output_recon_one_dataset() {
                 printf "\n%s" "${subj}" >> "${BASE}/sub_without_recon_err.txt"
             fi
 
-            if [ -f "${freesurferDir}/${subject}/surf/lh.thickness.fwhm10.fsaverage.mgh" ] && \
+            if subject_fs_recon_complete "${freesurferDir}/${subject}" && \
                [ -f "${BASE}/${subj}/anat/${subj}_T1w.nii" ]; then
                 printf "\n%s" "${subj}" >> "${BASE}/sub_with_recon_output.txt"
             fi
 
-            if [ ! -f "${freesurferDir}/${subject}/surf/lh.thickness.fwhm10.fsaverage.mgh" ] && \
+            if ! subject_fs_recon_complete "${freesurferDir}/${subject}" && \
                [ -f "${BASE}/${subj}/anat/${subj}_T1w.nii" ]; then
                 printf "\n%s" "${subj}" >> "${BASE}/sub_to_recon.txt"
             fi
@@ -141,9 +155,9 @@ check_output_recon_one_dataset() {
     return 0
 }
 
-# Ensure ses list exists, then run FreeSurfer/BIDS scan → sub_to_recon.txt
+# Ensure BIDS input lists exist (ses file for longitudinal). Does not scan FreeSurfer.
 # Args: DATA_ROOT, DATASET, longitudinal(0|1)
-build_sub_to_recon_for_dataset() {
+ensure_sbm_input_lists() {
     local DATA_ROOT="$1"
     local DATASET="$2"
     local long="$3"
@@ -168,8 +182,7 @@ build_sub_to_recon_for_dataset() {
             return 1
         fi
     fi
-
-    check_output_recon_one_dataset "$DATA_ROOT" "$DATASET" "$long" || return 1
+    return 0
 }
 
 # ---------- Mode 1: login ----------
@@ -248,9 +261,16 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
         esac
 
         if [ "${SKIP_BUILD_LISTS:-0}" != "1" ]; then
-            build_sub_to_recon_for_dataset "$DATA_ROOT" "$DATASET" "$SBM_RECON_LONGITUDINAL" || continue
+            ensure_sbm_input_lists "$DATA_ROOT" "$DATASET" "$SBM_RECON_LONGITUDINAL" || continue
         else
-            echo "SKIP_BUILD_LISTS=1 — using existing sub_to_recon.txt"
+            echo "SKIP_BUILD_LISTS=1 — skipping ses/subject_use checks (still re-scan FS below)"
+        fi
+
+        # Always refresh sub_to_recon.txt from disk before sbatch so finished subjects are excluded
+        # (fixes stale lists and SKIP_BUILD_LISTS).
+        if [ "${SKIP_FS_REFRESH_BEFORE_SBATCH:-0}" != "1" ]; then
+            echo "Scanning FreeSurfer outputs → sub_to_recon.txt"
+            check_output_recon_one_dataset "$DATA_ROOT" "$DATASET" "$SBM_RECON_LONGITUDINAL" || true
         fi
 
         SUBJECT_LIST="$DATASET_DIR/sub_to_recon.txt"
@@ -332,17 +352,18 @@ fi
 
 BIDS_DIR="${DATA_ROOT}/${DATASET}"
 export SUBJECTS_DIR="${BIDS_DIR}/derivatives/freesurfer"
-thick_cross="${SUBJECTS_DIR}/${subject}/surf/lh.thickness.fwhm10.fsaverage.mgh"
-thick_long="${SUBJECTS_DIR}/${subj}/surf/lh.thickness.fwhm10.fsaverage.mgh"
+
+fs_subj_cross="${SUBJECTS_DIR}/${subject}"
+fs_subj_long="${SUBJECTS_DIR}/${subj}"
 
 if [ -z "$ses" ]; then
-    if [ -f "$thick_cross" ]; then
-        echo "Skip ${subject}: recon output already exists ($thick_cross)"
+    if subject_fs_recon_complete "$fs_subj_cross"; then
+        echo "Skip ${subject}: FreeSurfer subject dir already complete (${fs_subj_cross})"
         exit 0
     fi
 else
-    if [ -f "$thick_long" ]; then
-        echo "Skip ${subj}: recon output already exists ($thick_long)"
+    if subject_fs_recon_complete "$fs_subj_long"; then
+        echo "Skip ${subj}: FreeSurfer subject dir already complete (${fs_subj_long})"
         exit 0
     fi
 fi
