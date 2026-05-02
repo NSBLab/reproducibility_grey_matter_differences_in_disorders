@@ -29,7 +29,25 @@ parse_sub_ses() {
 # ---------- LOGIN MODE ----------
 if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
 
-    CONFIG_FILE=${CONFIG_FILE:-config.json}
+        # Resolve CONFIG_FILE from env or sensible defaults
+    if [ -z "$CONFIG_FILE" ]; then
+        REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+        if [ -f "$REPO_ROOT/config_hpc.json" ]; then
+            CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+        elif [ -f "$REPO_ROOT/config.json" ]; then
+            CONFIG_FILE="$REPO_ROOT/config.json"
+        elif [ -f "config_hpc.json" ]; then
+            CONFIG_FILE="config_hpc.json"
+        elif [ -f "config.json" ]; then
+            CONFIG_FILE="config.json"
+        else
+            echo "Error: CONFIG_FILE not set and no default config found."
+            echo "Checked: $REPO_ROOT/config_hpc.json, $REPO_ROOT/config.json, ./config_hpc.json, ./config.json"
+            exit 1
+        fi
+    fi
+
+    echo "Using CONFIG_FILE: $CONFIG_FILE"
 
     if ! command -v jq >/dev/null; then
         echo "Need jq"; exit 1
