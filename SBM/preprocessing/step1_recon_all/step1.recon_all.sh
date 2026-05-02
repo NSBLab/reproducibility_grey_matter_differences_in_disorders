@@ -22,7 +22,9 @@
 #   SKIP_BUILD_LISTS=1             Skip ses/subject_use preparation only; FS scan still runs below.
 #   SKIP_FS_REFRESH_BEFORE_SBATCH=1  Do not rebuild sub_to_recon.txt from FS (not recommended).
 #
-# Worker: skips recon-all if thickness output already exists (no redundant run).
+# If FreeSurfer subjects live outside <Dataset>/derivatives/freesurfer, set for login + jobs:
+#   export FREESURFER_SUBJECTS_DIR=/path/to/parentOfSubjectDirs
+# (each subject is $FREESURFER_SUBJECTS_DIR/<subjid>).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STEP_SCRIPT="${SCRIPT_DIR}/$(basename "$0")"
@@ -37,17 +39,70 @@ parse_longitudinal_subject_session() {
     return 1
 }
 
-# Recon is "done" if qcache thickness exists OR core stats/surfaces exist (FS finished even if path differs).
+# Recon is "done" if typical FS products exist (any qcache thickness FWHM, or cortical stats/surfaces).
 subject_fs_recon_complete() {
     local sd="$1"
     [ -d "$sd" ] || return 1
-    if [ -f "${sd}/surf/lh.thickness.fwhm10.fsaverage.mgh" ]; then
-        return 0
-    fi
+
+    local f
+    shopt -s nullglob
+    for f in "${sd}/surf"/lh.thickness.*.fsaverage.mgh; do
+        [ -f "$f" ] && { shopt -u nullglob; return 0; }
+    done
+    shopt -u nullglob
+
     if [ -f "${sd}/stats/aseg.stats" ] && [ -f "${sd}/surf/lh.white" ] && [ -f "${sd}/surf/rh.white" ]; then
         return 0
     fi
+    if [ -f "${sd}/mri/aparc+aseg.mgz" ] && [ -f "${sd}/surf/lh.white" ]; then
+        return 0
+    fi
     return 1
+}
+
+# Second pass on sub_to_recon.txt: drop lines that already have FS output (strict gate before sbatch).
+filter_recon_list_remove_complete() {
+    local DATA_ROOT="$1"
+    local DATASET="$2"
+    local long="$3"
+    local listfile="$4"
+
+    [ ! -f "$listfile" ] && return 0
+
+    local BASE="${DATA_ROOT}/${DATASET}"
+    local freesurferDir="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
+    local tmp="${listfile}.__filter__$$"
+    local kept=0
+    local dropped=0
+
+    : > "$tmp"
+    while IFS= read -r line || [ -n "$line" ]; do
+        line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        [ -z "$line" ] && continue
+
+        local fs_subj_dir
+        if [ "$long" = "1" ]; then
+            if ! parse_longitudinal_subject_session "$line"; then
+                printf '%s\n' "$line" >> "$tmp"
+                kept=$((kept + 1))
+                continue
+            fi
+            fs_subj_dir="${freesurferDir}/${_SUBJ_PARSE}"
+        else
+            fs_subj_dir="${freesurferDir}/${line}"
+        fi
+
+        if subject_fs_recon_complete "$fs_subj_dir"; then
+            echo "  [filter] skip already complete: $line → $fs_subj_dir"
+            dropped=$((dropped + 1))
+            continue
+        fi
+        printf '%s\n' "$line" >> "$tmp"
+        kept=$((kept + 1))
+    done < "$listfile"
+
+    mv -f "$tmp" "$listfile"
+    echo "filter_recon_list: kept ${kept} line(s), dropped ${dropped} already complete → ${listfile}"
 }
 
 # Fallback if BIDS did not create ses_subject_use.txt
@@ -81,7 +136,7 @@ check_output_recon_one_dataset() {
     local long="$3"
 
     local BASE="${DATA_ROOT}/${DATASET}"
-    local freesurferDir="${BASE}/derivatives/freesurfer"
+    local freesurferDir="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
 
     rm -f "${BASE}/sub_without_recon_err.txt"
     rm -f "${BASE}/sub_with_recon_output.txt"
@@ -283,6 +338,11 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
             fi
         fi
 
+        # Hard gate: remove completed subjects again right before sbatch (same rules as worker).
+        if [ "${SKIP_FS_REFRESH_BEFORE_SBATCH:-0}" != "1" ]; then
+            filter_recon_list_remove_complete "$DATA_ROOT" "$DATASET" "$SBM_RECON_LONGITUDINAL" "$SUBJECT_LIST"
+        fi
+
         if [ "$LISTS_ONLY" = "1" ]; then
             echo "RECON_LISTS_ONLY — no sbatch."
             continue
@@ -302,12 +362,12 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
         echo "sbatch array 1-$N  SUBJECT_LIST=$SUBJECT_LIST  longitudinal=$SBM_RECON_LONGITUDINAL"
 
         export DATASET SUBJECT_LIST SBM_RECON_LONGITUDINAL
-
-        sbatch \
-            --job-name="recon_${DATASET}" \
-            --array="1-${N}" \
-            --export=ALL \
-            "$STEP_SCRIPT"
+        echo error here
+        #sbatch \
+        #    --job-name="recon_${DATASET}" \
+        #    --array="1-${N}" \
+        #    --export=ALL \
+        #    "$STEP_SCRIPT"
     done <<< "$ENABLED_DATASETS"
 
     echo ""
@@ -351,7 +411,11 @@ else
 fi
 
 BIDS_DIR="${DATA_ROOT}/${DATASET}"
-export SUBJECTS_DIR="${BIDS_DIR}/derivatives/freesurfer"
+if [ -n "${FREESURFER_SUBJECTS_DIR:-}" ]; then
+    export SUBJECTS_DIR="$FREESURFER_SUBJECTS_DIR"
+else
+    export SUBJECTS_DIR="${BIDS_DIR}/derivatives/freesurfer"
+fi
 
 fs_subj_cross="${SUBJECTS_DIR}/${subject}"
 fs_subj_long="${SUBJECTS_DIR}/${subj}"
