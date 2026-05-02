@@ -4,457 +4,120 @@
 #SBATCH --mem-per-cpu=6G
 #SBATCH --cpus-per-task=1
 #SBATCH --time=30:00:00
-# SBATCH --mail-user=<your.email>@monash.edu
-# SBATCH --mail-type=FAIL
-# SBATCH --mail-type=END
-#
-# Login node (no SLURM_ARRAY_TASK_ID):
-#   1) Read CONFIG_FILE — DATA_ROOT, enabled SBM datasets, longitudinal per dataset.
-#   2) Build / refresh recon lists by scanning FreeSurfer + BIDS (same rules as check_output_recon.sh):
-#        sub_without_recon_err.txt, sub_with_recon_output.txt, sub_to_recon.txt
-#        (+ ses_sub_with_recon_output.txt if longitudinal).
-#      Only subjects missing lh.thickness.fwhm10.fsaverage.mgh but with T1w go into sub_to_recon.txt.
-#      Longitudinal: requires ses_subject_use.txt from BIDS (e.g. BIDS_Myelin.m), or BUILD_SES_SUBJECT_USE=1.
-#   3) sbatch array jobs read sub_to_recon.txt only.
-#
-# Optional:
-#   RECON_LISTS_ONLY=1              Refresh lists only; no sbatch.
-#   SKIP_BUILD_LISTS=1             Skip ses/subject_use preparation only; FS scan still runs below.
-#   SKIP_FS_REFRESH_BEFORE_SBATCH=1  Do not rebuild sub_to_recon.txt from FS (not recommended).
-#
-# If FreeSurfer subjects live outside <Dataset>/derivatives/freesurfer, set for login + jobs:
-#   export FREESURFER_SUBJECTS_DIR=/path/to/parentOfSubjectDirs
-# (each subject is $FREESURFER_SUBJECTS_DIR/<subjid>).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STEP_SCRIPT="${SCRIPT_DIR}/$(basename "$0")"
 
-parse_longitudinal_subject_session() {
-    local line="$1"
-    if [[ "$line" =~ ^(.+)(ses-.+)$ ]]; then
-        _SUBJ_PARSE="${BASH_REMATCH[1]}"
-        _SES_PARSE="${BASH_REMATCH[2]}"
-        return 0
-    fi
-    return 1
-}
-
-# Recon is "done" if typical FS products exist (any qcache thickness FWHM, or cortical stats/surfaces).
-subject_fs_recon_complete() {
+# ---------- simple completion check ----------
+subject_done() {
     local sd="$1"
-    [ -d "$sd" ] || return 1
+    #[ -f "${sd}/surf/lh.thickness.fwhm10.fsaverage.mgh" ]
+    [ -f "${sd}/scripts/recon-all.log" ]
+}
 
-    local f
-    shopt -s nullglob
-    for f in "${sd}/surf"/lh.thickness.*.fsaverage.mgh; do
-        [ -f "$f" ] && { shopt -u nullglob; return 0; }
-    done
-    shopt -u nullglob
-
-    if [ -f "${sd}/stats/aseg.stats" ] && [ -f "${sd}/surf/lh.white" ] && [ -f "${sd}/surf/rh.white" ]; then
-        return 0
-    fi
-    if [ -f "${sd}/mri/aparc+aseg.mgz" ] && [ -f "${sd}/surf/lh.white" ]; then
+# ---------- parse longitudinal: sub + ses ----------
+parse_sub_ses() {
+    local line="$1"
+    if [[ "$line" =~ ^(sub-[^/]+)(ses-[^/]+)$ ]]; then
+        subj="${BASH_REMATCH[1]}"
+        ses="${BASH_REMATCH[2]}"
         return 0
     fi
     return 1
 }
 
-# Second pass on sub_to_recon.txt: drop lines that already have FS output (strict gate before sbatch).
-filter_recon_list_remove_complete() {
-    local DATA_ROOT="$1"
-    local DATASET="$2"
-    local long="$3"
-    local listfile="$4"
-
-    [ ! -f "$listfile" ] && return 0
-
-    local BASE="${DATA_ROOT}/${DATASET}"
-    local freesurferDir="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
-    local tmp="${listfile}.__filter__$$"
-    local kept=0
-    local dropped=0
-
-    : > "$tmp"
-    while IFS= read -r line || [ -n "$line" ]; do
-        line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-        [ -z "$line" ] && continue
-
-        local fs_subj_dir
-        if [ "$long" = "1" ]; then
-            if ! parse_longitudinal_subject_session "$line"; then
-                printf '%s\n' "$line" >> "$tmp"
-                kept=$((kept + 1))
-                continue
-            fi
-            fs_subj_dir="${freesurferDir}/${_SUBJ_PARSE}"
-        else
-            fs_subj_dir="${freesurferDir}/${line}"
-        fi
-
-        if subject_fs_recon_complete "$fs_subj_dir"; then
-            echo "  [filter] skip already complete: $line → $fs_subj_dir"
-            dropped=$((dropped + 1))
-            continue
-        fi
-        printf '%s\n' "$line" >> "$tmp"
-        kept=$((kept + 1))
-    done < "$listfile"
-
-    mv -f "$tmp" "$listfile"
-    echo "filter_recon_list: kept ${kept} line(s), dropped ${dropped} already complete → ${listfile}"
-}
-
-# Fallback if BIDS did not create ses_subject_use.txt
-make_ses_subject_use() {
-    local BASE="$1"
-    local subjlist="${BASE}/subject_use.txt"
-    local out="${BASE}/ses_subject_use.txt"
-    if [ ! -f "$subjlist" ]; then
-        echo "Error: missing $subjlist"
-        return 1
-    fi
-    rm -f "$out"
-    while IFS= read -r sub || [ -n "$sub" ]; do
-        sub=$(echo "$sub" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-        [ -z "$sub" ] && continue
-        local subdir="${BASE}/${sub}"
-        [ ! -d "$subdir" ] && echo "Warning: skip $subdir" && continue
-        local sesdir
-        sesdir=$(find "$subdir" -maxdepth 1 -type d -name 'ses-*' 2>/dev/null | sort -V | head -1)
-        [ -z "$sesdir" ] && echo "Warning: no ses-* under $subdir" && continue
-        printf "\n%s%s" "$sub" "$(basename "$sesdir")" >> "$out"
-    done < "$subjlist"
-    echo "Wrote $out"
-}
-
-# Same logic as legacy check_output_recon.sh; paths from DATA_ROOT / DATASET.
-# long=1 → session mode (ses_subject_use.txt lines are subjid + ses-*).
-check_output_recon_one_dataset() {
-    local DATA_ROOT="$1"
-    local DATASET="$2"
-    local long="$3"
-
-    local BASE="${DATA_ROOT}/${DATASET}"
-    local freesurferDir="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
-
-    rm -f "${BASE}/sub_without_recon_err.txt"
-    rm -f "${BASE}/sub_with_recon_output.txt"
-    rm -f "${BASE}/sub_to_recon.txt"
-    rm -f "${BASE}/ses_sub_with_recon_output.txt"
-
-    if [ "$long" = "1" ]; then
-        local SUBJLIST="${BASE}/ses_subject_use.txt"
-        if [ ! -f "$SUBJLIST" ]; then
-            echo "Error: $SUBJLIST not found (create via BIDS or BUILD_SES_SUBJECT_USE=1)"
-            return 1
-        fi
-        while IFS= read -r line || [ -n "$line" ]; do
-            line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            [ -z "$line" ] && continue
-            if ! parse_longitudinal_subject_session "$line"; then
-                echo "Warning: skip unparseable line: $line"
-                continue
-            fi
-            local ses="${_SES_PARSE}"
-            local subj="${_SUBJ_PARSE}"
-
-            if [ ! -f "${freesurferDir}/${subj}/scripts/recon-all.error" ] && \
-               [ -f "${BASE}/${subj}/${ses}/anat/${subj}_${ses}_T1w.nii" ]; then
-                printf "\n%s" "${subj}" >> "${BASE}/sub_without_recon_err.txt"
-            fi
-
-            if subject_fs_recon_complete "${freesurferDir}/${subj}" && \
-               [ -f "${BASE}/${subj}/${ses}/anat/${subj}_${ses}_T1w.nii" ]; then
-                printf "\n%s" "${subj}" >> "${BASE}/sub_with_recon_output.txt"
-                printf "\n%s%s" "${subj}" "${ses}" >> "${BASE}/ses_sub_with_recon_output.txt"
-            fi
-
-            if ! subject_fs_recon_complete "${freesurferDir}/${subj}" && \
-               [ -f "${BASE}/${subj}/${ses}/anat/${subj}_${ses}_T1w.nii" ]; then
-                printf "\n%s%s" "${subj}" "${ses}" >> "${BASE}/sub_to_recon.txt"
-            fi
-        done < "$SUBJLIST"
-    else
-        local SUBJLIST="${BASE}/subject_use.txt"
-        if [ ! -f "$SUBJLIST" ]; then
-            echo "Error: missing $SUBJLIST"
-            return 1
-        fi
-        while IFS= read -r subj || [ -n "$subj" ]; do
-            subj=$(echo "$subj" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            [ -z "$subj" ] && continue
-            local subject=$subj
-
-            if [ ! -f "${freesurferDir}/${subject}/scripts/recon-all.error" ] && \
-               [ -f "${BASE}/${subj}/anat/${subj}_T1w.nii" ]; then
-                printf "\n%s" "${subj}" >> "${BASE}/sub_without_recon_err.txt"
-            fi
-
-            if subject_fs_recon_complete "${freesurferDir}/${subject}" && \
-               [ -f "${BASE}/${subj}/anat/${subj}_T1w.nii" ]; then
-                printf "\n%s" "${subj}" >> "${BASE}/sub_with_recon_output.txt"
-            fi
-
-            if ! subject_fs_recon_complete "${freesurferDir}/${subject}" && \
-               [ -f "${BASE}/${subj}/anat/${subj}_T1w.nii" ]; then
-                printf "\n%s" "${subj}" >> "${BASE}/sub_to_recon.txt"
-            fi
-        done < "$SUBJLIST"
-    fi
-
-    touch "${BASE}/sub_to_recon.txt"
-    local need_cnt
-    need_cnt=$(grep -v '^[[:space:]]*$' "${BASE}/sub_to_recon.txt" | wc -l | tr -d ' ')
-    echo "${DATASET}: check_output → ${need_cnt} subject line(s) need recon (sub_to_recon.txt)"
-    return 0
-}
-
-# Ensure BIDS input lists exist (ses file for longitudinal). Does not scan FreeSurfer.
-# Args: DATA_ROOT, DATASET, longitudinal(0|1)
-ensure_sbm_input_lists() {
-    local DATA_ROOT="$1"
-    local DATASET="$2"
-    local long="$3"
-
-    local BASE="${DATA_ROOT}/${DATASET}"
-
-    if [ "$long" = "1" ]; then
-        if [ ! -f "${BASE}/ses_subject_use.txt" ]; then
-            if [ "${BUILD_SES_SUBJECT_USE:-0}" = "1" ]; then
-                echo "${DATASET}: building ses_subject_use.txt from subject_use.txt"
-                make_ses_subject_use "$BASE" || return 1
-            else
-                echo "Error: ${BASE}/ses_subject_use.txt missing (BIDS e.g. BIDS_Myelin.m or BUILD_SES_SUBJECT_USE=1)"
-                return 1
-            fi
-        else
-            echo "${DATASET}: using ses_subject_use.txt from BIDS (or existing)"
-        fi
-    else
-        if [ ! -f "${BASE}/subject_use.txt" ]; then
-            echo "Error: missing ${BASE}/subject_use.txt"
-            return 1
-        fi
-    fi
-    return 0
-}
-
-# ---------- Mode 1: login ----------
+# ---------- LOGIN MODE ----------
 if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
-    if [ -z "${CONFIG_FILE:-}" ]; then
-        REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
-        if [ -f "$REPO_ROOT/config_hpc.json" ]; then
-            CONFIG_FILE="$REPO_ROOT/config_hpc.json"
-        elif [ -f "$REPO_ROOT/config.json" ]; then
-            CONFIG_FILE="$REPO_ROOT/config.json"
-        elif [ -f "config_hpc.json" ]; then
-            CONFIG_FILE="config_hpc.json"
-        elif [ -f "config.json" ]; then
-            CONFIG_FILE="config.json"
-        else
-            echo "Error: set CONFIG_FILE or place config_hpc.json in repo root."
-            exit 1
-        fi
-    fi
 
-    echo "Using CONFIG_FILE: $CONFIG_FILE"
+    CONFIG_FILE=${CONFIG_FILE:-config.json}
 
-    if ! command -v jq >/dev/null 2>&1; then
-        echo "Error: jq required."
-        exit 1
-    fi
-    if [ ! -f "$CONFIG_FILE" ]; then
-        echo "Error: config not found: $CONFIG_FILE"
-        exit 1
+    if ! command -v jq >/dev/null; then
+        echo "Need jq"; exit 1
     fi
 
     DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-    if [ -z "$DATA_ROOT" ] || [ "$DATA_ROOT" = "null" ]; then
-        echo "Error: data_directories.dataset_root missing"
-        exit 1
-    fi
+    DATASETS=$(jq -r '.datasets | keys[]' "$CONFIG_FILE")
 
-    ENABLED_DATASETS=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true and (.value.sbm_recon != false)) | .key' "$CONFIG_FILE")
-    if [ -z "$ENABLED_DATASETS" ]; then
-        echo "Error: no enabled SBM datasets"
-        exit 1
-    fi
-
-    HPC_ENABLED_RAW=$(jq -r '.execution_mode.hpc_enabled' "$CONFIG_FILE")
-    case "$(echo "$HPC_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in
-        1|true) HPC_ENABLED="1" ;;
-        0|false) HPC_ENABLED="0" ;;
-        *)
-            echo "Error: invalid execution_mode.hpc_enabled: $HPC_ENABLED_RAW"
-            exit 1
-            ;;
-    esac
-
-    export DATA_ROOT HPC_ENABLED CONFIG_FILE
-
-    echo "DATA_ROOT=$DATA_ROOT  HPC_ENABLED=$HPC_ENABLED"
-
-    LISTS_ONLY="$(echo "${RECON_LISTS_ONLY:-0}" | tr '[:upper:]' '[:lower:]')"
-    case "$LISTS_ONLY" in 1|true|yes) LISTS_ONLY=1 ;; *) LISTS_ONLY=0 ;; esac
-
-    while IFS= read -r DATASET; do
-        [ -z "$DATASET" ] && continue
-        echo ""
+    for DATASET in $DATASETS; do
         echo "=== $DATASET ==="
 
-        DATASET_DIR="$DATA_ROOT/$DATASET"
-        if [ ! -d "$DATASET_DIR" ]; then
-            echo "Warning: skip missing $DATASET_DIR"
-            continue
-        fi
+        BASE="${DATA_ROOT}/${DATASET}"
+        FS_DIR="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
 
-        LONG_RAW=$(jq -r --arg ds "$DATASET" '.datasets[$ds].longitudinal // false' "$CONFIG_FILE")
-        case "$(echo "$LONG_RAW" | tr '[:upper:]' '[:lower:]')" in
-            1|true) SBM_RECON_LONGITUDINAL="1" ;;
-            *) SBM_RECON_LONGITUDINAL="0" ;;
-        esac
+        LONG=$(jq -r --arg ds "$DATASET" '.datasets[$ds].longitudinal // false' "$CONFIG_FILE")
+        [[ "$LONG" == "true" ]] && LONG=1 || LONG=0
 
-        if [ "${SKIP_BUILD_LISTS:-0}" != "1" ]; then
-            ensure_sbm_input_lists "$DATA_ROOT" "$DATASET" "$SBM_RECON_LONGITUDINAL" || continue
-        else
-            echo "SKIP_BUILD_LISTS=1 — skipping ses/subject_use checks (still re-scan FS below)"
-        fi
+        LIST_IN="${BASE}/subject_use.txt"
+        [ "$LONG" = "1" ] && LIST_IN="${BASE}/ses_subject_use.txt"
 
-        # Always refresh sub_to_recon.txt from disk before sbatch so finished subjects are excluded
-        # (fixes stale lists and SKIP_BUILD_LISTS).
-        if [ "${SKIP_FS_REFRESH_BEFORE_SBATCH:-0}" != "1" ]; then
-            echo "Scanning FreeSurfer outputs → sub_to_recon.txt"
-            check_output_recon_one_dataset "$DATA_ROOT" "$DATASET" "$SBM_RECON_LONGITUDINAL" || true
-        fi
+        OUT_LIST="${BASE}/sub_to_recon.txt"
+        rm -f "$OUT_LIST"
 
-        SUBJECT_LIST="$DATASET_DIR/sub_to_recon.txt"
-        ov=$(jq -r --arg ds "$DATASET" '.datasets[$ds].recon_subject_list // .datasets[$ds].sbm_recon_subject_list // empty' "$CONFIG_FILE")
-        if [ -n "$ov" ] && [ "$ov" != "null" ]; then
-            if [[ "$ov" != /* ]]; then
-                SUBJECT_LIST="$DATASET_DIR/$ov"
+        while read -r line; do
+            line=$(echo "$line" | xargs)
+            [ -z "$line" ] && continue
+
+            if [ "$LONG" = "1" ]; then
+                parse_sub_ses "$line" || continue
+                fsdir="${FS_DIR}/${subj}"
+                t1="${BASE}/${subj}/${ses}/anat/${subj}_${ses}_T1w.nii"
+                out="${subj}${ses}"
             else
-                SUBJECT_LIST="$ov"
+                fsdir="${FS_DIR}/${line}"
+                t1="${BASE}/${line}/anat/${line}_T1w.nii"
+                out="$line"
             fi
-        fi
 
-        # Hard gate: remove completed subjects again right before sbatch (same rules as worker).
-        if [ "${SKIP_FS_REFRESH_BEFORE_SBATCH:-0}" != "1" ]; then
-            filter_recon_list_remove_complete "$DATA_ROOT" "$DATASET" "$SBM_RECON_LONGITUDINAL" "$SUBJECT_LIST"
-        fi
+            if [ -f "$t1" ] && ! subject_done "$fsdir"; then
+                echo "$out" >> "$OUT_LIST"
+            fi
 
-        if [ "$LISTS_ONLY" = "1" ]; then
-            echo "RECON_LISTS_ONLY — no sbatch."
+        done < "$LIST_IN"
+
+        N=$(grep -c . "$OUT_LIST" 2>/dev/null || echo 0)
+
+        if [ "$N" -eq 0 ]; then
+            echo "Nothing to run"
             continue
         fi
 
-        if [ ! -f "$SUBJECT_LIST" ]; then
-            echo "Warning: missing $SUBJECT_LIST"
-            continue
-        fi
+        echo "Submitting $N jobs"
 
-        N=$(grep -v '^[[:space:]]*$' "$SUBJECT_LIST" | wc -l | tr -d ' ')
-        if [ -z "$N" ] || [ "$N" -eq 0 ]; then
-            echo "Nothing to recon (empty sub_to_recon.txt / all have FS output)."
-            continue
-        fi
+        export DATA_ROOT DATASET SUBJECT_LIST="$OUT_LIST" LONG
 
-        echo "sbatch array 1-$N  SUBJECT_LIST=$SUBJECT_LIST  longitudinal=$SBM_RECON_LONGITUDINAL"
+        sbatch --array=1-"$N" "$STEP_SCRIPT"
+    done
 
-        export DATASET SUBJECT_LIST SBM_RECON_LONGITUDINAL
-        echo error here
-        #sbatch \
-        #    --job-name="recon_${DATASET}" \
-        #    --array="1-${N}" \
-        #    --export=ALL \
-        #    "$STEP_SCRIPT"
-    done <<< "$ENABLED_DATASETS"
-
-    echo ""
-    if [ "$LISTS_ONLY" = "1" ]; then
-        echo "Lists refreshed. Config: $CONFIG_FILE"
-    else
-        echo "Done. Config: $CONFIG_FILE"
-    fi
     exit 0
 fi
 
-# ---------- Mode 2: array worker ----------
-if [ -z "${DATA_ROOT:-}" ]; then echo "Error: DATA_ROOT unset"; exit 1; fi
-if [ -z "${DATASET:-}" ]; then echo "Error: DATASET unset"; exit 1; fi
-if [ -z "${SUBJECT_LIST:-}" ]; then echo "Error: SUBJECT_LIST unset"; exit 1; fi
-if [ ! -f "$SUBJECT_LIST" ]; then echo "Error: $SUBJECT_LIST not found"; exit 1; fi
-if [ -z "${HPC_ENABLED:-}" ]; then echo "Error: HPC_ENABLED unset"; exit 1; fi
+# ---------- WORKER MODE ----------
+subject=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$SUBJECT_LIST" | xargs)
 
-subject=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "${SUBJECT_LIST}")
-subject=$(echo "$subject" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-if [ -z "$subject" ]; then
-    echo "Error: empty line at task ${SLURM_ARRAY_TASK_ID}"
-    exit 1
-fi
+BASE="${DATA_ROOT}/${DATASET}"
+FS_DIR="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
+export SUBJECTS_DIR="$FS_DIR"
 
-echo -e "\t\t\t --------------------------- "
-echo -e "\t\t\t ----- ${SLURM_ARRAY_TASK_ID} ${subject} ----- "
-echo -e "\t\t\t --------------------------- \n"
-
-if [ "${SBM_RECON_LONGITUDINAL:-0}" = "1" ] || [ "$(echo "${SBM_RECON_LONGITUDINAL:-0}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
-    if parse_longitudinal_subject_session "$subject"; then
-        subj="${_SUBJ_PARSE}"
-        ses="${_SES_PARSE}"
-    else
-        echo "Error: longitudinal line must be subject+ses-* (got: ${subject})"
-        exit 1
-    fi
+if [ "$LONG" = "1" ]; then
+    parse_sub_ses "$subject" || exit 1
+    fsdir="${FS_DIR}/${subj}"
+    t1="${BASE}/${subj}/${ses}/anat/${subj}_${ses}_T1w.nii"
+    run_id="$subj"
 else
-    subj=$subject
-    ses=""
+    fsdir="${FS_DIR}/${subject}"
+    t1="${BASE}/${subject}/anat/${subject}_T1w.nii"
+    run_id="$subject"
 fi
 
-BIDS_DIR="${DATA_ROOT}/${DATASET}"
-if [ -n "${FREESURFER_SUBJECTS_DIR:-}" ]; then
-    export SUBJECTS_DIR="$FREESURFER_SUBJECTS_DIR"
-else
-    export SUBJECTS_DIR="${BIDS_DIR}/derivatives/freesurfer"
+if subject_done "$fsdir"; then
+    echo "Skip $subject (already done)"
+    exit 0
 fi
 
-fs_subj_cross="${SUBJECTS_DIR}/${subject}"
-fs_subj_long="${SUBJECTS_DIR}/${subj}"
+module purge
+module load freesurfer/7.1.0
 
-if [ -z "$ses" ]; then
-    if subject_fs_recon_complete "$fs_subj_cross"; then
-        echo "Skip ${subject}: FreeSurfer subject dir already complete (${fs_subj_cross})"
-        exit 0
-    fi
-else
-    if subject_fs_recon_complete "$fs_subj_long"; then
-        echo "Skip ${subj}: FreeSurfer subject dir already complete (${fs_subj_long})"
-        exit 0
-    fi
-fi
-
-if [ "$HPC_ENABLED" = "1" ] || [ "$(echo "$HPC_ENABLED" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
-    echo "Loading FreeSurfer modules..."
-    module purge
-    module load freesurfer/7.1.0
-else
-    echo "Skipping module load (HPC off)."
-fi
-
-if [ ! -d "$SUBJECTS_DIR" ]; then
-    mkdir -p "$SUBJECTS_DIR"
-fi
+mkdir -p "$SUBJECTS_DIR"
 cd "$SUBJECTS_DIR"
 
-if [ -z "$ses" ]; then
-    if [ -d "${SUBJECTS_DIR}/${subject}" ]; then
-        mv "${SUBJECTS_DIR}/${subject}" "${SUBJECTS_DIR}/err${subject}"
-    fi
-    recon-all -i "${BIDS_DIR}/${subject}/anat/${subject}_T1w.nii" -s "${subject}" -all -qcache
-else
-    if [ -d "${SUBJECTS_DIR}/${subj}" ]; then
-        mv "${SUBJECTS_DIR}/${subj}" "${SUBJECTS_DIR}/err${subj}"
-    fi
-    recon-all -i "${BIDS_DIR}/${subj}/${ses}/anat/${subj}_${ses}_T1w.nii" -s "${subj}" -all -qcache
-fi
-
-echo "${subject}"
+recon-all -i "$t1" -s "$run_id" -all -qcache
