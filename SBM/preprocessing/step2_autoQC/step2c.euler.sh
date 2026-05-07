@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# This script requires Bash; users often invoke it as `sh step2c.euler.sh`.
+# If so, re-exec with Bash to preserve Bash-specific syntax below.
+[ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
+
 #SBATCH --job-name=euler_number
 #SBATCH --account=kg98
 #SBATCH --ntasks=1
@@ -11,17 +15,46 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STEP_SCRIPT="${SCRIPT_DIR}/$(basename "$0")"
 
+resolve_config_file() {
+    if [[ -n "${CONFIG_FILE:-}" ]]; then
+        [[ -f "$CONFIG_FILE" ]] && return 0
+        echo "Error: CONFIG_FILE is set but file not found: $CONFIG_FILE"
+        return 1
+    fi
+
+    local dir="$SCRIPT_DIR"
+    while [[ -n "$dir" ]]; do
+        if [[ -f "$dir/config_hpc.json" ]]; then
+            CONFIG_FILE="$dir/config_hpc.json"
+            return 0
+        fi
+        if [[ -f "$dir/config.json" ]]; then
+            CONFIG_FILE="$dir/config.json"
+            return 0
+        fi
+        local parent
+        parent="$(dirname "$dir")"
+        [[ "$parent" == "$dir" ]] && break
+        dir="$parent"
+    done
+
+    if [[ -f "config_hpc.json" ]]; then
+        CONFIG_FILE="config_hpc.json"
+        return 0
+    fi
+    if [[ -f "config.json" ]]; then
+        CONFIG_FILE="config.json"
+        return 0
+    fi
+
+    echo "Error: set CONFIG_FILE or place config_hpc.json/config.json in repo path."
+    return 1
+}
+
 # ---------- LOGIN: for DATASET in $ENABLED ----------
 if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
 
-    if [[ -z "${CONFIG_FILE:-}" ]]; then
-        REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-        if [[ -f "$REPO_ROOT/config_hpc.json" ]]; then CONFIG_FILE="$REPO_ROOT/config_hpc.json"
-        elif [[ -f "$REPO_ROOT/config.json" ]]; then CONFIG_FILE="$REPO_ROOT/config.json"
-        elif [[ -f "config_hpc.json" ]]; then CONFIG_FILE="config_hpc.json"
-        elif [[ -f "config.json" ]]; then CONFIG_FILE="config.json"
-        else echo "Error: set CONFIG_FILE or place config_hpc.json in repo root."; exit 1; fi
-    fi
+    resolve_config_file || exit 1
     command -v jq >/dev/null || { echo "Need jq"; exit 1; }
 
     DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
