@@ -51,7 +51,7 @@ resolve_config_file() {
 }
 
 # ---------- LOGIN: sbatch once per enabled dataset ----------
-if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
+if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
 
     resolve_config_file || exit 1
     command -v jq >/dev/null || { echo "Need jq"; exit 1; }
@@ -78,8 +78,10 @@ if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
 fi
 
 # ---------- WORKER ----------
-[[ -z "${SLURM_JOB_ID:-}" ]] && { echo "Run from login node without SLURM to submit jobs, or use sbatch."; exit 1; }
-
+if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
+    echo "Error: missing SLURM_ARRAY_TASK_ID"
+    exit 1
+fi
 DATASET="${DATASET:?Set DATASET}"
 DATA_ROOT="${DATA_ROOT:?Set DATA_ROOT}"
 

@@ -80,7 +80,7 @@ mriqc_missing_long() {
 }
 
 # ---------- LOGIN: build sub_to_runMRIQC.txt + sbatch ----------
-if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
+if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
 
     resolve_config_file || exit 1
     command -v jq >/dev/null || { echo "Need jq"; exit 1; }
@@ -159,7 +159,9 @@ if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
         echo "$DATASET: $N jobs -> $OUT_LIST"
         export DATA_ROOT DATASET LONG HPC_ENABLED SUBJECT_LIST="$OUT_LIST"
         if [[ "$HPC_ENABLED" == "1" ]]; then
+			
             sbatch --array=1-"$N" "$STEP_SCRIPT"
+			#sh "$STEP_SCRIPT"
         else
             echo "$DATASET: running locally with max $MAX_PARALLEL parallel jobs"
             pids=()
@@ -177,8 +179,11 @@ if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
     exit 0
 fi
 
-# ---------- WORKER (array task) ----------
-[[ -z "${SLURM_ARRAY_TASK_ID:-}" ]] && { echo "Run from login node without SLURM to build lists and submit, or use sbatch --array=1-N."; exit 1; }
+# ---------- WORKER MODE ----------
+if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
+    echo "Error: missing SLURM_ARRAY_TASK_ID"
+    exit 1
+fi
 
 DATASET="${DATASET:?Set DATASET}"
 SUBJECT_LIST="${SUBJECT_LIST:?Set SUBJECT_LIST}"
@@ -190,7 +195,7 @@ line=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$SUBJECT_LIST" | xargs)
 
 BIDS_DIR="${DATA_ROOT}/${DATASET}"
 OUT_DIR="${BIDS_DIR}/derivatives/MRIQC"
-WORK_DIR="${SCRIPT_DIR}/work/${DATASET}"
+WORK_DIR="${OUT_DIR}/work"
 
 echo "---------------------------"
 echo "----- ${SLURM_ARRAY_TASK_ID} ${line} (${DATASET}) -----"
@@ -206,10 +211,10 @@ fi
 if [[ "$LONG" -eq 1 ]]; then
     read -r plabel sess <<<"$line"
     mriqc "$BIDS_DIR" "$OUT_DIR" participant --participant_label "$plabel" --session-id "$sess" \
-        --n_procs 12 --n_cpus 6 --mem_gb 12 -m T1w --hmc-fsl --correct-slice-timing --work-dir "$WORK_DIR"
+        --n_procs 12 --n_cpus 6 --mem_gb 12 -m T1w --work-dir "$WORK_DIR" --bids-filter-file $BIDS_DIR
 else
     mriqc "$BIDS_DIR" "$OUT_DIR" participant --participant_label "$line" \
-        --n_procs 12 --n_cpus 6 --mem_gb 12 -m T1w --work-dir "$WORK_DIR"
+        --n_procs 12 --n_cpus 6 --mem_gb 12 -m T1w --work-dir "$WORK_DIR" --bids-filter-file $BIDS_DIR
 fi
 
 echo "----- DONE -----"
