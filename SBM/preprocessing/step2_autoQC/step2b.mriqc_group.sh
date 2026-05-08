@@ -72,8 +72,8 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
         fi
         echo "$DATASET: sbatch MRIQC group → $OUT_DIR"
         export CONFIG_FILE DATA_ROOT DATASET HPC_ENABLED
-        #sbatch "$STEP_SCRIPT"
-        sh "$STEP_SCRIPT"
+        sbatch "$STEP_SCRIPT"
+        #sh "$STEP_SCRIPT"
     done
     exit 0
 fi
@@ -90,7 +90,7 @@ DATA_ROOT="${DATA_ROOT:?Set DATA_ROOT}"
 BIDS_DIR="${DATA_ROOT}/${DATASET}"
 OUT_DIR="${BIDS_DIR}/derivatives/MRIQC"
 GROUP_DIR="${OUT_DIR}/group"
-WORK_DIR="${SCRIPT_DIR}/work/${DATASET}.group"
+WORK_DIR="${OUT_DIR}/work"
 
 mkdir -p "$OUT_DIR" "$GROUP_DIR" "$WORK_DIR"
 
