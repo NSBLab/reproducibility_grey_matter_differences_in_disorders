@@ -54,7 +54,10 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
     fi
 
     DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-    DATASETS=$(jq -r '.datasets | keys[]' "$CONFIG_FILE")
+    HPC_ENABLED=$(jq -r '.execution_mode.hpc_enabled // false' "$CONFIG_FILE")
+    MAX_PARALLEL=$(jq -r '.execution_mode.local_settings.max_parallel_jobs // 4' "$CONFIG_FILE")
+    # Only run datasets that are explicitly enabled in the config
+    DATASETS=$(jq -r '.datasets | to_entries[] | select((.value.enabled // false) == true) | .key' "$CONFIG_FILE")
 
     for DATASET in $DATASETS; do
         echo "=== $DATASET ==="
@@ -72,7 +75,7 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
         rm -f "$OUT_LIST"
 
         while read -r line; do
-            line=$(echo "$line" | xargs)
+            line=$(echo "$line" | tr -d '\r' | xargs)
             [ -z "$line" ] && continue
 
             if [ "$LONG" = "1" ]; then
@@ -99,11 +102,25 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
             continue
         fi
 
-        echo "Submitting $N jobs"
+        export DATA_ROOT DATASET SUBJECT_LIST="$OUT_LIST" LONG HPC_ENABLED
 
-        export DATA_ROOT DATASET SUBJECT_LIST="$OUT_LIST" LONG
-
-        sbatch --array=1-"$N" "$STEP_SCRIPT"
+        if [ "$HPC_ENABLED" = "true" ]; then
+            echo "Submitting $N jobs via SLURM"
+            sbatch --array=1-"$N" "$STEP_SCRIPT"
+        else
+            echo "Running $N subjects locally (max $MAX_PARALLEL in parallel)"
+            pids=()
+            for i in $(seq 1 "$N"); do
+                SLURM_ARRAY_TASK_ID=$i bash "$STEP_SCRIPT" &
+                pids+=($!)
+                if [ "${#pids[@]}" -ge "$MAX_PARALLEL" ]; then
+                    wait "${pids[0]}"
+                    pids=("${pids[@]:1}")
+                fi
+            done
+            wait
+            echo "Done: $DATASET"
+        fi
     done
 
     exit 0
@@ -132,8 +149,10 @@ if subject_done "$fsdir"; then
     exit 0
 fi
 
-module purge
-module load freesurfer/7.1.0
+if [ "${HPC_ENABLED:-false}" = "true" ]; then
+    module purge
+    module load freesurfer/7.1.0
+fi
 
 mkdir -p "$SUBJECTS_DIR"
 cd "$SUBJECTS_DIR"

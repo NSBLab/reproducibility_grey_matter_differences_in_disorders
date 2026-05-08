@@ -1,129 +1,82 @@
 {
-  "_comment": "Configuration file for neuroimaging analysis pipeline",
-  "_comment_usage": "Modify the paths, settings, and enabled stages according to your setup",
-  "_comment_datasets": "Add your datasets here with their paths and script names",
-  
   "data_directories": {
-    "_comment": "Set the root path where all your datasets are stored",
-    "_comment_dataset_root": "This is the base directory containing all your dataset folders",
-    "dataset_root": "/mnt/c/Users/tcao0011/VBM/multiple_dataset",
-    
-    "_comment": "Relative paths to pipeline directories (usually don't need to change)",
+    "dataset_root": "/mnt/c/Users/tcao0011/VBM/reproducibility_grey_matter_differences_in_disorders/data",
     "data": "./data",
     "data_BIDS": "./data_BIDS",
     "VBM": "./VBM",
     "SBM": "./SBM",
-    "utils": "./utils"
+    "utils": "./utils",
+    "conda_env": ""
   },
-  
+
   "datasets": {
-    "_comment": "Add your datasets here. Each dataset needs:",
-    "_comment_dataset_structure": "1. 'path': where the dataset is located (use ${dataset_root} variable)",
-    "_comment_dataset_structure": "2. 'bids_script': MATLAB script to convert to BIDS format",
-    "_comment_dataset_structure": "3. 'extract_script': MATLAB script to extract subjects",
-    "_comment_dataset_structure": "4. 'enabled': set to true to include this dataset in analysis",
-    
     "Myelin": {
       "path": "${dataset_root}/Myelin",
       "bids_script": "BIDS_Myelin.m",
-      "extract_script": "extract_sub_Myelin.m",
-      "enabled": true
+      "vbm_extract_script": "extract_sub_Myelin.m",
+      "enabled": true,
+      "longitudinal": true,
+      "combat_group": "psy"
     },
     "RD": {
       "path": "${dataset_root}/RD",
       "bids_script": "BIDS_RD.m",
-      "extract_script": "extract_sub_RD.m",
-      "enabled": false
+      "vbm_extract_script": "extract_sub_RD.m",
+      "enabled": true,
+      "longitudinal": false,
+      "combat_group": "psy"
     },
     "OASIS3": {
       "path": "${dataset_root}/OASIS3",
       "bids_script": "BIDS_OASIS3.m",
-      "extract_script": "extract_sub_OASIS3.m",
+      "vbm_extract_script": "extract_sub_OASIS3.m",
       "enabled": false,
       "longitudinal": true,
       "combat_group": "psy"
     }
-    
-    "_comment_add_more_datasets": "To add more datasets, copy the structure above and modify:",
-    "_comment_example": "\"YourDatasetName\": {",
-    "_comment_example": "  \"path\": \"${dataset_root}/YourDatasetName\",",
-    "_comment_example": "  \"bids_script\": \"BIDS_YourDatasetName.m\",",
-    "_comment_example": "  \"extract_script\": \"extract_sub_YourDatasetName.m\",",
-    "_comment_example": "  \"enabled\": true",
-    "_comment_example": "}"
   },
- 
-  
+
   "output_directories": {
-    "_comment": "Set where to save results and figures",
-    "_comment_paths": "Use absolute paths for best compatibility",
-    "results": "/mnt/c/Users/tcao0011/VBM/results",
-    "figures": "/mnt/c/Users/tcao0011/VBM/figures",
+    "results": "/mnt/c/Users/tcao0011/VBM/reproducibility_grey_matter_differences_in_disorders/results",
+    "figures": "/mnt/c/Users/tcao0011/VBM/reproducibility_grey_matter_differences_in_disorders/figures",
     "temp": "./temp"
   },
-  
+
   "execution_mode": {
-    "_comment": "Choose between 'local' or 'slurm' execution",
-    "_comment_local": "Use 'local' for running on your own machine",
-    "_comment_slurm": "Use 'slurm' for running on a cluster with SLURM scheduler",
     "type": "local",
-    
-    "_comment_slurm_settings": "SLURM cluster settings (only used if type='slurm')",
+    "hpc_enabled": false,
     "slurm_settings": {
-      "_comment": "SLURM partition name (check with 'sinfo' command)",
       "partition": "default",
-      "_comment": "Maximum time limit for jobs (format: DD-HH:MM:SS)",
       "time": "24:00:00",
-      "_comment": "Memory per job",
       "mem": "8G",
-      "_comment": "Number of CPUs per job",
       "cpus_per_task": 4,
-      "_comment": "SLURM account (leave empty if not needed)",
       "account": "",
-      "_comment": "Email notification type: NONE, BEGIN, END, FAIL, ALL",
       "mail_type": "END",
-      "_comment": "Email address for notifications",
       "mail_user": ""
     },
-    
-    "_comment_local_settings": "Local execution settings (only used if type='local')",
     "local_settings": {
-      "_comment": "Maximum number of jobs to run in parallel",
       "max_parallel_jobs": 4,
-      "_comment": "Use GNU parallel for better parallelization (requires GNU parallel to be installed)",
       "use_gnu_parallel": false
     }
   },
-  
+
   "analysis_settings": {
-    "_comment": "Analysis parameters that affect the pipeline",
-    "_comment_age": "Age range for subject inclusion (inclusive)",
     "age_range": {
       "min": 18,
       "max": 60
     },
-    "_comment_subjects": "Minimum number of subjects required per site",
     "minimum_subjects_per_site": 20,
-    "_comment_threshold": "Masking threshold for analysis (0.0 to 1.0)",
-    "masking_threshold": 0.2
+    "masking_threshold": 0.2,
+    "cat12_quality_threshold": 2.8,
+    "smoothing_kernel": 6,
+    "harmonize": 1,
+    "mask_diagnostic_group": "psy",
+    "num_permutations": 10
   },
-  
+
   "software_paths": {
-    "_comment": "Paths to required software (use absolute paths)",
-    "_comment_matlab": "Path to MATLAB executable",
-    "matlab": "/mnt/c/Program Files/MATLAB/R2023b/bin/matlab.exe",
-    "_comment_freesurfer": "Path to FreeSurfer installation (leave empty if not using SBM)",
+    "matlab": "/mnt/c/'Program Files'/MATLAB/R2026a/bin/matlab.exe",
     "freesurfer": "",
-    "_comment_cat12": "Path to CAT12 installation (leave empty if not using VBM)",
     "cat12": ""
-  },
-  
-  "_comment_quick_start": "=== QUICK START GUIDE ===",
-  "_comment_quick_start_1": "1. Set 'dataset_root' to your dataset directory",
-  "_comment_quick_start_2": "2. Add your datasets in the 'datasets' section",
-  "_comment_quick_start_3": "3. Set software paths (MATLAB, FreeSurfer, CAT12)",
-  "_comment_quick_start_4": "4. Choose execution mode (local/slurm)",
-  "_comment_quick_start_5": "5. Adjust analysis settings as needed",
-  "_comment_quick_start_6": "6. Enable/disable pipeline stages as needed",
-  "_comment_quick_start_7": "7. Run: run_pipeline('full') in MATLAB"
-} 
+  }
+}

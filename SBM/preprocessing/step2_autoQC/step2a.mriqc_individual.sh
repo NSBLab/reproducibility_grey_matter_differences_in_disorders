@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/bin/bash
 #SBATCH --job-name=MRIQC_individual
 #SBATCH --account=kg98
 #SBATCH --ntasks=1
@@ -26,6 +26,10 @@ resolve_config_file() {
             CONFIG_FILE="$dir/config_hpc.json"
             return 0
         fi
+        if [[ -f "$dir/config_linux.json" ]]; then
+            CONFIG_FILE="$dir/config_linux.json"
+            return 0
+        fi
         if [[ -f "$dir/config.json" ]]; then
             CONFIG_FILE="$dir/config.json"
             return 0
@@ -38,6 +42,10 @@ resolve_config_file() {
 
     if [[ -f "config_hpc.json" ]]; then
         CONFIG_FILE="config_hpc.json"
+        return 0
+    fi
+    if [[ -f "config_linux.json" ]]; then
+        CONFIG_FILE="config_linux.json"
         return 0
     fi
     if [[ -f "config.json" ]]; then
@@ -146,7 +154,7 @@ if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
             continue
         fi
 
-        echo "$DATASET: $N jobs → $OUT_LIST"
+        echo "$DATASET: $N jobs â†’ $OUT_LIST"
         export DATA_ROOT DATASET LONG HPC_ENABLED SUBJECT_LIST="$OUT_LIST"
         sbatch --array=1-"$N" "$STEP_SCRIPT"
     done

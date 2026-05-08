@@ -1,66 +1,74 @@
 {
-    "data_directories": {
-      "dataset_root": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data",
-      "data": ".\\data",
-      "data_BIDS": ".\\data_BIDS",
-      "VBM": ".\\VBM",
-      "SBM": ".\\SBM",
-      "utils": ".\\utils"
+  "data_directories": {
+    "dataset_root": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data",
+    "data": ".\\data",
+    "data_BIDS": ".\\data_BIDS",
+    "VBM": ".\\VBM",
+    "SBM": ".\\SBM",
+    "utils": ".\\utils",
+    "conda_env": ""
+  },
+
+  "datasets": {
+    "Myelin": {
+      "path": "${dataset_root}\\Myelin",
+      "bids_script": "BIDS_Myelin.m",
+      "vbm_extract_script": "extract_sub_Myelin.m",
+      "enabled": true,
+      "longitudinal": true,
+      "combat_group": "psy"
     },
-    
-    "datasets": {
-      "Myelin": {
-        "path": "${dataset_root}\\Myelin",
-        "bids_script": "BIDS_Myelin.m",
-        "vbm_extract_script": "extract_sub_Myelin.m",
-        "enabled": true,
-        "longitudinal": true
-      },
-      "RD": {
-        "path": "${dataset_root}\\RD",
-        "bids_script": "BIDS_RD.m",
-        "vbm_extract_script": "extract_sub_RD.m",
-        "enabled": true,
-        "longitudinal": false
-      }
-    },
-    
-    
-    "output_directories": {
-      "results": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data\\results",
-      "figures": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data\\figures",
-      "temp": ".\\temp"
-    },
-    
-    "execution_mode": {
-      "type": "local",
-      "slurm_settings": {
-        "partition": "default",
-        "time": "24:00:00",
-        "mem": "8G",
-        "cpus_per_task": 4,
-        "account": "",
-        "mail_type": "END",
-        "mail_user": ""
-      },
-      "local_settings": {
-        "max_parallel_jobs": 4,
-        "use_gnu_parallel": false
-      }
-    },
-    
-    "analysis_settings": {
-      "age_range": {
-        "min": 18,
-        "max": 60
-      },
-      "minimum_subjects_per_site": 20,
-      "masking_threshold": 0.2
-    },
-    
-    "software_paths": {
-      "matlab": "C:\\Program Files\\MATLAB\\R2023b\\bin\\matlab.exe",
-      "freesurfer": "",
-      "cat12": ""
+    "RD": {
+      "path": "${dataset_root}\\RD",
+      "bids_script": "BIDS_RD.m",
+      "vbm_extract_script": "extract_sub_RD.m",
+      "enabled": true,
+      "longitudinal": false,
+      "combat_group": "psy"
     }
+  },
+
+  "output_directories": {
+    "results": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data\\results",
+    "figures": "C:\\Users\\tcao0011\\VBM\\reproducibility_grey_matter_differences_in_disorders\\data\\figures",
+    "temp": ".\\temp"
+  },
+
+  "execution_mode": {
+    "type": "local",
+    "hpc_enabled": false,
+    "slurm_settings": {
+      "partition": "default",
+      "time": "24:00:00",
+      "mem": "8G",
+      "cpus_per_task": 4,
+      "account": "",
+      "mail_type": "END",
+      "mail_user": ""
+    },
+    "local_settings": {
+      "max_parallel_jobs": 4,
+      "use_gnu_parallel": false
+    }
+  },
+
+  "analysis_settings": {
+    "age_range": {
+      "min": 18,
+      "max": 60
+    },
+    "minimum_subjects_per_site": 20,
+    "masking_threshold": 0.2,
+    "cat12_quality_threshold": 2.8,
+    "smoothing_kernel": 6,
+    "harmonize": 1,
+    "mask_diagnostic_group": "psy",
+    "num_permutations": 10
+  },
+
+  "software_paths": {
+    "matlab": "C:\\Program Files\\MATLAB\\R2026a\\bin\\matlab.exe",
+    "freesurfer": "",
+    "cat12": ""
   }
+}
