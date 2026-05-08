@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 #SBATCH --job-name=MRIQC_individual
 #SBATCH --account=kg98
 #SBATCH --ntasks=1
@@ -88,6 +88,8 @@ if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
     DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
     HPC_ENABLED_RAW=$(jq -r '.execution_mode.hpc_enabled // empty' "$CONFIG_FILE")
     case "$(echo "$HPC_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in 1|true) HPC_ENABLED="1" ;; *) HPC_ENABLED="0" ;; esac
+    MAX_PARALLEL=$(jq -r '.execution_mode.local_settings.max_parallel_jobs // 4' "$CONFIG_FILE")
+    [[ "$MAX_PARALLEL" =~ ^[0-9]+$ ]] || MAX_PARALLEL=4
 
     ENABLED=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE")
     [[ -z "$ENABLED" ]] && { echo "No enabled datasets."; exit 1; }
@@ -154,9 +156,23 @@ if [[ -z "${SLURM_JOB_ID:-}" ]] && [[ -z "${SLURM_ARRAY_TASK_ID:-}" ]]; then
             continue
         fi
 
-        echo "$DATASET: $N jobs â†’ $OUT_LIST"
+        echo "$DATASET: $N jobs -> $OUT_LIST"
         export DATA_ROOT DATASET LONG HPC_ENABLED SUBJECT_LIST="$OUT_LIST"
-        sbatch --array=1-"$N" "$STEP_SCRIPT"
+        if [[ "$HPC_ENABLED" == "1" ]]; then
+            sbatch --array=1-"$N" "$STEP_SCRIPT"
+        else
+            echo "$DATASET: running locally with max $MAX_PARALLEL parallel jobs"
+            pids=()
+            for i in $(seq 1 "$N"); do
+                SLURM_ARRAY_TASK_ID=$i bash "$STEP_SCRIPT" &
+                pids+=($!)
+                if [[ "${#pids[@]}" -ge "$MAX_PARALLEL" ]]; then
+                    wait "${pids[0]}"
+                    pids=("${pids[@]:1}")
+                fi
+            done
+            wait
+        fi
     done
     exit 0
 fi
