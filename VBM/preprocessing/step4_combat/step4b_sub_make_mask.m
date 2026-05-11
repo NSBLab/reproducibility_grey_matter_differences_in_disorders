@@ -1,24 +1,18 @@
-function step4b_make_mask(dataset_root, smoothKernel)
-% STEP4B: Create masks for COMBAT processing
-% This function creates masks for each combat group using SPM statistical approach
-% This function use SPM to make a group mask for all the subject so need to have the package installed
-%
-% Input: 
-%   dataset_root - Root directory containing the datasets
-%   smoothKernel - Smoothing kernel size in mm
+function step4b_make_mask(config_file)
+% Create SPM masks for each COMBAT group. Requires SPM12.
 
-% Validate inputs
-if nargin < 2
-    error('Both dataset_root and smoothKernel are required');
+if nargin < 1 || isempty(config_file)
+    error('config_file required');
 end
 
-if isempty(dataset_root)
-    error('dataset_root cannot be empty');
-end
+this_dir = fileparts(mfilename('fullpath'));
+repo_main = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(repo_main));
+pipeline_ensure_paths();
 
-if isempty(smoothKernel)
-    error('smoothKernel cannot be empty');
-end
+config = pipeline_load_config(config_file);
+dataset_root = config.data_directories.dataset_root;
+smoothKernel = config.analysis_settings.smoothing_kernel;
 
 fprintf('=== STEP4B: MAKE MASKS ===\n');
 fprintf('Dataset root: %s\n', dataset_root);

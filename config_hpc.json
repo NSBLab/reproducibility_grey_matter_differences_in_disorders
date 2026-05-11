@@ -6,6 +6,7 @@
       "VBM": "./VBM",
       "SBM": "./SBM",
       "utils": "./utils",
+      "atlas_dir": "/projects/kg98/trangc/atlases/Human_standard_surface",
         "conda_env": "/scratch/kg98/trangc/miniconda/bin/activate"
     },
     

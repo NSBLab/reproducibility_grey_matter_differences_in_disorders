@@ -10,3 +10,4 @@ function estimate_tiv_job(subReport_cell, tiv_filename)
     matlabbatch{1}.spm.tools.cat.tools.calcvol.calcvol_name = tiv_filename;
 
 spm_jobman('run',matlabbatch);
+end

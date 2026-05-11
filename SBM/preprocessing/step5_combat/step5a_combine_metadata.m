@@ -1,11 +1,11 @@
-function step4a_combine_metadata(config)
+function step5a_combine_metadata(config)
 % Combine metadata from all enabled datasets and write group-specific files for COMBAT.
 
 if nargin < 1 || isempty(config)
     error('No config passed');
 end
 
-fprintf('=== STEP4A: COMBINE METADATA ===\n');
+fprintf('=== STEP5A: COMBINE METADATA ===\n');
 
 dataset_root = config.data_directories.dataset_root;
 smoothKernels = config.analysis_settings.smoothing_kernel;
@@ -18,12 +18,12 @@ end
 fprintf('Processing %d enabled datasets: %s\n', length(enabled_datasets), strjoin(enabled_datasets, ', '));
 
 all_variable_names = {'subj_id', 'dataset', 'site', 'diagnosis', 'age', 'sex', ...
-    'site_string', 'sex_string', 'ses', 'diagnosis_string'};
+    'site_string', 'sex_string', 'diagnosis_string', 'EN'};
 
 metadata_tables = {};
 for i = 1:length(enabled_datasets)
     dataset_name = enabled_datasets{i};
-    metadata_file = fullfile(dataset_root, dataset_name, [dataset_name, '_dems.csv']);
+    metadata_file = fullfile(dataset_root, dataset_name, [dataset_name, '_qdec_extended.csv']);
 
     if ~isfile(metadata_file)
         warning('Metadata file not found: %s. Skipping...', metadata_file);
@@ -38,9 +38,6 @@ for i = 1:length(enabled_datasets)
         continue;
     end
 
-    if ~ismember('ses', t.Properties.VariableNames)
-        t.ses = repmat({''}, height(t), 1);
-    end
     metadata_tables{end+1} = t(:, all_variable_names);
 end
 
@@ -51,9 +48,9 @@ end
 fprintf('  Combining metadata from %d datasets...\n', length(metadata_tables));
 metadata = vertcat(metadata_tables{:});
 
-writetable(metadata, fullfile(dataset_root, 'metadataVBM.csv'));
+writetable(metadata, fullfile(dataset_root, 'metadataSBM.csv'));
 fprintf('  Combined metadata saved to: %s (%d subjects)\n', ...
-    fullfile(dataset_root, 'metadataVBM.csv'), height(metadata));
+    fullfile(dataset_root, 'metadataSBM.csv'), height(metadata));
 
 % Split by combat group from config and write group files
 group_datasets = get_group_datasets(config);
@@ -61,7 +58,7 @@ group_names = fieldnames(group_datasets);
 for g = 1:length(group_names)
     gname = group_names{g};
     gdata = metadata(ismember(metadata.dataset, group_datasets.(gname)), :);
-    gfile = fullfile(dataset_root, ['metadataVBM_', gname, '.csv']);
+    gfile = fullfile(dataset_root, ['metadataSBM_', gname, '.csv']);
     writetable(gdata, gfile);
     fprintf('  %s group: %s (%d subjects)\n', gname, gfile, height(gdata));
 end
@@ -73,16 +70,15 @@ for smoothKernel = smoothKernels
     if ~exist(deriv_dir, 'dir'); mkdir(deriv_dir); end
     if ~exist(combat_dir, 'dir'); mkdir(combat_dir); end
     for g = 1:length(group_names)
-        src = fullfile(dataset_root, ['metadataVBM_', group_names{g}, '.csv']);
-        copyfile(src, fullfile(deriv_dir, ['metadataVBM_', group_names{g}, '.csv']));
-        copyfile(src, fullfile(combat_dir, ['metadataVBM_', group_names{g}, '.csv']));
+        src = fullfile(dataset_root, ['metadataSBM_', group_names{g}, '.csv']);
+        copyfile(src, fullfile(deriv_dir, ['metadataSBM_', group_names{g}, '.csv']));
+        copyfile(src, fullfile(combat_dir, ['metadataSBM_', group_names{g}, '.csv']));
     end
 end
 
 % Process extended metadata
 fprintf('  Processing extended metadata...\n');
 datasetList = unique(metadata.dataset);
-metadata.CAT             = cell(height(metadata), 1);
 metadata.antipsychotic   = cell(height(metadata), 1);
 metadata.moodstabiliser  = cell(height(metadata), 1);
 metadata.antidepression  = cell(height(metadata), 1);
@@ -91,11 +87,11 @@ metadata.treatment       = cell(height(metadata), 1);
 metadata.ageOnset        = NaN(height(metadata), 1);
 metadata.illnessDuration = NaN(height(metadata), 1);
 
-cell_fields = {'CAT', 'antipsychotic', 'moodstabiliser', 'antidepression', 'antianxiety', 'treatment'};
+cell_fields = {'antipsychotic', 'moodstabiliser', 'antidepression', 'antianxiety', 'treatment'};
 
 for iSet = 1:length(datasetList)
     dataset_name = char(datasetList(iSet));
-    extendFile = fullfile(dataset_root, dataset_name, [dataset_name, '_dems_extended.csv']);
+    extendFile = fullfile(dataset_root, dataset_name, [dataset_name, '_qdec_extended.csv']);
 
     if ~exist(extendFile, 'file')
         continue;
@@ -125,17 +121,13 @@ for iSet = 1:length(datasetList)
     end
 end
 
-if ismember('ageOnset', metadata.Properties.VariableNames)
-    metadata.ageOnset(metadata.ageOnset == 0 | metadata.ageOnset == 9999) = NaN;
-end
-if ismember('illnessDuration', metadata.Properties.VariableNames)
-    metadata.illnessDuration(metadata.illnessDuration <= 0) = NaN;
-end
+metadata.ageOnset(metadata.ageOnset == 0 | metadata.ageOnset == 9999) = NaN;
+metadata.illnessDuration(metadata.illnessDuration <= 0) = NaN;
 
-writetable(metadata, fullfile(dataset_root, 'metadataVBM_extended.csv'));
-fprintf('  Extended metadata saved to: %s\n', fullfile(dataset_root, 'metadataVBM_extended.csv'));
+writetable(metadata, fullfile(dataset_root, 'metadataSBM_extended.csv'));
+fprintf('  Extended metadata saved to: %s\n', fullfile(dataset_root, 'metadataSBM_extended.csv'));
 
-fprintf('=== STEP4A COMPLETED ===\n');
+fprintf('=== STEP5A COMPLETED ===\n');
 fprintf('Total subjects: %d\n', height(metadata));
 end
 

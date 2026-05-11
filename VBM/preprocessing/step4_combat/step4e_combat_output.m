@@ -1,14 +1,8 @@
 function step4e_combat_output(config)
-% STEP4E: Create COMBAT output files
-% This function takes the COMBAT harmonized data and creates individual
-% NIfTI files for each subject in each combat group
-%
-% Input: config - Configuration structure containing paths and settings
+% Write COMBAT-harmonized NIfTI files per subject per combat group.
 
-% Use config passed as parameter, or load from file if not provided
 if nargin < 1 || isempty(config)
-    % Fallback: Load configuration from config.json file
-    config = jsondecode(fileread('../../config.json'));
+    error('No config passed');
 end
 
 fprintf('=== STEP4E: COMBAT OUTPUT CREATION ===\n');

@@ -12,3 +12,4 @@ function smooth_job(subNifti_cell, smoothKernel)
     matlabbatch{1}.spm.spatial.smooth.prefix = ['s',num2str(smoothKernel)];
 
 spm_jobman('run',matlabbatch);
+end

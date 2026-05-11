@@ -1,30 +1,31 @@
 #!/bin/bash
-#SBATCH --job-name=COMBAT_run
+#SBATCH --job-name=COMBAT_surface_run
 #SBATCH --account=kg98
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-# SBATCH --partition=genomics
-# SBATCH --qos=irq
-#S BATCH --time=0:12:00
 #SBATCH --time=20:05:00
-#SBATCH --mail-user=ashlea.segal@monash.edu
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-type=END
 #SBATCH --export=ALL
-# SBATCH --mem-per-cpu=4096
 #SBATCH --mem=240000
 
-# ACtivate anaconda environment
-#. /usr/local/anaconda/5.1.0-Python3.6-gcc5/etc/profile.d/conda.sh
-#conda activate /scratch/kg98/Ashlea/virtual_envs/neighbourhood_deformation
+# Worker: runs COMBAT harmonization for one combat group and hemisphere
+# (invoked by step5c_COMBAT_run_sbatch_send.sh)
 
-source /scratch/kg98/trangc/miniconda/bin/activate
-#conda activate /fs02/kg98/trangc/NARPS/orig/ds001734/conda_dir/miniconda/conda/envs/myPythonEnv 
-#
-script_dir=/home/trangc/kg98/trangc/VBM/code
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
+GROUP="${GROUP:?Set GROUP}"
+HEMI="${HEMI:?Set HEMI}"
 
-if [ "$surface" -eq 1 ]; then 
-python ${script_dir}/COMBAT_surface_run.py "${smoothKernel}" "${maskDiag}" "${hemi}" 
-else
-python ${script_dir}/COMBAT_run.py "${smoothKernel}" "${maskDiag}" 
-fi
+DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
+smoothKernel=$(jq -r '.analysis_settings.smoothing_kernel' "$CONFIG_FILE")
+conda_env=$(jq -r '.data_directories.conda_env' "$CONFIG_FILE")
+
+OUT_DIR="${DATA_ROOT}/derivatives/freesurfer/s${smoothKernel}COMBAT"
+
+[[ -f "${DATA_ROOT}/metadataSBM_${GROUP}.csv" ]] \
+    || { echo "Missing: ${DATA_ROOT}/metadataSBM_${GROUP}.csv"; exit 1; }
+[[ -f "${OUT_DIR}/${HEMI}_thickness_s${smoothKernel}_${GROUP}.txt" ]] \
+    || { echo "Missing: ${OUT_DIR}/${HEMI}_thickness_s${smoothKernel}_${GROUP}.txt"; exit 1; }
+
+source "$conda_env"
+
+python "$SCRIPT_DIR/COMBAT_surface_run.py" "$smoothKernel" "$GROUP" "$HEMI" "$DATA_ROOT"

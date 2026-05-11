@@ -1,15 +1,9 @@
 function step4c_combat_input(config)
-% STEP4C: Create metadata and combine surface inputs for COMBAT
-% This function prepares the data for COMBAT harmonization by:
-% 1. Reading metadata and creating COMBAT input files
-% 2. Loading smoothed images and applying mask
-% 3. Creating the masked data matrix for COMBAT processing
-%
-% Input: config - Configuration structure containing paths and settings
+% Prepare masked data matrix for COMBAT: reads smoothed images, applies group mask,
+% and writes anat_s<k>mwp1_T1w_masked.txt per combat group.
 
-% Use config passed as parameter, or load from file if not provided
 if nargin < 1 || isempty(config)
-    error('No config found');
+    error('No config passed');
 end
 
 fprintf('=== STEP4C: COMBAT INPUT PREPARATION ===\n');
@@ -67,8 +61,11 @@ end
 
 fprintf('  Reading metadata from: %s\n', metadataFilename);
 opts = detectImportOptions(metadataFilename);
-opts = setvaropts(opts, 'ses', 'FillValue', '');
+if ismember('ses', opts.VariableNames)
+    opts = setvaropts(opts, 'ses', 'FillValue', '');
+end
 metadata = readtable(metadataFilename, opts);
+has_ses = ismember('ses', metadata.Properties.VariableNames);
 
 % Load mask
 maskFile = fullfile(demoDir, 'mask.nii');
@@ -86,20 +83,16 @@ map = zeros(sum(mask(:)), height(metadata));
 
 for iSub = 1:height(metadata)
     subj_id = metadata.subj_id{iSub};
-    ses = metadata.ses{iSub};
     dataset = metadata.dataset{iSub};
-    
-    fprintf('    Processing subject %d/%d: %s\n', iSub, height(metadata), subj_id);
-    
-    % Determine file path based on session
-    if strcmp(ses, '')
-        % Single session
+    ses = '';
+    if has_ses; ses = metadata.ses{iSub}; end
+
+    if isempty(ses)
         mapFile = fullfile(dataDir, dataset, subj_id, 'anat', ...
-            ['s', num2str(smoothKernel), 'mwp1', subj_id, '_T1w.nii']);
+            sprintf('s%dmwp1%s_T1w.nii', smoothKernel, subj_id));
     else
-        % Multiple sessions
         mapFile = fullfile(dataDir, dataset, subj_id, ses, 'anat', ...
-            ['s', num2str(smoothKernel), 'mwp1', subj_id, '_', ses, '_T1w.nii']);
+            sprintf('s%dmwp1%s_%s_T1w.nii', smoothKernel, subj_id, ses));
     end
     
     % Check if file exists

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Dispatcher: reads combat groups from config, submits COMBAT_run_sbatch.sh per group
+# Dispatcher: reads combat groups from config, submits COMBAT_run_sbatch.sh
+# per group and hemisphere.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BATCH_SCRIPT="${SCRIPT_DIR}/COMBAT_run_sbatch.sh"
@@ -14,6 +15,7 @@ if [ -z "$CONFIG_FILE" ]; then
         exit 1
     fi
 fi
+
 command -v jq >/dev/null || { echo "Need jq"; exit 1; }
 [[ -f "$BATCH_SCRIPT" ]] || { echo "Error: Missing $BATCH_SCRIPT"; exit 1; }
 
@@ -27,12 +29,14 @@ echo "Using CONFIG_FILE: $CONFIG_FILE"
 echo "Combat groups: $COMBAT_GROUPS"
 
 for GROUP in $COMBAT_GROUPS; do
-    echo "=== $GROUP ==="
-    export CONFIG_FILE GROUP HPC_ENABLED
+    for HEMI in lh rh; do
+        echo "=== ${GROUP} ${HEMI} ==="
+        export CONFIG_FILE GROUP HEMI
 
-    if [[ "$HPC_ENABLED" == "1" ]]; then
-        sbatch --job-name="combat_${GROUP}" "$BATCH_SCRIPT"
-    else
-        bash "$BATCH_SCRIPT"
-    fi
+        if [[ "$HPC_ENABLED" == "1" ]]; then
+            sbatch --job-name="combat_${GROUP}_${HEMI}" "$BATCH_SCRIPT"
+        else
+            bash "$BATCH_SCRIPT"
+        fi
+    done
 done
