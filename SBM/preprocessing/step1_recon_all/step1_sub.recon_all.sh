@@ -31,7 +31,6 @@ subject=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$SUBJECT_LIST" | xargs)
 
 BASE="${DATA_ROOT}/${DATASET}"
 FS_DIR="${BASE}/derivatives/freesurfer"
-export SUBJECTS_DIR="$FS_DIR"
 
 if [ "$LONG" = "1" ]; then
     parse_sub_ses "$subject" || exit 1
@@ -54,6 +53,9 @@ if [ "${HPC_ENABLED:-false}" = "true" ]; then
     module load freesurfer/7.1.0
 fi
 
+# Set SUBJECTS_DIR after module load — the FreeSurfer module resets it to the
+# system default, so this must come after to point to the dataset derivatives.
+export SUBJECTS_DIR="$FS_DIR"
 mkdir -p "$SUBJECTS_DIR"
 cd "$SUBJECTS_DIR"
 

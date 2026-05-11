@@ -47,4 +47,4 @@ if [ "${HPC_ENABLED:-0}" = "1" ] || [ "$(echo "${HPC_ENABLED:-}" | tr '[:upper:]
     module load spm12/matlab2021a.r7771-v1
 fi
 
-matlab -nodisplay -r "cd ('$SCRIPT_DIR'); CAT12_preprocessing_job('$T1_name')"
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); CAT12_preprocessing_job('$T1_name')"
