@@ -1,192 +1,140 @@
-%% read demographic information and extract subjects that satisfy criteria:
-% - age: 18-60
-% - each site has at least 20 subjects
-
+function extract_sub_surface_RD(config)
+% Extract subjects passing SBM QC and write qdec metadata for RD.
+%
+% Reads subjects_pass_visualisation.txt (created from
+% subjects_pass_Euler_number_check.txt written by step2c.euler.sh, after
+% removing subjects that fail visual surface inspection), looks up Euler
+% numbers for the EN column, applies minimum subjects per diagnosis, and
+% writes <study>_qdec_extended.csv.
+%
 % Trang Cao, Neural Systems and Behaviour Lab, Monash University, 2024.
 
-%% make BIDS format of usable files
-clear all
-close all
+study = 'RD';
 
-study = 'RestDepress';
-
-% define const
-LOWAGE = 18; % lower bound of age
-UPAGE = 60; % upper bound of age
-NSUB = 20; % lowest number of subject per site per phenotype
-
-
-
-% Open the input file for reading
-imageFile = readtable(['/projects/kg98/trangc/VBM/data/', study, '/participants.tsv'], "FileType","text",'Delimiter', '\t');
-% subject in the age range 18-60 at scanning time
-imageFile.adult = imageFile.age >= LOWAGE & imageFile.age <= UPAGE;
-adult.ID = unique(imageFile.participant_id(imageFile.adult == 1));
-
-% list of sites and diagnose
-[diag, ~, indexDiag] = unique(imageFile.group);
-diagList = 1:2;
-
-nDiag = size(diag,1);
-
-
-    for iDiag = 1: nDiag % control and proband in the diag list
-
-        % adult subjects in each phenotype in each site
-        condition = ismember(adult.ID,...
-            imageFile.participant_id(indexDiag == iDiag));
-
-        % number of adult subjects in each phenotype in each site
-        nSubPerPhenotypePerSite( iDiag) = sum(condition);
-
-    end
-
-
-% the site and phenotype has >= NSUB HC subjects
-siteSizeCondition = nSubPerPhenotypePerSite >= NSUB;
-
-adult.use =  zeros(size(adult.ID));
-
-
-        for iDiag = diagList
-
-            if siteSizeCondition( iDiag) == 1
-
-                % adult subjects in each phenotype in each site
-                condition = ismember(adult.ID,...
-                    imageFile.participant_id( indexDiag == iDiag));
-                adult.use(condition) = 1;
-            end
-
-        end
-
-
-
-useID = adult.ID(adult.use==1);
-imageFile.useID = ismember(imageFile.participant_id,useID);
-imageFile.useFile = imageFile.useID == 1 ;
-[iUseFile col va] = find(imageFile.useFile);
-
-idUse = imageFile.participant_id(iUseFile);
-[useSub iUnique iID] = unique(idUse);
-
-
-useFolder = cellstr(imageFile.participant_id(iUseFile(iUnique),:));
-
-
-
-
-
-%% create metadata to run VBM after proprocessing and cat report
-
-% create metadata
-% read euler number
-holesFile = readtable(['/projects/kg98/trangc/VBM/data/', study, '/derivatives/euler/', study, '_holes.csv'], 'ReadVariableNames', false);
-if ~all(arrayfun(@(x) strcmp(holesFile.Var1{x}(1:end-3),holesFile.Var1{x+1}(1:end-3)),1:2:length(holesFile.Var1)))
-    error('Error. Do not have both hemispheres.')
+if nargin < 1 || isempty(config)
+    error('No config passed');
 end
 
-inSubLh = 1:2:length(holesFile.Var1);
-eulerNumber = mean([2 - 2*holesFile.Var2(inSubLh), 2 - 2*holesFile.Var2(inSubLh+1)],2);
-meanEN = mean(2 - 2*holesFile.Var2);
-SD_EN = std(2 - 2*holesFile.Var2);
-ENsubHighEN = eulerNumber((eulerNumber > (meanEN-3.29*SD_EN)));
-subHighEN = arrayfun(@(x) holesFile.Var1{inSubLh(x)}(1:end-3), find(eulerNumber > (meanEN-3.29*SD_EN)), 'UniformOutput', false);
+dataset_root = config.data_directories.dataset_root;
+study_path   = fullfile(dataset_root, study);
+NSUB         = config.analysis_settings.minimum_subjects_per_site;
 
-% exclude after visualize
-mark = readtable(fullfile('/projects/kg98/trangc/VBM/data', study,'sub_with_recon_output_marked.txt'),'ReadVariableNames', false);
-[lia locb] = ismember(subHighEN, mark.Var1);
-if size(mark,2) == 2
-    subHighEN(strcmp(mark.Var2(locb),'x')) = [];
+if ~isfield(config.datasets, study) || ~isfield(config.datasets.(study), 'path')
+    error('Path not found in config for dataset %s', study);
 end
+source_path = config.datasets.(study).path;
 
-[La indexHighQRinUseFolder] = ismember(subHighEN, useFolder); % index in use Folder is same as in iUnique
-% indexHighQRinUseFolder = indexHighQRinUseFolder(indexHighQRinUseFolder>0);
-% subHighEN = useFolder(indexHighQRinUseFolder);
+fprintf('=== EXTRACTING SURFACE SUBJECTS FOR %s ===\n', study);
 
-metadata.subj_id = cellstr(useFolder(indexHighQRinUseFolder));
+% --- Euler numbers (for EN column in output) ---
+holes_file = fullfile(source_path, 'derivatives', 'euler', sprintf('%s_holes.csv', study));
+if ~exist(holes_file, 'file')
+    error('Euler holes file not found: %s', holes_file);
+end
+holesFile = readtable(holes_file, 'ReadVariableNames', false);
+if ~all(arrayfun(@(x) strcmp(holesFile.Var1{x}(1:end-3), holesFile.Var1{x+1}(1:end-3)), 1:2:length(holesFile.Var1)))
+    error('Euler file does not have both hemispheres for each subject.');
+end
+inSubLh     = 1:2:length(holesFile.Var1);
+eulerNumber = mean([2 - 2*holesFile.Var2(inSubLh), 2 - 2*holesFile.Var2(inSubLh+1)], 2);
+subNames    = arrayfun(@(x) holesFile.Var1{inSubLh(x)}(1:end-3), 1:length(inSubLh), 'UniformOutput', false);
 
-metadata.dataset = cellstr(repmat(study,size(indexHighQRinUseFolder)));
+% subjects_pass_Euler_number_check.txt is written by step2c.euler.sh.
+% subjects_pass_visualisation.txt is created from that file by manually
+% removing subjects that fail visual surface inspection (step3).
+
+% --- Subject list (after visual inspection) ---
+fn = fullfile(study_path, 'subjects_pass_visualisation.txt');
+if ~exist(fn, 'file')
+    error('Missing %s — create from subjects_pass_Euler_number_check.txt after visual inspection', fn);
+end
+useFolder = readlines(fn);
+useFolder = cellstr(useFolder(useFolder ~= ""));
+fprintf('Subject list after visualisation: %d subjects\n', numel(useFolder));
+
+% Look up EN for each visualisation-passed subject
+[~, enIdx] = ismember(useFolder, subNames);
+ENvalues   = nan(numel(useFolder), 1);
+ENvalues(enIdx > 0) = eulerNumber(enIdx(enIdx > 0));
+
+% --- Demographics ---
+demographic_file = fullfile(source_path, 'participants.tsv');
+if ~exist(demographic_file, 'file')
+    error('Demographic file not found: %s', demographic_file);
+end
+imageFile = readtable(demographic_file, 'FileType', 'text', 'Delimiter', '\t');
+
+% --- Build metadata ---
+n = numel(useFolder);
+metadata.subj_id     = useFolder;
+metadata.dataset     = repmat({study}, n, 1);
 metadata.site_string = metadata.dataset;
-metadata.site = cellstr(repmat('41',size(indexHighQRinUseFolder)));
-metadata.age = imageFile.age(iUseFile(iUnique(indexHighQRinUseFolder)));
-metadata.sex_string = cellstr(imageFile.gender(iUseFile(iUnique(indexHighQRinUseFolder))));
-metadata.sex = cellstr(num2str(strcmp(metadata.sex_string,'m')));
-metadata.sex_string(strcmp(metadata.sex_string,'m')) = {'M'};
-metadata.sex_string(strcmp(metadata.sex_string,'f')) = {'F'};
+metadata.site        = repmat({'41'}, n, 1);
+metadata.age         = zeros(n, 1);
+metadata.sex_string  = cell(n, 1);
+metadata.diag_raw    = cell(n, 1);
 
-% find diagnosis for used subjects
-diag
-metadata.diagnosis_string = cellstr(imageFile.group(iUseFile(iUnique(indexHighQRinUseFolder))));
-[La Lb] = ismember(metadata.diagnosis_string, diag);
-control = 'control';
-[iControl ic] = find(strcmp(diag, control));
-metadata.diagnosis = Lb;
-metadata.diagnosis(Lb==iControl) = 1;
-metadata.diagnosis(Lb~=1) = 6;
-diagString = {'HC', 'BD', 'SCA',...
-    'SCZ', 'ASD', 'MDD' };
-metadata.diagnosis_string(:,1) = diagString(metadata.diagnosis);
-metadata.diagnosis = cellstr(num2str(metadata.diagnosis));
-
-
-%% check number of subjects
-siteCat = unique(metadata.site);
-
-diagCat = unique(metadata.diagnosis);
-
-
-    for iDiag = 1: length(diagCat) % control and proband in the diag list
-
-        % number of adult subjects in each phenotype in each site
-        nSiteDiag( iDiag) = sum( strcmp(metadata.diagnosis, diagCat(iDiag)));
-
-    end
-
-
-% the site and phenotype has >= NSUB HC subjects
-nSiteDiagCondition = nSiteDiag >= NSUB;
-nSiteCondition = nSiteDiagCondition(:,1) & any(nSiteDiagCondition(:,2:end),2);
-
-siteCon = siteCat(nSiteCondition);
-
-%%
-metadata.con = zeros(size(metadata.subj_id));
-for iSite = 1:length(siteCon)
-     siteDiag = diagCat(nSiteDiagCondition(iSite,:)); % diag for this site
-  
-    for iDiag = 2: length(siteDiag) % control and proband in the diag list
-
-
-        condition = ismember(metadata.site,siteCon(iSite)) & ...
-            ismember(metadata.diagnosis, siteDiag([1,iDiag]));
-
-        metadata.con(condition) = 1;
-
-        qdecTable = cell2table([metadata.subj_id(condition), metadata.diagnosis(condition), ...
-            metadata.sex(condition), cellstr(num2str(metadata.age(condition)))], "VariableNames",["fsid", "diagnosis",...
-            "sex", "age"]);
-        writetable(qdecTable,['/projects/kg98/trangc/VBM/data/', study, ...
-            '/qdec_table_', char(unique(metadata.site_string(condition))),'_',char(siteDiag(iDiag)),'.dat'],'Delimiter','tab');
-
+for i = 1:n
+    row = find(strcmp(cellstr(imageFile.participant_id), useFolder{i}), 1);
+    if ~isempty(row)
+        metadata.age(i)        = imageFile.age(row);
+        metadata.sex_string{i} = imageFile.gender{row};
+        metadata.diag_raw{i}   = imageFile.group{row};
+    else
+        warning('Subject %s not found in demographic file', useFolder{i});
+        metadata.age(i)        = NaN;
+        metadata.sex_string{i} = 'Unknown';
+        metadata.diag_raw{i}   = 'Unknown';
     end
 end
-% metadata.con(ismember(metadata.subj_id,'sub-2467ZEJ')) = 0;% remove sub with wrong site info, see note.txt
-metadata.con = logical(metadata.con);
-metadata.EN = cellstr(num2str(ENsubHighEN(ismember(subHighEN,metadata.subj_id(metadata.con)))));
 
+metadata.sex = arrayfun(@(x) num2str(strcmp(x, 'm')), metadata.sex_string, 'UniformOutput', false);
+metadata.sex_string(strcmp(metadata.sex_string, 'm')) = {'M'};
+metadata.sex_string(strcmp(metadata.sex_string, 'f')) = {'F'};
 
-%%
-metaTable = cell2table([metadata.subj_id(metadata.con), metadata.dataset(metadata.con), ...
-    metadata.site(metadata.con), metadata.diagnosis(metadata.con), cellstr(num2str(metadata.age(metadata.con))),...
-    metadata.sex(metadata.con), metadata.site_string(metadata.con), metadata.sex_string(metadata.con),...
-    metadata.diagnosis_string(metadata.con), metadata.EN], "VariableNames",["subj_id", "dataset", "site", "diagnosis",...
-    "age", "sex", "site_string", "sex_string",  "diagnosis_string", "EN" ]);
+[diag, ~, ~] = unique(imageFile.group);
+control_idx  = find(strcmp(diag, 'control'));
+metadata.diagnosis_code = zeros(n, 1);
+for i = 1:n
+    di = find(strcmp(diag, metadata.diag_raw{i}));
+    if ~isempty(di)
+        if di == control_idx
+            metadata.diagnosis_code(i) = 1;
+        else
+            metadata.diagnosis_code(i) = 6;
+        end
+    end
+end
+diagLabels = {'HC','BD','SCA','SCZ','ASD','MDD'};
+metadata.diagnosis_string = arrayfun(@(x) diagLabels{x}, metadata.diagnosis_code, 'UniformOutput', false);
+metadata.diagnosis        = arrayfun(@(x) num2str(x), metadata.diagnosis_code, 'UniformOutput', false);
 
-writetable(metaTable,['/projects/kg98/trangc/VBM/data/', study, '/',study,'_qdec_extended.csv']);
-%% test
-% print first line and last line of metaTable and compare with original
-% info - need manual check
-testsub1 = metaTable(1,:)
-testsub2 = metaTable(end,:)
-imageFile(ismember(cellstr(imageFile.participant_id),[testsub1.subj_id,testsub2.subj_id]),:)
+% --- Minimum subjects per diagnosis ---
+diagCat            = unique(metadata.diagnosis);
+nSiteDiag          = cellfun(@(d) sum(strcmp(metadata.diagnosis, d)), diagCat);
+nSiteDiagCondition = nSiteDiag >= NSUB;
+
+metadata.con = false(n, 1);
+for i = 1:n
+    di = find(strcmp(diagCat, metadata.diagnosis{i}));
+    if ~isempty(di) && nSiteDiagCondition(di)
+        metadata.con(i) = true;
+    end
+end
+fprintf('Final inclusion: %d subjects\n', sum(metadata.con));
+
+% --- Write qdec table ---
+metaTable = cell2table([...
+    metadata.subj_id(metadata.con), metadata.dataset(metadata.con), ...
+    metadata.site(metadata.con), metadata.diagnosis(metadata.con), ...
+    cellstr(num2str(metadata.age(metadata.con))), ...
+    metadata.sex(metadata.con), metadata.site_string(metadata.con), ...
+    metadata.sex_string(metadata.con), metadata.diagnosis_string(metadata.con), ...
+    arrayfun(@(x) num2str(x), ENvalues(metadata.con), 'UniformOutput', false)], ...
+    'VariableNames', ["subj_id","dataset","site","diagnosis","age","sex","site_string","sex_string","diagnosis_string","EN"]);
+
+out_file = fullfile(study_path, sprintf('%s_qdec_extended.csv', study));
+writetable(metaTable, out_file);
+fprintf('Saved: %s\n', out_file);
+fprintf('=== DONE %s ===\n', study);
+end

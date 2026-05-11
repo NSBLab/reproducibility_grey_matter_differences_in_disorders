@@ -1,61 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=MRIQC_individual
-#SBATCH --account=kg98
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --time=0-1:00:00
-#SBATCH --export=ALL
-#SBATCH --mem-per-cpu=8000
-# MRIQC T1w is CPU-only; do not request GPU here or sbatch may fail with "node configuration is not available".
-# Override partition/qos/account on your cluster by editing the lines above or: sbatch --partition=X --array=1-N ./step2a.mriqc_individual.sh
-# Submit from login: builds lists then sbatch --array=1-N (CLI overrides #SBATCH --array).
+# Dispatcher: builds subject lists and submits step2a_sub.mriqc_individual.sh
+[ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-STEP_SCRIPT="${SCRIPT_DIR}/$(basename "$0")"
-
-resolve_config_file() {
-    if [[ -n "${CONFIG_FILE:-}" ]]; then
-        [[ -f "$CONFIG_FILE" ]] && return 0
-        echo "Error: CONFIG_FILE is set but file not found: $CONFIG_FILE"
-        return 1
-    fi
-
-    local dir="$SCRIPT_DIR"
-    while [[ -n "$dir" ]]; do
-        if [[ -f "$dir/config_hpc.json" ]]; then
-            CONFIG_FILE="$dir/config_hpc.json"
-            return 0
-        fi
-        if [[ -f "$dir/config_linux.json" ]]; then
-            CONFIG_FILE="$dir/config_linux.json"
-            return 0
-        fi
-        if [[ -f "$dir/config.json" ]]; then
-            CONFIG_FILE="$dir/config.json"
-            return 0
-        fi
-        local parent
-        parent="$(dirname "$dir")"
-        [[ "$parent" == "$dir" ]] && break
-        dir="$parent"
-    done
-
-    if [[ -f "config_hpc.json" ]]; then
-        CONFIG_FILE="config_hpc.json"
-        return 0
-    fi
-    if [[ -f "config_linux.json" ]]; then
-        CONFIG_FILE="config_linux.json"
-        return 0
-    fi
-    if [[ -f "config.json" ]]; then
-        CONFIG_FILE="config.json"
-        return 0
-    fi
-
-    echo "Error: set CONFIG_FILE or place config_hpc.json/config.json in repo path."
-    return 1
-}
+SUB_SCRIPT="${SCRIPT_DIR}/step2a_sub.mriqc_individual.sh"
 
 subject_done() { [[ -f "$1/scripts/recon-all.log" ]]; }
 
@@ -69,152 +17,100 @@ parse_sub_ses() {
     return 1
 }
 
-mriqc_missing_cross() {
-    local base="$1" sub="$2"
-    [[ ! -f "${base}/derivatives/MRIQC/${sub}_T1w.html" ]]
-}
+mriqc_missing_cross() { [[ ! -f "${1}/derivatives/MRIQC/${2}_T1w.html" ]]; }
+mriqc_missing_long()  { [[ ! -f "${1}/derivatives/MRIQC/${2}_${3}_T1w.html" ]]; }
 
-mriqc_missing_long() {
-    local base="$1" sub="$2" ses="$3"
-    [[ ! -f "${base}/derivatives/MRIQC/${sub}_${ses}_T1w.html" ]]
-}
+if [ -z "$CONFIG_FILE" ]; then
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    if [ -f "$REPO_ROOT/config_hpc.json" ]; then
+        CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+    else
+        echo "Error: CONFIG_FILE not set and config_hpc.json not found."
+        echo "Checked: $REPO_ROOT/config_hpc.json"
+        exit 1
+    fi
+fi
+command -v jq >/dev/null || { echo "Need jq"; exit 1; }
 
-# ---------- LOGIN: build sub_to_runMRIQC.txt + sbatch ----------
-if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
+DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
+HPC_ENABLED_RAW=$(jq -r '.execution_mode.hpc_enabled // empty' "$CONFIG_FILE")
+case "$(echo "$HPC_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in 1|true) HPC_ENABLED="1" ;; *) HPC_ENABLED="0" ;; esac
+MAX_PARALLEL=$(jq -r '.execution_mode.local_settings.max_parallel_jobs // 4' "$CONFIG_FILE")
+[[ "$MAX_PARALLEL" =~ ^[0-9]+$ ]] || MAX_PARALLEL=4
 
-    resolve_config_file || exit 1
-    command -v jq >/dev/null || { echo "Need jq"; exit 1; }
+ENABLED=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE")
+[[ -z "$ENABLED" ]] && { echo "No enabled datasets."; exit 1; }
 
-    DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-    HPC_ENABLED_RAW=$(jq -r '.execution_mode.hpc_enabled // empty' "$CONFIG_FILE")
-    case "$(echo "$HPC_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in 1|true) HPC_ENABLED="1" ;; *) HPC_ENABLED="0" ;; esac
-    MAX_PARALLEL=$(jq -r '.execution_mode.local_settings.max_parallel_jobs // 4' "$CONFIG_FILE")
-    [[ "$MAX_PARALLEL" =~ ^[0-9]+$ ]] || MAX_PARALLEL=4
+for DATASET in $ENABLED; do
+    BASE="${DATA_ROOT}/${DATASET}"
+    FS_DIR="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
+    LONG=$(jq -r --arg ds "$DATASET" '.datasets[$ds].longitudinal // false' "$CONFIG_FILE")
+    [[ "$LONG" == "true" ]] && LONG=1 || LONG=0
 
-    ENABLED=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE")
-    [[ -z "$ENABLED" ]] && { echo "No enabled datasets."; exit 1; }
+    LIST_IN="${BASE}/subject_use.txt"
+    [[ "$LONG" -eq 1 ]] && LIST_IN="${BASE}/ses_subject_use.txt"
+    if [[ ! -f "$LIST_IN" ]]; then
+        echo "Skip $DATASET: missing $LIST_IN"
+        continue
+    fi
 
-    for DATASET in $ENABLED; do
-        BASE="${DATA_ROOT}/${DATASET}"
-        FS_DIR="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
-        LONG=$(jq -r --arg ds "$DATASET" '.datasets[$ds].longitudinal // false' "$CONFIG_FILE")
-        [[ "$LONG" == "true" ]] && LONG=1 || LONG=0
-
-        LIST_IN="${BASE}/subject_use.txt"
-        [[ "$LONG" -eq 1 ]] && LIST_IN="${BASE}/ses_subject_use.txt"
-        if [[ ! -f "$LIST_IN" ]]; then
-            echo "Skip $DATASET: missing $LIST_IN"
-            continue
-        fi
-
+    if [[ "$LONG" -eq 1 ]]; then
+        RECON_OUT="${BASE}/ses_sub_with_recon_output.txt"
+    else
+        RECON_OUT="${BASE}/sub_with_recon_output.txt"
+    fi
+    : >"$RECON_OUT"
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line=$(echo "$line" | xargs)
+        [[ -z "$line" ]] && continue
         if [[ "$LONG" -eq 1 ]]; then
-            RECON_OUT="${BASE}/ses_sub_with_recon_output.txt"
+            parse_sub_ses "$line" || continue
+            subject_done "${FS_DIR}/${subj}" && echo "${subj}${ses}" >>"$RECON_OUT"
         else
-            RECON_OUT="${BASE}/sub_with_recon_output.txt"
+            subject_done "${FS_DIR}/${line}" && echo "$line" >>"$RECON_OUT"
         fi
-        : >"$RECON_OUT"
+    done <"$LIST_IN"
+
+    OUT_LIST="${BASE}/sub_to_runMRIQC.txt"
+    : >"$OUT_LIST"
+
+    if [[ "$LONG" -eq 1 ]]; then
         while IFS= read -r line || [[ -n "$line" ]]; do
             line=$(echo "$line" | xargs)
             [[ -z "$line" ]] && continue
-            if [[ "$LONG" -eq 1 ]]; then
-                parse_sub_ses "$line" || continue
-                if subject_done "${FS_DIR}/${subj}"; then
-                    echo "${subj}${ses}" >>"$RECON_OUT"
-                fi
-            else
-                if subject_done "${FS_DIR}/${line}"; then
-                    echo "$line" >>"$RECON_OUT"
-                fi
+            parse_sub_ses "$line" || continue
+            mriqc_missing_long "$BASE" "$subj" "$ses" && printf '%s %s\n' "${subj#sub-}" "$ses" >>"$OUT_LIST"
+        done <"$RECON_OUT"
+    else
+        while IFS= read -r subj || [[ -n "$subj" ]]; do
+            subj=$(echo "$subj" | xargs)
+            [[ -z "$subj" ]] && continue
+            mriqc_missing_cross "$BASE" "$subj" && printf '%s\n' "${subj#sub-}" >>"$OUT_LIST"
+        done <"$RECON_OUT"
+    fi
+
+    N=$(wc -l <"$OUT_LIST" | tr -d ' \t')
+    if [[ "${N:-0}" -eq 0 ]]; then
+        echo "$DATASET: nothing to run (MRIQC outputs present or empty list)."
+        continue
+    fi
+
+    echo "$DATASET: $N jobs -> $OUT_LIST"
+    export DATA_ROOT DATASET LONG HPC_ENABLED SUBJECT_LIST="$OUT_LIST"
+
+    if [[ "$HPC_ENABLED" == "1" ]]; then
+        sbatch --array=1-"$N" "$SUB_SCRIPT"
+    else
+        echo "$DATASET: running locally with max $MAX_PARALLEL parallel jobs"
+        pids=()
+        for i in $(seq 1 "$N"); do
+            SLURM_ARRAY_TASK_ID=$i bash "$SUB_SCRIPT" &
+            pids+=($!)
+            if [[ "${#pids[@]}" -ge "$MAX_PARALLEL" ]]; then
+                wait "${pids[0]}"
+                pids=("${pids[@]:1}")
             fi
-        done <"$LIST_IN"
-
-        OUT_LIST="${BASE}/sub_to_runMRIQC.txt"
-        : >"$OUT_LIST"
-
-        if [[ "$LONG" -eq 1 ]]; then
-            while IFS= read -r line || [[ -n "$line" ]]; do
-                line=$(echo "$line" | xargs)
-                [[ -z "$line" ]] && continue
-                parse_sub_ses "$line" || continue
-                if mriqc_missing_long "$BASE" "$subj" "$ses"; then
-                    printf '%s %s\n' "${subj#sub-}" "$ses" >>"$OUT_LIST"
-                fi
-            done <"$RECON_OUT"
-        else
-            while IFS= read -r subj || [[ -n "$subj" ]]; do
-                subj=$(echo "$subj" | xargs)
-                [[ -z "$subj" ]] && continue
-                if mriqc_missing_cross "$BASE" "$subj"; then
-                    printf '%s\n' "${subj#sub-}" >>"$OUT_LIST"
-                fi
-            done <"$RECON_OUT"
-        fi
-
-        N=$(wc -l <"$OUT_LIST" | tr -d ' \t')
-        if [[ "${N:-0}" -eq 0 ]]; then
-            echo "$DATASET: nothing to run (MRIQC outputs present or empty list)."
-            continue
-        fi
-
-        echo "$DATASET: $N jobs -> $OUT_LIST"
-        export DATA_ROOT DATASET LONG HPC_ENABLED SUBJECT_LIST="$OUT_LIST"
-        if [[ "$HPC_ENABLED" == "1" ]]; then
-			
-            sbatch --array=1-"$N" "$STEP_SCRIPT"
-			#sh "$STEP_SCRIPT"
-        else
-            echo "$DATASET: running locally with max $MAX_PARALLEL parallel jobs"
-            pids=()
-            for i in $(seq 1 "$N"); do
-                SLURM_ARRAY_TASK_ID=$i bash "$STEP_SCRIPT" &
-                pids+=($!)
-                if [[ "${#pids[@]}" -ge "$MAX_PARALLEL" ]]; then
-                    wait "${pids[0]}"
-                    pids=("${pids[@]:1}")
-                fi
-            done
-            wait
-        fi
-    done
-    exit 0
-fi
-
-# ---------- WORKER MODE ----------
-if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
-    echo "Error: missing SLURM_ARRAY_TASK_ID"
-    exit 1
-fi
-
-DATASET="${DATASET:?Set DATASET}"
-SUBJECT_LIST="${SUBJECT_LIST:?Set SUBJECT_LIST}"
-DATA_ROOT="${DATA_ROOT:?Set DATA_ROOT}"
-LONG="${LONG:-0}"
-
-line=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$SUBJECT_LIST" | xargs)
-[[ -z "$line" ]] && { echo "Empty line ${SLURM_ARRAY_TASK_ID}"; exit 1; }
-
-BIDS_DIR="${DATA_ROOT}/${DATASET}"
-OUT_DIR="${BIDS_DIR}/derivatives/MRIQC"
-WORK_DIR="${OUT_DIR}/work"
-
-echo "---------------------------"
-echo "----- ${SLURM_ARRAY_TASK_ID} ${line} (${DATASET}) -----"
-echo "---------------------------"
-
-mkdir -p "$OUT_DIR" "$WORK_DIR"
-
-if [[ "$HPC_ENABLED" == "1" ]] || [[ "$(echo "$HPC_ENABLED" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
-    module purge
-    module load mriqc/24.0.2-1 
-fi
-
-if [[ "$LONG" -eq 1 ]]; then
-    read -r plabel sess <<<"$line"
-    mriqc "$BIDS_DIR" "$OUT_DIR" participant --participant_label "$plabel" --session-id "$sess" \
-        --n_procs 12 --n_cpus 6 --mem_gb 12 -m T1w --work-dir "$WORK_DIR" --bids-filter-file $BIDS_DIR
-else
-    mriqc "$BIDS_DIR" "$OUT_DIR" participant --participant_label "$line" \
-        --n_procs 12 --n_cpus 6 --mem_gb 12 -m T1w --work-dir "$WORK_DIR" --bids-filter-file $BIDS_DIR
-fi
-
-echo "----- DONE -----"
+        done
+        wait
+    fi
+done
