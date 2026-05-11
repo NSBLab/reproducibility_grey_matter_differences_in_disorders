@@ -4,9 +4,7 @@
 #SBATCH --job-name=CAT12_Preprocessing
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16000
-#SBATCH --mail-user=trang.cao@monash.edu
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-type=END
+
 
 # Worker: runs CAT12 preprocessing for one subject (invoked by step1a_CAT12_preprocessing_send.sh)
 

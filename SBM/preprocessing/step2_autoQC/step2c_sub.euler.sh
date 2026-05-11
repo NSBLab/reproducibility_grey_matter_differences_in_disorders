@@ -51,13 +51,15 @@ if [[ "$LONG" -eq 0 ]]; then
         done
     done <"${BASE}/sub_with_recon_output.txt"
 else
+    # Longitudinal: entries are sub-XXXses-YY; strip the ses- suffix to get the
+    # subject. recon-all outputs to ${SUBJECTS_DIR}/${subj}/ (no session
+    # subdirectory) because step1 runs with run_id=$subj.
     while read -r i; do
         i=$(echo "$i" | xargs)
         [[ -z "$i" ]] && continue
-        ses="${i: -5}"
-        subj="${i:0:${#i}-5}"
+        subj="${i%%ses-*}"
         for h in lh rh; do
-            x=$(mris_euler_number "${SUBJECTS_DIR}/${subj}/${ses}/surf/${h}.orig.nofix" 2>/dev/null | grep -o -P '(?<=--> ).*(?= holes)')
+            x=$(mris_euler_number "${SUBJECTS_DIR}/${subj}/surf/${h}.orig.nofix" 2>/dev/null | grep -o -P '(?<=--> ).*(?= holes)')
             if [[ "$x" =~ $numbers ]]; then
                 echo "$x" >>"$f"
                 echo "${subj}_${h}" >>"$id"
