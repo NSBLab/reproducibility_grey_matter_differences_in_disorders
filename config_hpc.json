@@ -15,6 +15,7 @@
         "path": "${dataset_root}/Myelin",
         "bids_script": "BIDS_Myelin.m",
         "vbm_extract_script": "extract_sub_Myelin.m",
+         "sbm_extract_surface_script": "extract_sub_surface_Myelin.m",
         "enabled": true,
         "longitudinal": true,
         "combat_group": "psy"
@@ -23,6 +24,7 @@
         "path": "${dataset_root}/RD",
         "bids_script": "BIDS_RD.m",
         "vbm_extract_script": "extract_sub_RD.m",
+        "sbm_extract_surface_script": "extract_sub_surface_RD.m",
         "enabled": true,
         "longitudinal": false,
         "combat_group": "psy"
