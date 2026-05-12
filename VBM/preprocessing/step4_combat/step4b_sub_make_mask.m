@@ -1,9 +1,14 @@
-function step4b_make_mask(config_file)
+function step4b_make_mask(config_file, group_filter)
 % Create SPM masks for each COMBAT group. Requires SPM12.
+%
+% Usage:
+%   step4b_make_mask('config_hpc.json')        % all groups
+%   step4b_make_mask('config_hpc.json', 'psy') % one group only
 
 if nargin < 1 || isempty(config_file)
     error('config_file required');
 end
+if nargin < 2; group_filter = ''; end
 
 this_dir = fileparts(mfilename('fullpath'));
 repo_main = fullfile(this_dir, '..', '..', '..');
@@ -18,25 +23,41 @@ fprintf('=== STEP4B: MAKE MASKS ===\n');
 fprintf('Dataset root: %s\n', dataset_root);
 fprintf('Smoothing kernel: %dmm\n', smoothKernel);
 
-% Process each combat group by reading existing metadata files
-group_names = {'psy', 'AD'}; % Known combat groups
+group_names = get_combat_groups(config);
+if isempty(group_names)
+    error('No combat groups found in config.');
+end
 
 for g = 1:length(group_names)
     group_name = group_names{g};
+    if ~isempty(group_filter) && ~strcmp(group_name, group_filter)
+        continue;
+    end
     metadataFilename = fullfile(dataset_root, ['metadataVBM_', group_name, '.csv']);
-    
     if ~exist(metadataFilename, 'file')
         fprintf('  Skipping group %s - metadata file not found: %s\n', group_name, metadataFilename);
         continue;
     end
-    
     fprintf('Creating mask for combat group: %s\n', group_name);
-    
-    % Process this group
     process_mask_group(group_name, dataset_root, smoothKernel);
 end
 
 fprintf('=== STEP4B COMPLETED ===\n');
+end
+
+
+function groups = get_combat_groups(config)
+groups = {};
+if ~isfield(config, 'datasets'); return; end
+ds_names = fieldnames(config.datasets);
+for k = 1:numel(ds_names)
+    ds = config.datasets.(ds_names{k});
+    if isfield(ds, 'enabled') && logical(ds.enabled) && isfield(ds, 'combat_group')
+        if ~ismember(ds.combat_group, groups)
+            groups{end+1} = ds.combat_group; %#ok<AGROW>
+        end
+    end
+end
 end
 
 function process_mask_group(group_name, dataset_root, smoothKernel)

@@ -1,7 +1,8 @@
 #!/bin/bash
-# Runs step4b_make_mask for all combat groups (invoked directly — not an array job)
+# Dispatcher: reads combat groups from config, submits step4b_sub_make_mask.sh per group
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SUB_SCRIPT="${SCRIPT_DIR}/step4b_sub_make_mask.sh"
 
 if [ -z "$CONFIG_FILE" ]; then
     REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
@@ -14,15 +15,24 @@ if [ -z "$CONFIG_FILE" ]; then
     fi
 fi
 command -v jq >/dev/null || { echo "Need jq"; exit 1; }
+[[ -f "$SUB_SCRIPT" ]] || { echo "Error: Missing $SUB_SCRIPT"; exit 1; }
 
 HPC_ENABLED_RAW=$(jq -r '.execution_mode.hpc_enabled // false' "$CONFIG_FILE")
 case "$(echo "$HPC_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in 1|true) HPC_ENABLED="1" ;; *) HPC_ENABLED="0" ;; esac
 
+COMBAT_GROUPS=$(jq -r '[.datasets | to_entries[] | select(.value.enabled == true) | .value.combat_group] | unique[]' "$CONFIG_FILE")
+[[ -z "$COMBAT_GROUPS" ]] && { echo "No combat groups found in enabled datasets."; exit 1; }
+
 echo "Using CONFIG_FILE: $CONFIG_FILE"
+echo "Combat groups: $COMBAT_GROUPS"
 
-if [ "$HPC_ENABLED" = "1" ]; then
-    module unload matlab
-    module load spm12/matlab2021a.r7771-v1
-fi
+for GROUP in $COMBAT_GROUPS; do
+    echo "=== Submitting step4b for group: $GROUP ==="
+    export CONFIG_FILE GROUP HPC_ENABLED
 
-matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step4b_sub_make_mask('$CONFIG_FILE'); quit;"
+    if [[ "$HPC_ENABLED" == "1" ]]; then
+        sbatch --job-name="step4b_${GROUP}" "$SUB_SCRIPT"
+    else
+        bash "$SUB_SCRIPT"
+    fi
+done
