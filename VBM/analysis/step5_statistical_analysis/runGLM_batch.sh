@@ -1,50 +1,25 @@
 #!/bin/bash
 #SBATCH --time=0-2:00:00
-#SBATCH --job-name=GLM_VBM_${dataset}
 #SBATCH --account=kg98
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=80000
-# SBATCH --mail-user=youremail@monash.edu
-# SBATCH --mail-type=FAIL
-# SBATCH --mail-type=BEGIN
-# SBATCH --mail-type=END
 
-# Check if environment variables are set
-if [ -z "$DATA_ROOT" ] || [ -z "$smoothKernel" ] || [ -z "$SCRIPT_DIR" ] || [ -z "$dataset" ]; then
-    echo "Error: Required environment variables not set"
-    echo "DATA_ROOT: $DATA_ROOT"
-    echo "smoothKernel: $smoothKernel"
-    echo "SCRIPT_DIR: $SCRIPT_DIR"
-    echo "dataset: $dataset"
-    exit 1
-fi
+# Worker: runs VBM GLM for one dataset (submitted by runGLM_send.sh)
 
-# Load required modules only if HPC is enabled
-if [ "$HPC_ENABLED" = "1" ]; then
-    echo "Loading required modules (HPC mode enabled)..."
-    module unload matlab 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
+DATASET="${DATASET:?Set DATASET}"
+
+if [ "${HPC_ENABLED:-0}" = "1" ]; then
+    module unload matlab
     module load spm12/matlab2021a.r7771-v1
-    #module load matlab/r2023b
-else
-    echo "Skipping module loading (HPC mode disabled)..."
 fi
 
+echo "=== GLM: $DATASET ==="
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step5_statistical_analysis('$CONFIG_FILE', '$DATASET'); quit;"
 
-
-# Run the MATLAB script using the new step5a function
-echo "Running statistical analysis for dataset: $dataset"
-echo "Harmonization: $harmonize"
-echo "Smoothing kernel: $smoothKernel"
-echo "Mask diagnostic group: $maskDiag"
-echo "Sessions: $isses"
-echo "Data Root: $DATA_ROOT"
-echo "SCRIPT_DIR: $SCRIPT_DIR"
-matlab -nodisplay -r "cd ('$SCRIPT_DIR'); step5_statistical_analysis('$DATA_ROOT', '$dataset', $isses, $smoothKernel, '$maskDiag', $harmonize); quit;"
-
-# Check exit status
-if [ $? -eq 0 ]; then
-    echo "Statistical analysis completed successfully for dataset: $dataset"
-else
-    echo "Error: Statistical analysis failed for dataset: $dataset"
+if [ $? -ne 0 ]; then
+    echo "Error: GLM failed for $DATASET"
     exit 1
 fi
+echo "=== GLM DONE: $DATASET ==="
