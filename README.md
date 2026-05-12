@@ -59,10 +59,12 @@ Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/
 
 After **step 1c**, inspect the generated volumes. For each dataset directory (`${dataset_root}/<Dataset>/`, e.g. `Myelin/`, `RD/`):
 
-1. Copy **`subjects_cat12_passed.txt`** to **`subjects_pass_visualisation.txt`**.
-2. Edit **`subjects_pass_visualisation.txt`**: delete participant IDs you exclude after visual QC (one BIDS participant ID per line, same format as the CAT12-passed list).
+1. Copy **`subjects_cat12_passed.txt`** to **`subjects_pass_visualisation_vbm.txt`**.
+2. Edit **`subjects_pass_visualisation_vbm.txt`**: delete participant IDs you exclude after visual QC (one BIDS participant ID per line, same format as the CAT12-passed list).
 
-**Step 2 extract** (`extract_sub_RD`, `extract_sub_Myelin`, or **`step2_run_extract_subjects`**) reads **`subjects_pass_visualisation.txt` only** (one participant ID per line).
+**Step 2 extract** (`extract_sub_RD`, `extract_sub_Myelin`, or **`step2_run_extract_subjects`**) reads **`subjects_pass_visualisation_vbm.txt` only** (one participant ID per line).
+
+For **SBM**, create **`subjects_pass_visualisation_sbm.txt`** from `subjects_pass_Euler_number_check.txt` (written by `step2c.euler.sh`) after removing subjects that fail visual surface inspection.
 
 ### SBM pipeline (main scripts)
 

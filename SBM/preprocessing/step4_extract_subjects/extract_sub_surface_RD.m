@@ -1,7 +1,7 @@
 function extract_sub_surface_RD(config)
 % Extract subjects passing SBM QC and write qdec metadata for RD.
 %
-% Reads subjects_pass_visualisation.txt (created from
+% Reads subjects_pass_visualisation_sbm.txt (created from
 % subjects_pass_Euler_number_check.txt written by step2c.euler.sh, after
 % removing subjects that fail visual surface inspection), looks up Euler
 % numbers for the EN column, applies minimum subjects per diagnosis, and
@@ -15,16 +15,18 @@ if nargin < 1 || isempty(config)
     error('No config passed');
 end
 
-dataset_root = config.data_directories.dataset_root;
-study_path   = fullfile(dataset_root, study);
-NSUB         = config.analysis_settings.minimum_subjects_per_site;
+dataset_root  = config.data_directories.dataset_root;
+study_path    = fullfile(dataset_root, study);
+NSUB          = config.analysis_settings.minimum_subjects_per_site;
 
 if ~isfield(config.datasets, study) || ~isfield(config.datasets.(study), 'path')
     error('Path not found in config for dataset %s', study);
 end
-source_path = config.datasets.(study).path;
+source_path    = config.datasets.(study).path;
+is_longitudinal = isfield(config.datasets.(study), 'longitudinal') && config.datasets.(study).longitudinal;
 
 fprintf('=== EXTRACTING SURFACE SUBJECTS FOR %s ===\n', study);
+fprintf('Longitudinal: %s\n', string(is_longitudinal));
 
 % --- Euler numbers (for EN column in output) ---
 holes_file = fullfile(source_path, 'derivatives', 'euler', sprintf('%s_holes.csv', study));
@@ -40,11 +42,11 @@ eulerNumber = mean([2 - 2*holesFile.Var2(inSubLh), 2 - 2*holesFile.Var2(inSubLh+
 subNames    = arrayfun(@(x) holesFile.Var1{inSubLh(x)}(1:end-3), 1:length(inSubLh), 'UniformOutput', false);
 
 % subjects_pass_Euler_number_check.txt is written by step2c.euler.sh.
-% subjects_pass_visualisation.txt is created from that file by manually
+% subjects_pass_visualisation_sbm.txt is created from that file by manually
 % removing subjects that fail visual surface inspection (step3).
 
 % --- Subject list (after visual inspection) ---
-fn = fullfile(study_path, 'subjects_pass_visualisation.txt');
+fn = fullfile(study_path, 'subjects_pass_visualisation_sbm.txt');
 if ~exist(fn, 'file')
     error('Missing %s — create from subjects_pass_Euler_number_check.txt after visual inspection', fn);
 end

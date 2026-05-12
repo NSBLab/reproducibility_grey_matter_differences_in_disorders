@@ -1,6 +1,6 @@
 #!/bin/bash
 # Concatenates CAT12 QC; writes subjects_cat12_passed.txt per dataset.
-# After step1c, copy that file to subjects_pass_visualisation.txt and
+# After step1c, copy that file to subjects_pass_visualisation_vbm.txt and
 # delete excluded IDs before VBM step2 extract.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

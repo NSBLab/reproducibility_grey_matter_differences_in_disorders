@@ -1,7 +1,7 @@
 function extract_sub_surface_Myelin(config)
 % Extract subjects passing SBM QC and write qdec metadata for Myelin.
 %
-% Reads subjects_pass_visualisation.txt (created from
+% Reads subjects_pass_visualisation_sbm.txt (created from
 % subjects_pass_Euler_number_check.txt written by step2c.euler.sh, after
 % removing subjects that fail visual surface inspection), looks up Euler
 % numbers for the EN column, applies minimum subjects per diagnosis, and
@@ -42,11 +42,11 @@ eulerNumber = mean([2 - 2*holesFile.Var2(inSubLh), 2 - 2*holesFile.Var2(inSubLh+
 subNames    = arrayfun(@(x) holesFile.Var1{inSubLh(x)}(1:end-3), 1:length(inSubLh), 'UniformOutput', false);
 
 % subjects_pass_Euler_number_check.txt is written by step2c.euler.sh.
-% subjects_pass_visualisation.txt is created from that file by manually
+% subjects_pass_visualisation_sbm.txt is created from that file by manually
 % removing subjects that fail visual surface inspection (step3).
 
 % --- Subject list (after visual inspection) ---
-fn = fullfile(study_path, 'subjects_pass_visualisation.txt');
+fn = fullfile(study_path, 'subjects_pass_visualisation_sbm.txt');
 if ~exist(fn, 'file')
     error('Missing %s — create from subjects_pass_Euler_number_check.txt after visual inspection', fn);
 end

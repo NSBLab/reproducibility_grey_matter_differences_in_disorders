@@ -37,7 +37,7 @@ fprintf('=== EXTRACTING SUBJECTS FOR %s ===\n', study);
 fprintf('Longitudinal study: %s\n', string(is_longitudinal));
 fprintf('Using CAT12 quality threshold: %.1f\n', IQRthres);
 
-fn = fullfile(study_path, 'subjects_pass_visualisation.txt');
+fn = fullfile(study_path, 'subjects_pass_visualisation_vbm.txt');
 if ~exist(fn, 'file')
     error('Missing %s (copy from subjects_cat12_passed.txt after step1c and edit)', fn);
 end

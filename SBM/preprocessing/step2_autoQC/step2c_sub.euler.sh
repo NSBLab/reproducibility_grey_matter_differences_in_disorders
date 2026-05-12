@@ -2,8 +2,8 @@
 #SBATCH --job-name=euler_number
 #SBATCH --account=kg98
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --time=1-00:00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --time=0-01:00:00
 #SBATCH --export=ALL
 #SBATCH --mem-per-cpu=8000
 
@@ -18,7 +18,6 @@ LONG=$(jq -r --arg ds "$DATASET" '.datasets[$ds].longitudinal // false' "$CONFIG
 [[ "$LONG" == "true" ]] && LONG=1 || LONG=0
 
 BASE="${DATA_ROOT}/${DATASET}"
-SUBJECTS_DIR="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
 outdir="${BASE}/derivatives/euler"
 
 echo "---------------------------"
@@ -31,6 +30,8 @@ if [[ "${HPC_ENABLED:-0}" == "1" ]] || [[ "$(echo "${HPC_ENABLED:-}" | tr '[:upp
     module purge
     module load freesurfer/7.1.0
 fi
+
+SUBJECTS_DIR="${FREESURFER_SUBJECTS_DIR:-${BASE}/derivatives/freesurfer}"
 
 numbers='^[0-9]+$'
 rm -f "${outdir}/${DATASET}_holes_temp.txt" "${outdir}/${DATASET}_ids.txt"
@@ -78,7 +79,7 @@ paste -d "," "$id" "$f" >"$e"
 rm -f "$id" "$f"
 
 # Apply 3.29 SD Euler QC threshold and write subjects_pass_Euler_number_check.txt.
-# subjects_pass_visualisation.txt is then created from this file by manually
+# subjects_pass_visualisation_sbm.txt is then created from this file by manually
 # removing subjects that fail visual surface inspection (step3).
 pass_file="${BASE}/subjects_pass_Euler_number_check.txt"
 awk -F',' '

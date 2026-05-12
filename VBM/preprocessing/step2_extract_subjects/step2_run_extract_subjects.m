@@ -1,7 +1,7 @@
 function step2_run_extract_subjects(config_file)
 % STEP 2 (VBM): run dataset-specific extract_sub_<dataset>.m scripts from config.
 %
-% After step 1d, write subjects_pass_visualisation.txt per dataset (copy from subjects_cat12_passed.txt,
+% After step 1d, write subjects_pass_visualisation_vbm.txt per dataset (copy from subjects_cat12_passed.txt,
 % remove excluded IDs); extract scripts read that file with readlines.
 %
 % Same pattern as data_BIDS/step0b_organize_bids.m: loops enabled datasets and calls
