@@ -6,6 +6,9 @@ if nargin < 1 || isempty(config)
 end
 
 if ischar(config) || isstring(config)
+    this_dir = fileparts(mfilename('fullpath'));
+    repo_root = fullfile(this_dir, '..', '..', '..');
+    addpath(genpath(repo_root));
     config = pipeline_load_config(char(config));
 end
 
