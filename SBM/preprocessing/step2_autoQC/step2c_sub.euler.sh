@@ -86,26 +86,26 @@ awk -F',' '
 {
     name = $1; holes = $2
     en_val = 2 - 2 * holes
-    sub = substr(name, 1, length(name) - 3)   # strip _lh or _rh
+    subj = substr(name, 1, length(name) - 3)
     hemi_en[NR] = en_val
-    sub_sum[sub] += en_val
-    sub_cnt[sub]++
-    if (!(sub in seen)) { seen[sub] = 1; order[++nSubs] = sub }
+    sub_sum[subj] += en_val
+    sub_cnt[subj]++
+    if (!(subj in seen)) { seen[subj] = 1; order[++nSubs] = subj }
 }
 END {
     n = NR
-    sum = 0
-    for (i = 1; i <= n; i++) sum += hemi_en[i]
-    mean = sum / n
+    total = 0
+    for (i = 1; i <= n; i++) total += hemi_en[i]
+    mean = total / n
     ss = 0
     for (i = 1; i <= n; i++) ss += (hemi_en[i] - mean)^2
     sd = sqrt(ss / (n - 1))
     thr = mean - 3.29 * sd
     nPass = 0
     for (k = 1; k <= nSubs; k++) {
-        sub = order[k]
-        if (sub_cnt[sub] == 2 && sub_sum[sub] / 2 > thr) {
-            print sub
+        subj = order[k]
+        if (sub_cnt[subj] == 2 && sub_sum[subj] / 2 > thr) {
+            print subj
             nPass++
         }
     }
