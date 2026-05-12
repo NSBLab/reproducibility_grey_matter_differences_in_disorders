@@ -64,7 +64,8 @@
       "minimum_subjects_per_site": 20,
       "masking_threshold": 0.2,
       "cat12_quality_threshold": 2.8,
-      "smoothing_kernel": 6,
+      "vbm_smoothing_kernel": 6,
+      "sbm_smoothing_kernel": 10,
       "harmonize": 1,
       "mask_diagnostic_group": "psy",
       "num_permutations": 10

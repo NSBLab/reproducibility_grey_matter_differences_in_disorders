@@ -26,7 +26,7 @@ end
 fprintf('=== STEP5D: COMBAT SURFACE OUTPUT ===\n');
 
 dataset_root = config.data_directories.dataset_root;
-smoothKernel = config.analysis_settings.smoothing_kernel;
+smoothKernel = config.analysis_settings.sbm_smoothing_kernel;
 atlas_dir    = config.data_directories.atlas_dir;
 hemispheres  = {'lh', 'rh'};
 

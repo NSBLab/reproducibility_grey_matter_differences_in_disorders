@@ -14,7 +14,7 @@ CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
 GROUP="${GROUP:?Set GROUP}"
 
 DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-smoothKernel=$(jq -r '.analysis_settings.smoothing_kernel' "$CONFIG_FILE")
+smoothKernel=$(jq -r '.analysis_settings.vbm_smoothing_kernel' "$CONFIG_FILE")
 conda_env=$(jq -r '.data_directories.conda_env' "$CONFIG_FILE")
 
 OUT_DIR="${DATA_ROOT}/derivatives/s${smoothKernel}COMBAT/mask_${GROUP}"

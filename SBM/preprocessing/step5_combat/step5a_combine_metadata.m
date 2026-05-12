@@ -15,7 +15,7 @@ end
 fprintf('=== STEP5A: COMBINE METADATA ===\n');
 
 dataset_root = config.data_directories.dataset_root;
-smoothKernels = config.analysis_settings.smoothing_kernel;
+smoothKernels = config.analysis_settings.sbm_smoothing_kernel;
 
 enabled_datasets = pipeline_get_enabled_datasets(config);
 if isempty(enabled_datasets)

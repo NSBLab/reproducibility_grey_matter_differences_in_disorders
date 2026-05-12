@@ -136,5 +136,47 @@ metaTable = cell2table([...
 out_file = fullfile(study_path, sprintf('%s_qdec_extended.csv', study));
 writetable(metaTable, out_file);
 fprintf('Saved: %s\n', out_file);
+
+% --- Write qdec_table_<site>_<diag>.dat per patient group (for step6 GLM) ---
+control_diag  = '1';
+diagCat_con   = unique(metadata.diagnosis(metadata.con));
+patient_diags = diagCat_con(~strcmp(diagCat_con, control_diag));
+
+for iDiag = 1:length(patient_diags)
+    pat_diag  = patient_diags{iDiag};
+    condition = metadata.con & ...
+        (strcmp(metadata.diagnosis, control_diag) | strcmp(metadata.diagnosis, pat_diag));
+
+    site_str  = metadata.site_string{find(condition, 1)};
+
+    qdecTable = cell2table([...
+        metadata.subj_id(condition), ...
+        metadata.diagnosis(condition), ...
+        metadata.sex(condition), ...
+        cellstr(num2str(metadata.age(condition)))], ...
+        'VariableNames', ["fsid","diagnosis","sex","age"]);
+
+    qdec_file = fullfile(study_path, sprintf('qdec_table_%s_%s.dat', site_str, pat_diag));
+    writetable(qdecTable, qdec_file, 'Delimiter', '\t');
+    fprintf('Saved: %s\n', qdec_file);
+end
+
+% --- Write sitelist.txt from unique sites in metadata (for step6 GLM) ---
+sitelist_file = fullfile(study_path, 'sitelist.txt');
+fid = fopen(sitelist_file, 'w');
+unique_sites = unique(metadata.site_string(metadata.con));
+for k = 1:length(unique_sites)
+    site_k      = unique_sites{k};
+    site_mask   = metadata.con & strcmp(metadata.site_string, site_k);
+    site_diags  = unique(metadata.diagnosis(site_mask));
+    site_diags  = site_diags(~strcmp(site_diags, control_diag));
+    for d = 1:length(site_diags)
+        fprintf(fid, '%s\n', fullfile(study_path, ...
+            sprintf('qdec_table_%s_%s.dat', site_k, site_diags{d})));
+    end
+end
+fclose(fid);
+fprintf('Saved: %s\n', sitelist_file);
+
 fprintf('=== DONE %s ===\n', study);
 end

@@ -16,7 +16,7 @@ GROUP="${GROUP:?Set GROUP}"
 HEMI="${HEMI:?Set HEMI}"
 
 DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
-smoothKernel=$(jq -r '.analysis_settings.smoothing_kernel' "$CONFIG_FILE")
+smoothKernel=$(jq -r '.analysis_settings.sbm_smoothing_kernel' "$CONFIG_FILE")
 conda_env=$(jq -r '.data_directories.conda_env' "$CONFIG_FILE")
 
 OUT_DIR="${DATA_ROOT}/derivatives/freesurfer/s${smoothKernel}COMBAT"

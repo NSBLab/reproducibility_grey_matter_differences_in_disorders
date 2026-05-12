@@ -17,7 +17,7 @@ pipeline_ensure_paths();
 
 config = pipeline_load_config(config_file);
 dataset_root = config.data_directories.dataset_root;
-smoothKernel = config.analysis_settings.smoothing_kernel;
+smoothKernel = config.analysis_settings.vbm_smoothing_kernel;
 
 fprintf('=== STEP4B: MAKE MASKS ===\n');
 fprintf('Dataset root: %s\n', dataset_root);

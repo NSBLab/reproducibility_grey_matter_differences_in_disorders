@@ -21,7 +21,7 @@ end
 fprintf('=== STEP4E: COMBAT OUTPUT CREATION ===\n');
 
 dataset_root = config.data_directories.dataset_root;
-smoothKernel = config.analysis_settings.smoothing_kernel;
+smoothKernel = config.analysis_settings.vbm_smoothing_kernel;
 
 datasets_by_group = get_datasets_by_combat_group(config);
 group_names = fieldnames(datasets_by_group);
