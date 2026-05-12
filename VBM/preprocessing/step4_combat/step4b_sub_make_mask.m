@@ -92,37 +92,26 @@ subNiftiSmooth_cell = {};
 for i = 1:height(metadata)
     subj_id = metadata.subj_id{i};
     dataset = metadata.dataset{i};
-    
-     % Check if ses column exists and get session info
+
     if ismember('ses', metadata.Properties.VariableNames)
         ses = metadata.ses{i};
         if ~strcmp(ses, '')
-            % Multiple sessions
             subNiftiSmooth = fullfile(inDir, dataset, subj_id, ses, 'anat', ...
                 ['s', num2str(smoothKernel), 'mwp1', subj_id, '_', ses, '_T1w.nii']);
         else
-            % Single session
             subNiftiSmooth = fullfile(inDir, dataset, subj_id, 'anat', ...
                 ['s', num2str(smoothKernel), 'mwp1', subj_id, '_T1w.nii']);
         end
     else
-        % No ses column - single session
         subNiftiSmooth = fullfile(inDir, dataset, subj_id, 'anat', ...
             ['s', num2str(smoothKernel), 'mwp1', subj_id, '_T1w.nii']);
     end
-    
-    if exist(subNiftiSmooth, 'file')
-        subNiftiSmooth_cell{end+1,1} = subNiftiSmooth;
-    else
-        warning('Smoothed image not found: %s', subNiftiSmooth);
-    end
-end
 
-if isempty(subNiftiSmooth_cell)
-    error('No valid smoothed images found for group: %s', group_name);
+    subNiftiSmooth_cell{i} = subNiftiSmooth;
 end
+subNiftiSmooth_cell = subNiftiSmooth_cell';
 
-fprintf('  Found %d valid smoothed images for group: %s\n', length(subNiftiSmooth_cell), group_name);
+fprintf('  Found %d smoothed images for group: %s\n', length(subNiftiSmooth_cell), group_name);
 
 % Prepare covariates for SPM analysis
 numCovs = 2;
