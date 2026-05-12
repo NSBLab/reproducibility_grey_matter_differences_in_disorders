@@ -5,6 +5,10 @@ if nargin < 1 || isempty(config)
     error('No config passed');
 end
 
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+
 fprintf('=== STEP4A: COMBINE METADATA ===\n');
 
 dataset_root = config.data_directories.dataset_root;
