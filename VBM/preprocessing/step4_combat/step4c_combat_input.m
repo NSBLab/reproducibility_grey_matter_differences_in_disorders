@@ -1,18 +1,29 @@
-function step4c_combat_input(config)
+function step4c_combat_input(config, group_filter)
 % Prepare masked data matrix for COMBAT: reads smoothed images, applies group mask,
 % and writes anat_s<k>mwp1_T1w_masked.txt per combat group.
+%
+% Usage:
+%   step4c_combat_input(config)              % all groups
+%   step4c_combat_input(config, 'psy')       % one group only
+%   step4c_combat_input('config_hpc.json')   % load from file, all groups
+%   step4c_combat_input('config_hpc.json', 'psy')
 
 if nargin < 1 || isempty(config)
     error('No config passed');
 end
+if nargin < 2; group_filter = ''; end
+
+if ischar(config) || isstring(config)
+    this_dir = fileparts(mfilename('fullpath'));
+    addpath(genpath(fullfile(this_dir, '..', '..', '..')));
+    config = pipeline_load_config(char(config));
+end
 
 fprintf('=== STEP4C: COMBAT INPUT PREPARATION ===\n');
 
-% Get paths from config
 dataset_root = config.data_directories.dataset_root;
 smoothKernel = config.analysis_settings.smoothing_kernel;
 
-% Get datasets grouped by combat group
 datasets_by_group = get_datasets_by_combat_group(config);
 group_names = fieldnames(datasets_by_group);
 
@@ -20,18 +31,14 @@ if isempty(group_names)
     error('No combat groups found in config. Please add combat_group field to datasets.');
 end
 
-% Process each combat group
 for g = 1:length(group_names)
     group_name = group_names{g};
-    datasets = datasets_by_group.(group_name);
-    
-    if isempty(datasets)
+    if ~isempty(group_filter) && ~strcmp(group_name, group_filter)
         continue;
     end
-    
+    datasets = datasets_by_group.(group_name);
+    if isempty(datasets); continue; end
     fprintf('Processing combat group: %s (%d datasets)\n', group_name, length(datasets));
-    
-    % Process this group
     process_combat_group(config, group_name, datasets, dataset_root, smoothKernel);
 end
 

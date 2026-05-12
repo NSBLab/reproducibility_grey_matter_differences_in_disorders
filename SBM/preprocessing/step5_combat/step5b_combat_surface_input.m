@@ -1,13 +1,26 @@
-function step5b_combat_surface_input(config)
+function step5b_combat_surface_input(config, group_filter)
 % Prepare masked surface data matrix for COMBAT: reads smoothed thickness
 % .mgh files, applies cortex mask, and writes
 % {hemi}_thickness_s{k}_{group}.txt per combat group and hemisphere.
 %
 % Requires config.data_directories.atlas_dir pointing to the directory
 % containing fsaverage_164k_cortex-{lh|rh}_mask.txt.
+%
+% Usage:
+%   step5b_combat_surface_input(config)              % all groups
+%   step5b_combat_surface_input(config, 'psy')       % one group only
+%   step5b_combat_surface_input('config_hpc.json')   % load from file, all groups
+%   step5b_combat_surface_input('config_hpc.json', 'psy')
 
 if nargin < 1 || isempty(config)
     error('No config passed');
+end
+if nargin < 2; group_filter = ''; end
+
+if ischar(config) || isstring(config)
+    this_dir = fileparts(mfilename('fullpath'));
+    addpath(genpath(fullfile(this_dir, '..', '..', '..')));
+    config = pipeline_load_config(char(config));
 end
 
 fprintf('=== STEP5B: COMBAT SURFACE INPUT PREPARATION ===\n');
@@ -26,6 +39,9 @@ end
 
 for g = 1:length(group_names)
     group_name = group_names{g};
+    if ~isempty(group_filter) && ~strcmp(group_name, group_filter)
+        continue;
+    end
     fprintf('Processing combat group: %s\n', group_name);
 
     metadataFilename = fullfile(dataset_root, ['metadataSBM_', group_name, '.csv']);
