@@ -212,6 +212,6 @@ a11 = annotation(fig, 'textbox', [ax4.Position(1)-0.04 0.97 0.1 0.02], 'string',
 
 
 %% Save figure
-savefig(fig,['output/figure1_pipeline.fig']);
-set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', 'output/figure1_pipeline.jpg')
+% savefig(fig,['output/figure1_pipeline.fig']);
+% set(fig, 'PaperPositionMode', 'auto')
+% print(fig, '-djpeg', '-r1200', 'output/figure1_pipeline.jpg')
