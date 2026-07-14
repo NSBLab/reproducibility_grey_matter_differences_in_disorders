@@ -1,6 +1,0 @@
-# Configuration file for PALM.
-# Version (github, running in MATLAB 23.2.0.2365128 (R2023b).
-# 10-Jun-2024 22:05:18
-
--i /home/trangc/kg98/trangc/VBM/data/miriad/derivatives/freesurfer/qdec/7_miriad_thick_smooth10_lh_sex_age_combat/lh-Diff-1-7-Intercept-thickness/sig.mgh
--fdr
