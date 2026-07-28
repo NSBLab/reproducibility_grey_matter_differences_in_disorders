@@ -4,14 +4,26 @@
 #SBATCH --account=kg98
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=60000
-# SBATCH --mail-user=youremail@monash.edu
-# SBATCH --mail-type=FAIL
-# SBATCH --mail-type=BEGIN
-# SBATCH --mail-type=END
 
-script_DIR=/projects/kg98/trangc/VBM/code/freesurfer/freesurfer_holmesQC/step5_nulltest
+# Worker: one eigentrapping job (submitted by step7a_eigentrapping_nulltest_send.sh)
 
-module load matlab/r2023b
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
+inJob="${inJob:?Set inJob}"
+harmonize="${harmonize:-1}"
+hemi="${hemi:-lh}"
+smoothKernel="${smoothKernel:-10}"
+nTrap="${nTrap:-10}"
 
-matlab -nodisplay -r "cd ('$script_DIR');  step7a_sub_nulltest($iCOMBAT, '$hemi', $smoothKernel, $nTrap, $inJob);quit"
+if [ "${HPC_ENABLED:-0}" = "1" ]; then
+    module load matlab/r2023b
+fi
 
+echo "=== STEP7A WORKER: inJob=$inJob hemi=$hemi smooth=$smoothKernel ==="
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step7a_sub_nulltest('$CONFIG_FILE', $harmonize, '$hemi', $smoothKernel, $nTrap, $inJob); quit;"
+
+if [ $? -ne 0 ]; then
+    echo "Error: step7a job $inJob failed"
+    exit 1
+fi
+echo "=== STEP7A WORKER DONE: inJob=$inJob ==="

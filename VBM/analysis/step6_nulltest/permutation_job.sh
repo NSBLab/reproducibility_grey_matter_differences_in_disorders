@@ -1,45 +1,50 @@
 #!/bin/bash
 #SBATCH --time=0-2:00:00
-#SBATCH --job-name=permutation_VBM_${dataset}
+#SBATCH --job-name=permutation_VBM
 #SBATCH --account=kg98
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=80000
-# SBATCH --mail-user=youremail@monash.edu
-# SBATCH --mail-type=FAIL
-# SBATCH --mail-type=BEGIN
-# SBATCH --mail-type=END
 
+# Worker: create permuted demographics and re-run VBM GLM (step5).
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
+DATA_ROOT="${DATA_ROOT:?Set DATA_ROOT}"
+DATASET="${DATASET:?Set DATASET}"
+PERM_ID="${PERM_ID:?Set PERM_ID}"
+smoothKernel="${smoothKernel:?Set smoothKernel}"
+harmonize="${harmonize:?Set harmonize}"
 
-TARGET_DIR=$(realpath "$SCRIPT_DIR/../step5_statistical_analysis")
+TARGET_DIR=$(cd "$SCRIPT_DIR/../step5_statistical_analysis" && pwd)
 
 echo "=== PERMUTATION JOB ==="
 echo "Permutation ID: $PERM_ID"
-echo "Dataset: $DATASET"
-echo "Script directory: $SCRIPT_DIR"
+echo "Dataset:        $DATASET"
+echo "CONFIG_FILE:    $CONFIG_FILE"
+echo "Script dir:     $SCRIPT_DIR"
 
-# Load modules conditionally
-if [ "$HPC_ENABLED" = "1" ]; then
-    echo "Loading required modules (HPC mode enabled)..."
-    module unload matlab 
+if [ "${HPC_ENABLED:-0}" = "1" ]; then
+    module unload matlab 2>/dev/null || true
     module load spm12/matlab2021a.r7771-v1
-else
-    echo "Skipping module loading (HPC mode disabled)..."
 fi
 
-# Create permutation output directory
-PERM_OUT_DIR="$DATA_ROOT/derivatives/s${smoothKernel}COMBAT_perm${PERM_ID}"
+if [ "$harmonize" -eq 1 ]; then
+    PERM_OUT_DIR="$DATA_ROOT/derivatives/s${smoothKernel}COMBAT_perm${PERM_ID}"
+else
+    PERM_OUT_DIR="$DATA_ROOT/derivatives/s${smoothKernel}_perm${PERM_ID}"
+fi
 mkdir -p "$PERM_OUT_DIR"
-
 echo "Permutation output directory: $PERM_OUT_DIR"
 
-# Run MATLAB script to create permuted metadata and run statistical analysis
-matlab -nodisplay -r "cd('$SCRIPT_DIR'); create_permuted_metadata('$DATA_ROOT', '$DATASET', $PERM_ID, $harmonize, $smoothKernel);  cd('$TARGET_DIR');  step5_statistical_analysis('$DATA_ROOT', '$DATASET', $isses, $smoothKernel, '$maskDiag', $harmonize, $PERM_ID);    fprintf('Permutation %d completed for dataset %s\n', $PERM_ID, '$DATASET'); quit;"
+matlab -nodisplay -r "\
+addpath('$SCRIPT_DIR'); addpath('$TARGET_DIR'); \
+create_permuted_metadata('$DATA_ROOT', '$DATASET', $PERM_ID, $harmonize, $smoothKernel); \
+step5_sub_statistical_analysis('$CONFIG_FILE', '$DATASET', $PERM_ID); \
+fprintf('Permutation %d completed for dataset %s\n', $PERM_ID, '$DATASET'); \
+quit;"
 
-# Check exit status
-if [ $? -eq 0 ]; then
-    echo "Permutation $PERM_ID completed successfully for dataset $DATASET"
-else
+if [ $? -ne 0 ]; then
     echo "Error: Permutation $PERM_ID failed for dataset $DATASET"
     exit 1
 fi
+echo "Permutation $PERM_ID completed successfully for dataset $DATASET"

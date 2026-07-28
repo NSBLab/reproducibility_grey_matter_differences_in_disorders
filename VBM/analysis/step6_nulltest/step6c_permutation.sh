@@ -1,125 +1,75 @@
 #!/bin/bash
+# Dispatcher: submit label-shuffle GLM permutations for enabled datasets.
 
-# Get script directory (same directory as this script file)
-export SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SUB_SCRIPT="${SCRIPT_DIR}/permutation_job.sh"
 
-# Use environment variables passed from MATLAB
-if [ -z "$DATA_ROOT" ]; then
-    echo "Error: DATA_ROOT environment variable not set"
-    echo "Please ensure the pipeline sets the DATA_ROOT environment variable."
-    exit 1
+if [ -z "$CONFIG_FILE" ]; then
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    if [ -f "$REPO_ROOT/config_hpc.json" ]; then
+        CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+    else
+        echo "Error: CONFIG_FILE not set and config_hpc.json not found at $REPO_ROOT"
+        exit 1
+    fi
 fi
 
-if [ -z "$smoothKernel" ]; then
-    echo "Error: smoothKernel environment variable not set"
-    echo "Please ensure the pipeline sets the smoothKernel environment variable."
-    exit 1
-fi
+command -v jq >/dev/null 2>&1 || { echo "Error: jq is required."; exit 1; }
+[[ -f "$SUB_SCRIPT" ]] || { echo "Error: missing worker $SUB_SCRIPT"; exit 1; }
 
-if [ -z "$HPC_ENABLED" ]; then
-    echo "Error: HPC_ENABLED environment variable not set"
-    echo "Please ensure the pipeline sets the HPC_ENABLED environment variable."
-    exit 1
-fi
+DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
+smoothKernel=$(jq -r '.analysis_settings.vbm_smoothing_kernel // 6' "$CONFIG_FILE")
+harmonize=$(jq -r '.analysis_settings.harmonize // 1' "$CONFIG_FILE")
+maskDiag=$(jq -r '.analysis_settings.mask_diagnostic_group // "psy"' "$CONFIG_FILE")
+NUM_PERMUTATIONS=$(jq -r '.analysis_settings.num_permutations // 10' "$CONFIG_FILE")
 
-if [ -z "$harmonize" ]; then
-    echo "Error: harmonize environment variable not set"
-    echo "Please ensure the pipeline sets the harmonize environment variable."
-    exit 1
-fi
+HPC_ENABLED_RAW=$(jq -r '.execution_mode.hpc_enabled // false' "$CONFIG_FILE")
+case "$(echo "$HPC_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in
+    1|true) HPC_ENABLED="1" ;;
+    *) HPC_ENABLED="0" ;;
+esac
 
-if [ -z "$maskDiag" ]; then
-    echo "Error: maskDiag environment variable not set"
-    echo "Please ensure the pipeline sets the maskDiag environment variable."
-    exit 1
-fi
+MAX_PARALLEL=$(jq -r '.execution_mode.local_settings.max_parallel_jobs // 4' "$CONFIG_FILE")
+[[ "$MAX_PARALLEL" =~ ^[0-9]+$ ]] || MAX_PARALLEL=4
 
-if [ -z "$isses" ]; then
-    echo "Error: isses environment variable not set"
-    echo "Please ensure the pipeline sets the isses environment variable."
-    exit 1
-fi
+ENABLED_DATASETS=$(jq -r '.datasets | to_entries[] | select(.value.enabled == true) | .key' "$CONFIG_FILE")
+[[ -z "$ENABLED_DATASETS" ]] && { echo "Error: no enabled datasets in $CONFIG_FILE"; exit 1; }
 
 echo "=== STEP6C: PERMUTATION ANALYSIS ==="
-echo "Using DATA_ROOT from environment: $DATA_ROOT"
-echo "Using smoothKernel from environment: ${smoothKernel}mm"
-echo "Using HPC_ENABLED from environment: $HPC_ENABLED"
-echo "Using harmonize from environment: $harmonize"
-echo "Using maskDiag from environment: $maskDiag"
-echo "Using isses from environment: $isses"
+echo "CONFIG_FILE:       $CONFIG_FILE"
+echo "DATA_ROOT:         $DATA_ROOT"
+echo "smoothKernel:      $smoothKernel"
+echo "harmonize:         $harmonize"
+echo "maskDiag:          $maskDiag"
+echo "NUM_PERMUTATIONS:  $NUM_PERMUTATIONS"
+echo "HPC_ENABLED:       $HPC_ENABLED"
 
+export CONFIG_FILE DATA_ROOT SCRIPT_DIR HPC_ENABLED smoothKernel harmonize maskDiag
 
+pids=()
+while IFS= read -r DATASET; do
+    [[ -z "$DATASET" ]] && continue
+    export DATASET
 
-# Get enabled datasets file path from environment variable
-if [ -z "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: ENABLED_DATASETS_FILE environment variable not set"
-    echo "Please ensure the pipeline sets the ENABLED_DATASETS_FILE environment variable."
-    exit 1
-fi
-
-# Check if the dataset list file exists
-if [ ! -f "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: Dataset list file not found: $ENABLED_DATASETS_FILE"
-    exit 1
-fi
-
-# Check if the file has any content
-if [ ! -s "$ENABLED_DATASETS_FILE" ]; then
-    echo "Error: Dataset list file is empty: $ENABLED_DATASETS_FILE"
-    exit 1
-fi
-
-echo "Processing enabled datasets from file: $ENABLED_DATASETS_FILE"
-echo "Found enabled datasets:"
-cat "$ENABLED_DATASETS_FILE"
-
-# Create logs directory
-mkdir -p "$SCRIPT_DIR/logs"
-
-# Read datasets from file
-DATASETS=()
-while IFS= read -r dataset; do
-    # Skip empty lines
-    if [ -n "$dataset" ]; then
-        DATASETS+=("$dataset")
-    fi
-done < "$ENABLED_DATASETS_FILE"
-
-# Get number of permutations from environment variable
-if [ -z "$NUM_PERMUTATIONS" ]; then
-    echo "Error: NUM_PERMUTATIONS environment variable not set"
-    echo "Please ensure the pipeline sets the NUM_PERMUTATIONS environment variable."
-    exit 1
-fi
-
-echo "Number of permutations: $NUM_PERMUTATIONS"
-
-echo "Checking and submitting permutations for each dataset..."
-echo "Note: Will skip permutations that already have existing results"
-
-# Loop through each dataset
-for dataset in "${DATASETS[@]}"; do
-    echo "Processing dataset: $dataset"
-    
-    # Loop through permutations
-    for perm in $(seq 1 $NUM_PERMUTATIONS); do
-        # Set environment variables for this permutation
+    for perm in $(seq 1 "$NUM_PERMUTATIONS"); do
         export PERM_ID=$perm
-        export DATASET=$dataset
-        
-               
-echo "submit job ${perm}_${dataset}"
-        
-        # Submit permutation job
-        sbatch --job-name=perm${perm}_${dataset} "$SCRIPT_DIR/permutation_job.sh"
-    done
-done
+        echo "Submitting perm=${perm} dataset=${DATASET}"
 
-echo ""
-echo "=== STEP6C: PERMUTATION SUBMISSION COMPLETED ==="
-echo "Summary:"
-echo "- Total permutations requested per dataset: $NUM_PERMUTATIONS"
-echo "- Checked for existing SPM contrast files before submitting jobs"
-echo "- Only missing permutations were submitted"
-echo "- Total datasets processed: ${#DATASETS[@]}"
-echo ""
+        if [[ "$HPC_ENABLED" == "1" ]]; then
+            sbatch --job-name="perm${perm}_${DATASET}" "$SUB_SCRIPT"
+        else
+            bash "$SUB_SCRIPT" &
+            pids+=($!)
+            if [[ "${#pids[@]}" -ge "$MAX_PARALLEL" ]]; then
+                wait "${pids[0]}"
+                pids=("${pids[@]:1}")
+            fi
+        fi
+    done
+done <<< "$ENABLED_DATASETS"
+
+if [[ "$HPC_ENABLED" != "1" ]]; then
+    wait
+fi
+
+echo "=== STEP6C SUBMISSION DONE ==="

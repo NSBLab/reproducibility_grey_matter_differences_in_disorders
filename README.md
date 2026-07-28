@@ -53,8 +53,8 @@ Run VBM preprocessing and analysis
 | 2 Extract subjects |  `VBM/preprocessing/step2_extract_subjects/step2_run_extract_subjects.m` — see **Manual visual QC** below |
 | 3 Smoothing | `VBM/preprocessing/step3_smoothing/step3_run_smooth_TIV.sh` |
 | 4a–e COMBAT / metadata | `VBM/preprocessing/step4_combat/` (`step4a_combine_metadata.m`, `step4b_make_mask.sh`, `step4c_combat_input.sh`, `step4d_COMBAT_run_sbatch_send.sh`, `step4e_combat_output.sh`) |
-| 5 Statistical analysis | `VBM/analysis/step5_statistical_analysis/step5b_runGLM_send.sh` |
-| 6 Null test | `VBM/analysis/step6_nulltest/` (`step6a_matrix_volume.py`, `step6b_vol_dense_gen_send.sh`, `step6c_permutation.sh`) |
+| 5 Statistical analysis | `VBM/analysis/step5_statistical_analysis/step5_runGLM_send.sh` |
+| 6a–c Null test | `VBM/analysis/step6_nulltest/` (`step6a_matrix_volume.sh`, `step6b_vol_dense_gen_send.sh`, `step6c_permutation.sh`) |
 | 7a–e Parcellation | `VBM/analysis/step7_parcellation/` (`step7a_project_parcellations_on_CAT12MNI.sh`, `step7b_combine_parcellation.m`, `step7c_parcellate_maps_send.sh`, `step7d_runGLM_parc_send.sh`, `step7e_parcellate_null_maps_send.sh`) |
 | 8a-f Consistency | `VBM/analysis/step8_consistency/` |
 | 9a-k Covariates | `VBM/analysis/step9_covariates/` |
