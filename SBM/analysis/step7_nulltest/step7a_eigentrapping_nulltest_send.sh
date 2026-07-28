@@ -7,7 +7,7 @@ export smoothKernel=10
 export nTrap=10
 for inJob in $(seq 1 $nResample); do
 		export inJob=${inJob}
-		sbatch --job-name=nulltest_${inJob} nulltest_job.sh
+		sbatch --job-name=nulltest_${inJob} step7a_sub_nulltest.sh
 		#sh nulltest_job.sh
 
 

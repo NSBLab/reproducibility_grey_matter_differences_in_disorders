@@ -85,7 +85,7 @@ for g = 1:length(group_names)
         end
 
         outputFile = fullfile(outDir, sprintf('%s_thickness_s%d_%s.txt', hemi, smoothKernel, group_name));
-        writematrix(thickmap, outputFile);
+        writematrix(thickmap, outputFile, 'Delimiter', ' ');
         fprintf('  Saved: %s\n', outputFile);
     end
 end

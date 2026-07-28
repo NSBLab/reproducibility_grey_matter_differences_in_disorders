@@ -16,7 +16,7 @@ if [ "${HPC_ENABLED:-0}" = "1" ]; then
 fi
 
 echo "=== GLM: $DATASET ==="
-matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step5_statistical_analysis('$CONFIG_FILE', '$DATASET'); quit;"
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step5_sub_statistical_analysis('$CONFIG_FILE', '$DATASET'); quit;"
 
 if [ $? -ne 0 ]; then
     echo "Error: GLM failed for $DATASET"

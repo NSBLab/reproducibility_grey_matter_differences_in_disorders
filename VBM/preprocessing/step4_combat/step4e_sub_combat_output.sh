@@ -22,4 +22,4 @@ if [[ "$HPC_ENABLED" == "1" ]]; then
     module load matlab
 fi
 
-matlab -nodisplay -r "addpath(genpath('$SCRIPT_DIR')); step4e_combat_output('$CONFIG_FILE', '$GROUP'); quit;"
+matlab -nodisplay -r "addpath(genpath('$SCRIPT_DIR')); step4e_sub_combat_output('$CONFIG_FILE', '$GROUP'); quit;"

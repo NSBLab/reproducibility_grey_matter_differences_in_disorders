@@ -1,4 +1,4 @@
-function step4b_make_mask(config_file, group_filter)
+function step4b_sub_make_mask(config_file, group_filter)
 % Create SPM masks for each COMBAT group. Requires SPM12.
 %
 % Usage:

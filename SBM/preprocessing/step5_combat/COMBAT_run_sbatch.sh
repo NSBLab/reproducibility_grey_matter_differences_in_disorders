@@ -10,7 +10,7 @@
 # Worker: runs COMBAT harmonization for one combat group and hemisphere
 # (invoked by step5c_COMBAT_run_sbatch_send.sh)
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+#SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
 GROUP="${GROUP:?Set GROUP}"
 HEMI="${HEMI:?Set HEMI}"

@@ -1,4 +1,4 @@
-function step5_statistical_analysis(config, dataset, perm_id)
+function step5_sub_statistical_analysis(config, dataset, perm_id)
 % VBM GLM analysis for one dataset (one site-diagnosis pair per call).
 %
 % Usage:

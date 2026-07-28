@@ -23,4 +23,4 @@ if [[ "$HPC_ENABLED" == "1" ]]; then
   
 fi
 
-matlab -nodisplay -r "addpath(genpath('$SCRIPT_DIR')); step4c_combat_input('$CONFIG_FILE', '$GROUP'); quit;"
+matlab -nodisplay -r "addpath(genpath('$SCRIPT_DIR')); step4c_sub_combat_input('$CONFIG_FILE', '$GROUP'); quit;"

@@ -13,5 +13,5 @@ script_DIR=/projects/kg98/trangc/VBM/code/freesurfer/freesurfer_holmesQC/step5_n
 
 module load matlab/r2023b
 
-matlab -nodisplay -r "cd ('$script_DIR');  nulltest($iCOMBAT, '$hemi', $smoothKernel, $nTrap, $inJob);quit"
+matlab -nodisplay -r "cd ('$script_DIR');  step7a_sub_nulltest($iCOMBAT, '$hemi', $smoothKernel, $nTrap, $inJob);quit"
 

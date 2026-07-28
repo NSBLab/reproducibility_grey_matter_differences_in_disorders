@@ -1,7 +1,7 @@
 #!/bin/bash
 # Dispatcher: reads combat groups from config, submits COMBAT_run_sbatch.sh per group
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BATCH_SCRIPT="${SCRIPT_DIR}/COMBAT_run_sbatch.sh"
 
 if [ -z "$CONFIG_FILE" ]; then

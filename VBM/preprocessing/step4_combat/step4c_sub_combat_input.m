@@ -1,4 +1,4 @@
-function step4c_combat_input(config, group_filter)
+function step4c_sub_combat_input(config, group_filter)
 % Prepare masked data matrix for COMBAT: reads smoothed images, applies group mask,
 % and writes anat_s<k>mwp1_T1w_masked.txt per combat group.
 %
