@@ -6,5 +6,6 @@
 **/*.nii
 **/*.mat
 data/
+utils/
 freesurfer/freesurfer_holmesQC/step4_qdec/output/
 analysis/output/

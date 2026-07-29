@@ -15,10 +15,6 @@ utils_dir = fullfile(repo_root, 'utils');
 addpath(this_dir);
 addpath(genpath(utils_dir));   % utils/ + utils/modes/ (calc_eigenstrap, ...)
 
-% Optional external dependency used for FDR (not bundled in utils/)
-if exist('/projects/kg98/trangc/library/fdr_bh', 'dir')
-    addpath('/projects/kg98/trangc/library/fdr_bh');
-end
 
 if ischar(config) || isstring(config)
     config = pipeline_load_config(char(config));

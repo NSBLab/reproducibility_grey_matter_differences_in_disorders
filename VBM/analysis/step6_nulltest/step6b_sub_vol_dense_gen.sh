@@ -7,7 +7,6 @@
 
 # Worker: one BrainSMASH surrogate (submitted by step6b_vol_dense_gen_send.sh)
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
 DATA_ROOT="${DATA_ROOT:?Set DATA_ROOT}"
 diag="${diag:?Set diag}"
@@ -22,4 +21,4 @@ if [ "${HPC_ENABLED:-0}" = "1" ]; then
     fi
 fi
 
-python "$SCRIPT_DIR/vol_dense_gen.py" "${diag}" "${site}" "${ranseed}"
+python "$SCRIPT_DIR/step6b_sub_vol_dense_gen.py" "${diag}" "${site}" "${ranseed}"

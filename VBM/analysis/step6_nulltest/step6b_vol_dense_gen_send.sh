@@ -1,8 +1,8 @@
 #!/bin/bash
 # Dispatcher: submit BrainSMASH surrogate jobs for diagnosis/site folders under derivatives.
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SUB_SCRIPT="${SCRIPT_DIR}/vol_dense_gen_job.sh"
+export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SUB_SCRIPT="${SCRIPT_DIR}/step6b_sub_vol_dense_gen.sh"
 
 if [ -z "$CONFIG_FILE" ]; then
     REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
