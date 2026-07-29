@@ -1,5 +1,6 @@
 function step7a_precal_eigenmode(config, hemi)
 % Precompute geometric eigenmodes for eigentrapping nulltest (step7b).
+% Reads VTK/mask from repo data/ (config data_directories.data).
 % Saves eigenStruct_<hemi>.mat under config data_directories.dataset_root.
 %
 % Usage:
@@ -24,21 +25,23 @@ if ischar(config) || isstring(config)
     config = pipeline_load_config(char(config));
 end
 
-if ~isfield(config.data_directories, 'atlas_dir') || isempty(config.data_directories.atlas_dir)
-    error('config.data_directories.atlas_dir is required for step7a');
+% Surface mesh + cortex mask live in repo data/ (not atlas_dir)
+if isfield(config.data_directories, 'data') && ~isempty(config.data_directories.data)
+    data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+else
+    data_dir = fullfile(repo_root, 'data');
 end
-atlas_dir = config.data_directories.atlas_dir;
 data_root = config.data_directories.dataset_root;
 
 fprintf('=== STEP7A: PRECAL EIGENMODE ===\n');
 fprintf('hemi:      %s\n', hemi);
-fprintf('atlas_dir: %s\n', atlas_dir);
+fprintf('data_dir:  %s\n', data_dir);
 fprintf('data_root: %s\n', data_root);
 
 s = struct();
 s.hemi = hemi;
-s.maskFile = fullfile(atlas_dir, sprintf('fsaverage_164k_cortex-%s_mask.txt', hemi));
-s.vtkFile  = fullfile(atlas_dir, sprintf('fsaverage_164k_midthickness_%s.vtk', hemi));
+s.maskFile = fullfile(data_dir, sprintf('fsaverage_164k_cortex-%s_mask.txt', hemi));
+s.vtkFile  = fullfile(data_dir, sprintf('fsaverage_164k_midthickness-%s.vtk', hemi));
 
 if ~exist(s.maskFile, 'file')
     error('Mask file not found: %s', s.maskFile);

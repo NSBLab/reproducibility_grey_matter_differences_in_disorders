@@ -27,7 +27,11 @@ measure = 'thickness';
 thres=0.05;
 % s.vtkFile = '/projects/kg98/trangc/MBM/data/demo_emp/fsaverage_164k_midthickness-lh.vtk';
 % s.maskFile = '/projects/kg98/trangc/MBM/data/demo_emp/fsaverage_164k_cortex-lh_mask.txt';
-load(['eigenStruct_',hemi,'.mat'])
+eigenFile = fullfile(dataDir, ['eigenStruct_', hemi, '.mat']);
+if ~exist(eigenFile, 'file')
+    error('eigenStruct not found: %s\nRun step7a_precal_eigenmode first.', eigenFile);
+end
+load(eigenFile); %#ok<LOAD>
 nEigenmode = 200;
 % nTrap = 10;
 rng(inJob)
