@@ -48,7 +48,7 @@ else
     combat_suffix=""
 fi
 
-echo "=== STEP7B: PERMUTATION NULLTEST ==="
+echo "=== STEP7C: PERMUTATION NULLTEST ==="
 echo "CONFIG_FILE:       $CONFIG_FILE"
 echo "DATA_ROOT:         $DATA_ROOT"
 echo "smoothKernel:      $smoothKernel"
@@ -136,4 +136,4 @@ if [[ "$HPC_ENABLED" != "1" ]]; then
     wait
 fi
 
-echo "=== STEP7B SUBMISSION DONE ==="
+echo "=== STEP7C SUBMISSION DONE ==="

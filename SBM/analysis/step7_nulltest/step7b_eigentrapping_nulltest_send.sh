@@ -2,7 +2,7 @@
 # Dispatcher: submit eigentrapping nulltest jobs.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SUB_SCRIPT="${SCRIPT_DIR}/step7a_sub_nulltest.sh"
+SUB_SCRIPT="${SCRIPT_DIR}/step7b_sub_nulltest.sh"
 
 if [ -z "$CONFIG_FILE" ]; then
     REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
@@ -35,7 +35,7 @@ MAX_PARALLEL=$(jq -r '.execution_mode.local_settings.max_parallel_jobs // 4' "$C
 hemi="${hemi:-lh}"
 nTrap="${nTrap:-10}"
 
-echo "=== STEP7A: EIGENTRAPPING NULLTEST ==="
+echo "=== STEP7B: EIGENTRAPPING NULLTEST ==="
 echo "CONFIG_FILE:  $CONFIG_FILE"
 echo "DATA_ROOT:    $DATA_ROOT"
 echo "harmonize:    $harmonize"
@@ -68,4 +68,4 @@ if [[ "$HPC_ENABLED" != "1" ]]; then
     wait
 fi
 
-echo "=== STEP7A SUBMISSION DONE ==="
+echo "=== STEP7B SUBMISSION DONE ==="

@@ -8,7 +8,7 @@ See "[The cross-site reproducibility of MRI morphometric phenotypes in psychiatr
 
 In this package, we provide the codes that were used to obtain the results in the project. The main folders are:
   1. `data/`: sample data to run the pipeline.
-  2. `utils/`: dependent packages and functions.
+  2. `utils/`: dependent packages and functions, including [modes](https://github.com/magnesium2400/nihelp.git)
   3. `data_BIDS/`:  organising downloaded data into BIDS format and selecting subjects for the analysis.
   4. `SBM/`: analysing cortical thickness alteration maps using surface-based morphometry (SBM) and evaluating their 
   consistency.
@@ -79,7 +79,7 @@ Run SBM preprocessing and analysis
 | 4 Extract | `SBM/preprocessing/step4_extract_subjects/step4_run_extract_surface.m` |
 | 5a–d COMBAT / metadata | `SBM/preprocessing/step5_combat/` (`step5a_combine_metadata.m`, `step5b_combat_surface_input.sh`, `step5c_COMBAT_run_sbatch_send.sh`, `step5d_combat_surface_output.sh`) |
 | 6 GLM | `SBM/analysis/step6_statistical_analysis/step6_glmfit.sh` |
-| 7a–b Null test | `SBM/analysis/step7_nulltest/` (`step7a_eigentrapping_nulltest_send.sh`, `step7b_permutation_nulltest_send.sh`) |
+| 7a–c Null test | `SBM/analysis/step7_nulltest/` (`step7a_precal_eigenmode.sh`, `step7b_eigentrapping_nulltest_send.sh`, `step7c_permutation_nulltest_send.sh`) |
 | 8a–d Parcellation | `SBM/analysis/step8_parcellation/` (`step8a_parcelate_maps.m`, `step8b_glm_parc.m`, `step8c_parc_null.m`, `step8d_ver_null.m`) |
 | 9a–e Consistency | `SBM/analysis/step9_consistency/` (`step9a_corr_zmap.m`, `step9b_corr_zmap_parc.m`, `step9c_corr_zmap_null_send.sh`, `step9d_corr_zmap_null_combine.m`, `step9e_corr_zmap_parc_null.m`) |
 | 10a–k Covariates | `SBM/analysis/step10_covariates/` |

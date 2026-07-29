@@ -1,34 +1,27 @@
-function step7a_sub_nulltest(config, iCOMBAT, hemi, smoothKernel, nTrap, inJob)
+function step7b_sub_nulltest(config, iCOMBAT, hemi, smoothKernel, nTrap, inJob)
 % Eigentrapping null test for one job index.
 %
 % Usage:
-%   step7a_sub_nulltest('config_hpc.json', 1, 'lh', 10, 10, 1)
-%   step7a_sub_nulltest(config, iCOMBAT, hemi, smoothKernel, nTrap, inJob)
+%   step7b_sub_nulltest('config_hpc.json', 1, 'lh', 10, 10, 1)
+%   step7b_sub_nulltest(config, iCOMBAT, hemi, smoothKernel, nTrap, inJob)
 
 if nargin < 6
-    error('Usage: step7a_sub_nulltest(config, iCOMBAT, hemi, smoothKernel, nTrap, inJob)');
+    error('Usage: step7b_sub_nulltest(config, iCOMBAT, hemi, smoothKernel, nTrap, inJob)');
 end
 
 this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+utils_dir = fullfile(repo_root, 'utils');
 addpath(this_dir);
+addpath(genpath(utils_dir));   % utils/ + utils/modes/ (calc_eigenstrap, ...)
 
-if ischar(config) || isstring(config)
-    addpath(genpath(fullfile(this_dir, '..', '..', '..')));
-    config = pipeline_load_config(char(config));
-end
-
-% Optional external toolboxes (leave if present on HPC)
-if exist('/projects/kg98/trangc/MBM/func', 'dir')
-    addpath('/projects/kg98/trangc/MBM/func');
-end
-if exist('/projects/kg98/trangc/library/NSB_utils_matlab', 'dir')
-    addpath(genpath('/projects/kg98/trangc/library/NSB_utils_matlab'));
-end
-if exist('/projects/kg98/trangc/library/nihelp', 'dir')
-    addpath(genpath('/projects/kg98/trangc/library/nihelp'));
-end
+% Optional external dependency used for FDR (not bundled in utils/)
 if exist('/projects/kg98/trangc/library/fdr_bh', 'dir')
     addpath('/projects/kg98/trangc/library/fdr_bh');
+end
+
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
 end
 
 dataDir = config.data_directories.dataset_root;
@@ -41,7 +34,7 @@ if isempty(smoothKernel)
     smoothKernel = config.analysis_settings.sbm_smoothing_kernel;
 end
 
-fprintf('=== STEP7A: EIGENTRAPPING ===\n');
+fprintf('=== STEP7B: EIGENTRAPPING ===\n');
 fprintf('dataDir=%s  hemi=%s  smooth=%d  combat=%d  inJob=%d\n', ...
     dataDir, hemi, smoothKernel, iCOMBAT, inJob);
 
@@ -49,9 +42,9 @@ measureShort = 'thick';
 measure = 'thickness';
 thres = 0.05;
 
-eigenFile = fullfile(this_dir, ['eigenStruct_', hemi, '.mat']);
+eigenFile = fullfile(dataDir, ['eigenStruct_', hemi, '.mat']);
 if ~exist(eigenFile, 'file')
-    eigenFile = ['eigenStruct_', hemi, '.mat'];
+    error('eigenStruct not found: %s\nRun step7a_precal_eigenmode first.', eigenFile);
 end
 load(eigenFile); %#ok<LOAD>
 rng(inJob);
@@ -165,5 +158,5 @@ for iSite = 1:nSite
     fprintf('Saved: %s\n', outFile);
 end
 
-fprintf('=== STEP7A COMPLETED (inJob=%d) ===\n', inJob);
+fprintf('=== STEP7B COMPLETED (inJob=%d) ===\n', inJob);
 end

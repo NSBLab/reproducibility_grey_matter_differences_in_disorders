@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=60000
 
-# Worker: one eigentrapping job (submitted by step7a_eigentrapping_nulltest_send.sh)
+# Worker: one eigentrapping job (submitted by step7b_eigentrapping_nulltest_send.sh)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
@@ -19,11 +19,11 @@ if [ "${HPC_ENABLED:-0}" = "1" ]; then
     module load matlab/r2023b
 fi
 
-echo "=== STEP7A WORKER: inJob=$inJob hemi=$hemi smooth=$smoothKernel ==="
-matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step7a_sub_nulltest('$CONFIG_FILE', $harmonize, '$hemi', $smoothKernel, $nTrap, $inJob); quit;"
+echo "=== STEP7B WORKER: inJob=$inJob hemi=$hemi smooth=$smoothKernel ==="
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step7b_sub_nulltest('$CONFIG_FILE', $harmonize, '$hemi', $smoothKernel, $nTrap, $inJob); quit;"
 
 if [ $? -ne 0 ]; then
-    echo "Error: step7a job $inJob failed"
+    echo "Error: STEP7B job $inJob failed"
     exit 1
 fi
-echo "=== STEP7A WORKER DONE: inJob=$inJob ==="
+echo "=== STEP7B WORKER DONE: inJob=$inJob ==="
