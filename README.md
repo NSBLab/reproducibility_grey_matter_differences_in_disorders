@@ -55,7 +55,7 @@ Run VBM preprocessing and analysis
 | 4a–e COMBAT / metadata | `VBM/preprocessing/step4_combat/` (`step4a_combine_metadata.m`, `step4b_make_mask.sh`, `step4c_combat_input.sh`, `step4d_COMBAT_run_sbatch_send.sh`, `step4e_combat_output.sh`) |
 | 5 Statistical analysis | `VBM/analysis/step5_statistical_analysis/step5_runGLM_send.sh` |
 | 6a–c Null test | `VBM/analysis/step6_nulltest/` (`step6a_matrix_volume.sh`, `step6b_vol_dense_gen_send.sh`, `step6c_permutation.sh`) |
-| 7a–e Parcellation | `VBM/analysis/step7_parcellation/` (`step7a_project_parcellations_on_CAT12MNI.sh`, `step7b_combine_parcellation.m`, `step7c_parcellate_maps_send.sh`, `step7d_runGLM_parc_send.sh`, `step7e_parcellate_null_maps_send.sh`) |
+| 7a–e Parcellation | `VBM/analysis/step7_parcellation/` (`step7a_project_parcellations_on_CAT12MNI.sh`, `step7b_combine_parcellation.sh`, `step7c_parcellate_maps_send.sh`, `step7d_runGLM_parc_send.sh`, `step7e_parcellate_null_maps_send.sh`) |
 | 8a-f Consistency | `VBM/analysis/step8_consistency/` |
 | 9a-k Covariates | `VBM/analysis/step9_covariates/` |
 | 10 Figures | `VBM/analysis/step10_figures/` |
@@ -80,7 +80,7 @@ Run SBM preprocessing and analysis
 | 5a–d COMBAT / metadata | `SBM/preprocessing/step5_combat/` (`step5a_combine_metadata.m`, `step5b_combat_surface_input.sh`, `step5c_COMBAT_run_sbatch_send.sh`, `step5d_combat_surface_output.sh`) |
 | 6 GLM | `SBM/analysis/step6_statistical_analysis/step6_glmfit.sh` |
 | 7a–c Null test | `SBM/analysis/step7_nulltest/` (`step7a_precal_eigenmode.sh`, `step7b_eigentrapping_nulltest_send.sh`, `step7c_permutation_nulltest_send.sh`) |
-| 8a–d Parcellation | `SBM/analysis/step8_parcellation/` (`step8a_parcelate_maps.m`, `step8b_glm_parc.m`, `step8c_parc_null.m`, `step8d_ver_null.m`) |
+| 8a–d Parcellation | `SBM/analysis/step8_parcellation/` (`step8a_parcelate_maps.sh`, `step8b_glm_parc.sh`, `step8c_parc_null.sh`, `step8d_ver_null.sh`; or MATLAB `step8*_*(config)`) |
 | 9a–e Consistency | `SBM/analysis/step9_consistency/` (`step9a_corr_zmap.m`, `step9b_corr_zmap_parc.m`, `step9c_corr_zmap_null_send.sh`, `step9d_corr_zmap_null_combine.m`, `step9e_corr_zmap_parc_null.m`) |
 | 10a–k Covariates | `SBM/analysis/step10_covariates/` |
 | 11a–g Sample size | `SBM/analysis/step11_sample_size_effect/` (`step11a_resample_2sitegroup_subdivide_samesize_send.sh`, `step11b_glmfit_resample_2sitegroup_subdivide_samesize_send.sh`, `step11c_corr_map_subdivide_send.sh`, `step11d_corr_zmap_subdivide_2sitegroup_samesize.m`, `step11e_parc_resample_2sitegroup_subdivide_samesize_send.sh`, `step11f_corr_parc_resample_2sitegroup_subdivide_samesize_send.sh`, `step11g_corr_zmap_parc_subdivide_2sitegroup_samesize.m`) |

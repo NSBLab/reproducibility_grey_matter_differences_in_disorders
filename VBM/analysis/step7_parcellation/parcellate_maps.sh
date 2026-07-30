@@ -4,15 +4,23 @@
 #SBATCH --account=kg98
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16000
-# SBATCH --mail-user=youremail@monash.edu
-# SBATCH --mail-type=FAIL
-# SBATCH --mail-type=BEGIN
-# SBATCH --mail-type=END
 
+# Worker: parcellate maps for one dataset (submitted by step7c_parcellate_maps_send.sh)
 
-export script_DIR=/home/trangc/kg98/trangc/VBM/code/roi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
+DATASET="${DATASET:?Set DATASET}"
 
-module load matlab/r2023b
+if [ "${HPC_ENABLED:-0}" = "1" ]; then
+    module unload matlab 2>/dev/null || true
+    module load spm12/matlab2021a.r7771-v1
+fi
 
-matlab -nodisplay -r "cd ('$script_DIR');  addpath('/scratch/kg98/trangc/toolbox/spm12'); parcellate_maps('$dataset',$isses);quit"
+echo "=== PARCELLATE MAPS: $DATASET ==="
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); parcellate_maps('$CONFIG_FILE', '$DATASET'); quit;"
 
+if [ $? -ne 0 ]; then
+    echo "Error: parcellate_maps failed for $DATASET"
+    exit 1
+fi
+echo "=== PARCELLATE MAPS DONE: $DATASET ==="

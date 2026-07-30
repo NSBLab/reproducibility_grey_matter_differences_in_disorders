@@ -4,18 +4,27 @@
 #SBATCH --account=kg98
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=60000
-# SBATCH --mail-user=youremail@monash.edu
-# SBATCH --mail-type=FAIL
-# SBATCH --mail-type=BEGIN
-# SBATCH --mail-type=END
 
+# Worker: parcellate null maps for one diagnosis x site
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
+diag="${diag:?Set diag}"
+site="${site:?Set site}"
+nulldir="${NULLDIR:?Set NULLDIR}"
+nNull="${nNull:?Set nNull}"
 
-export script_DIR=/home/trangc/kg98/trangc/VBM/code/roi
+if [ "${HPC_ENABLED:-0}" = "1" ]; then
+    module unload matlab 2>/dev/null || true
+    module load spm12/matlab2021a.r7771-v1
+fi
 
-module load  spm12/matlab2021a.r7771-v1
+echo "=== PARCELLATE NULL: diag=$diag site=$site ==="
+echo "nulldir=$nulldir nNull=$nNull"
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); parcellate_null_maps('$CONFIG_FILE', '$diag', '$site', '$nulldir', $nNull); quit;"
 
-echo $nulldir
-
-matlab -nodisplay -r "cd ('$script_DIR');  parcellate_null_maps('$diag', '$site', '$nulldir',$nNull)"
-
+if [ $? -ne 0 ]; then
+    echo "Error: parcellate_null_maps failed for $diag / $site"
+    exit 1
+fi
+echo "=== PARCELLATE NULL DONE: $diag / $site ==="

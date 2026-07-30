@@ -1,110 +1,178 @@
-clear all
-addpath(genpath('/projects/kg98/trangc/library/BrainSpace'))
-addpath(genpath('/projects/kg98/trangc/library'))
-hemi = 'lh';
-smoothkernel = 0;
+function step8a_parcelate_maps(config, hemi)
+% Parcellate subject thickness maps (DK + Schaefer) for enabled datasets.
+%
+% Usage:
+%   step8a_parcelate_maps('config_hpc.json')
+%   step8a_parcelate_maps('config_hpc.json', 'lh')
+%   step8a_parcelate_maps(config, 'rh')
+
+if nargin < 1 || isempty(config)
+    error('Usage: step8a_parcelate_maps(config [, hemi])');
+end
+if nargin < 2 || isempty(hemi)
+    hemi = 'lh';
+end
+hemi = char(hemi);
+
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+utils_dir = fullfile(repo_root, 'utils');
+addpath(this_dir);                 % load_mgh
+addpath(genpath(utils_dir));       % read_annotation, pipeline_*
+
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+
+% full2parcel from BrainSpace if available
+if exist('full2parcel', 'file') ~= 2
+    cand = {fullfile(repo_root, 'utils', 'BrainSpace'), ...
+            '/projects/kg98/trangc/library/BrainSpace'};
+    for ic = 1:numel(cand)
+        if exist(cand{ic}, 'dir')
+            addpath(genpath(cand{ic}));
+            break;
+        end
+    end
+end
+if exist('full2parcel', 'file') ~= 2
+    error('full2parcel not found. Add BrainSpace to the MATLAB path.');
+end
+
+datadir = config.data_directories.dataset_root;
+datasets = pipeline_get_enabled_datasets(config);
+if isempty(datasets)
+    error('No enabled datasets in config');
+end
+
+smoothkernel = config.analysis_settings.sbm_smoothing_kernel;
+iCOMBAT = config.analysis_settings.harmonize;
 measure = 'thick';
-iCOMBAT = 1;
-% load(['eigenStruct_',hemi,'.mat']); %load structure that contains eigentrapping because the mask was changed to fix the 164k mesh error
+
+atlas_root = local_atlas_root(config, repo_root);
+aparc_file = local_find_aparc(datadir, datasets, atlas_root, hemi);
+
+fprintf('=== STEP8A: PARCELATE MAPS ===\n');
+fprintf('datadir: %s\n', datadir);
+fprintf('hemi: %s  smooth: %d  combat: %d\n', hemi, smoothkernel, iCOMBAT);
+fprintf('aparc: %s\n', aparc_file);
+
 % DK atlas
-[tempVertices,tempLabel,colortable]=read_annotation(['/projects/kg98/trangc/VBM/data/Atypical/derivatives' ...
-    '/freesurfer/fsaverage/label/lh.aparc.annot']);
+[~, tempLabel, colortable] = read_annotation(aparc_file);
 map2colortable = [2:4 6:36];
-colorcode = colortable.table(map2colortable,5);
-[lia labelDK] = ismember(tempLabel, colorcode);
+colorcode = colortable.table(map2colortable, 5);
+[~, labelDK] = ismember(tempLabel, colorcode);
 
-% Schaefer atlas
-[tempVertices,tempLabel,colortable]=read_annotation(['/projects/kg98/trangc/atlases/Human_cortical/Schaefer/fsaverage/label/lh.Schaefer2018_100Parcels_7Networks_order.annot']);
-map2colortable = [2:51];
-colorcode = colortable.table(map2colortable,5);
-[lia labelSF100] = ismember(tempLabel, colorcode);
+% Schaefer atlases
+schaefer_label_dir = fullfile(atlas_root, 'Human_cortical', 'Schaefer', 'fsaverage', 'label');
+[~, tempLabel, colortable] = read_annotation(fullfile(schaefer_label_dir, [hemi, '.Schaefer2018_100Parcels_7Networks_order.annot']));
+map2colortable = 2:51;
+colorcode = colortable.table(map2colortable, 5);
+[~, labelSF100] = ismember(tempLabel, colorcode);
 
-[tempVertices,tempLabel,colortable]=read_annotation(['/projects/kg98/trangc/atlases/Human_cortical/Schaefer/fsaverage/label/lh.Schaefer2018_500Parcels_7Networks_order.annot']);
-map2colortable = [2:251];
-colorcode = colortable.table(map2colortable,5);
-[lia labelSF500] = ismember(tempLabel, colorcode);
+[~, tempLabel, colortable] = read_annotation(fullfile(schaefer_label_dir, [hemi, '.Schaefer2018_500Parcels_7Networks_order.annot']));
+map2colortable = 2:251;
+colorcode = colortable.table(map2colortable, 5);
+[~, labelSF500] = ismember(tempLabel, colorcode);
 
-[tempVertices,tempLabel,colortable]=read_annotation(['/projects/kg98/trangc/atlases/Human_cortical/Schaefer/fsaverage/label/lh.Schaefer2018_1000Parcels_7Networks_order.annot']);
-map2colortable = [2:501];
-colorcode = colortable.table(map2colortable,5);
-[lia labelSF1000] = ismember(tempLabel, colorcode);
-
-
-datadir = '/projects/kg98/trangc/VBM/data';
-datasets = readlines(fullfile(datadir,'dataset_list_SBM_psy.txt'));
+[~, tempLabel, colortable] = read_annotation(fullfile(schaefer_label_dir, [hemi, '.Schaefer2018_1000Parcels_7Networks_order.annot']));
+map2colortable = 2:501;
+colorcode = colortable.table(map2colortable, 5);
+[~, labelSF1000] = ismember(tempLabel, colorcode);
 
 for iSite = 1:length(datasets)
-    datasets(iSite)
+    dsName = char(datasets{iSite});
+    fprintf('Dataset: %s\n', dsName);
 
-    files = dir(fullfile(datadir,datasets(iSite),'qdec*'));
-    files = files(~ismember({files.name}, {'.', '..'})); % Exclude '.' and '..'
+    files = dir(fullfile(datadir, dsName, 'qdec*'));
+    files = files(~ismember({files.name}, {'.', '..'}));
 
     for iFile = 1:length(files)
-        % find site name
-        % Split the string using '_' as the delimiter
-        parts =  strsplit(files(iFile).name, '_');
-
-        % Check if there are at least two parts
-        if numel(parts) >4
-            % Extract the substring between the first and second underscores
+        parts = strsplit(files(iFile).name, '_');
+        if numel(parts) > 4
             lastpart = char(parts{5});
-            diag(iFile) = str2num(lastpart(1));
-            site{iFile} = [char(parts{3}),'_',char(parts{4})];
+            diag(iFile) = str2double(lastpart(1));
+            site{iFile} = [char(parts{3}), '_', char(parts{4})];
         else
-            % Handle the case where there are not enough underscores
             lastpart = char(parts{4});
-            diag(iFile) = str2num(lastpart(1));
+            diag(iFile) = str2double(lastpart(1));
             site{iFile} = char(parts{3});
         end
 
-        qdecfile = readtable(fullfile(datadir,datasets(iSite), files(iFile).name));
+        qdecfile = readtable(fullfile(datadir, dsName, files(iFile).name));
         if iCOMBAT == 0
-            if strcmp(datasets(iSite),'MBBP')
+            if strcmp(dsName, 'MBBP')
                 for iMap = 1:height(qdecfile)
                     subNameFull = char(qdecfile.fsid{iMap});
-                    subNameSort = ['sub-',num2str(str2num(subNameFull(5:end)))];
-                    vermap(:,iMap) = load_mgh(fullfile('/scratch/kg98/Toby/WHOLEMBBP/workspace', 'derivatives','freesurfer',subNameSort,'surf',['lh.thickness.fwhm',char(num2str(smoothkernel)),'.fsaverage.mgh']));
-
-                    zmapDK(:,iMap) = full2parcel(vermap(:,iMap) ,labelDK');
-                    zmapSF100(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF100');
-                    zmapSF500(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF500');
-                    zmapSF1000(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF1000');
+                    subNameSort = ['sub-', num2str(str2double(subNameFull(5:end)))];
+                    vermap(:, iMap) = load_mgh(fullfile('/scratch/kg98/Toby/WHOLEMBBP/workspace', 'derivatives', 'freesurfer', subNameSort, 'surf', ...
+                        [hemi, '.thickness.fwhm', char(num2str(smoothkernel)), '.fsaverage.mgh']));
+                    zmapDK(:, iMap) = full2parcel(vermap(:, iMap), labelDK');
+                    zmapSF100(:, iMap) = full2parcel(vermap(:, iMap), labelSF100');
+                    zmapSF500(:, iMap) = full2parcel(vermap(:, iMap), labelSF500');
+                    zmapSF1000(:, iMap) = full2parcel(vermap(:, iMap), labelSF1000');
                 end
             else
                 for iMap = 1:height(qdecfile)
-                    vermap(:,iMap) = load_mgh(fullfile(datadir,char(datasets(iSite)), 'derivatives','freesurfer',char(qdecfile.fsid{iMap}),'surf',['lh.thickness.fwhm',char(num2str(smoothkernel)),'.fsaverage.mgh']));
-
-                    zmapDK(:,iMap) = full2parcel(vermap(:,iMap) ,labelDK');
-
-                    zmapSF100(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF100');
-                    zmapSF500(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF500');
-                    zmapSF1000(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF1000');
-
+                    vermap(:, iMap) = load_mgh(fullfile(datadir, dsName, 'derivatives', 'freesurfer', char(qdecfile.fsid{iMap}), 'surf', ...
+                        [hemi, '.thickness.fwhm', char(num2str(smoothkernel)), '.fsaverage.mgh']));
+                    zmapDK(:, iMap) = full2parcel(vermap(:, iMap), labelDK');
+                    zmapSF100(:, iMap) = full2parcel(vermap(:, iMap), labelSF100');
+                    zmapSF500(:, iMap) = full2parcel(vermap(:, iMap), labelSF500');
+                    zmapSF1000(:, iMap) = full2parcel(vermap(:, iMap), labelSF1000');
                 end
             end
-            qdecfolder = fullfile(datadir,char(datasets(iSite)), 'derivatives','freesurfer','qdec',[char(num2str(diag(iFile))),'_',char(site{iFile}),'_',measure,'_smooth',char(num2str(smoothkernel)),'_',hemi,'_sex_age_SF']);
+            qdecfolder = fullfile(datadir, dsName, 'derivatives', 'freesurfer', 'qdec', ...
+                [char(num2str(diag(iFile))), '_', char(site{iFile}), '_', measure, '_smooth', char(num2str(smoothkernel)), '_', hemi, '_sex_age_SF']);
             mkdir(qdecfolder);
-
-            save(fullfile(qdecfolder,[hemi,'.thickness.fwhm',char(num2str(smoothkernel)),'.fsaverage.mat']),'zmapSF100','zmapSF500' ,'zmapSF1000')
-
+            save(fullfile(qdecfolder, [hemi, '.thickness.fwhm', char(num2str(smoothkernel)), '.fsaverage.mat']), ...
+                'zmapSF100', 'zmapSF500', 'zmapSF1000');
         else
             for iMap = 1:height(qdecfile)
-                vermap(:,iMap) = load_mgh(fullfile(datadir,char(datasets(iSite)), 'derivatives','freesurfer',char(qdecfile.fsid{iMap}),'surf',['lh.thickness.fwhm',char(num2str(smoothkernel)),'.fsaverage_combat.mgh']));
-
-                zmapDK(:,iMap) = full2parcel(vermap(:,iMap) ,labelDK');
-
-                zmapSF100(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF100');
-                zmapSF500(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF500');
-                zmapSF1000(:,iMap) = full2parcel(vermap(:,iMap) ,labelSF1000');
-
+                vermap(:, iMap) = load_mgh(fullfile(datadir, dsName, 'derivatives', 'freesurfer', char(qdecfile.fsid{iMap}), 'surf', ...
+                    [hemi, '.thickness.fwhm', char(num2str(smoothkernel)), '.fsaverage_combat.mgh']));
+                zmapDK(:, iMap) = full2parcel(vermap(:, iMap), labelDK');
+                zmapSF100(:, iMap) = full2parcel(vermap(:, iMap), labelSF100');
+                zmapSF500(:, iMap) = full2parcel(vermap(:, iMap), labelSF500');
+                zmapSF1000(:, iMap) = full2parcel(vermap(:, iMap), labelSF1000');
             end
-            qdecfolder = fullfile(datadir,char(datasets(iSite)), 'derivatives','freesurfer','qdec',[char(num2str(diag(iFile))),'_',char(site{iFile}),'_',measure,'_smooth',char(num2str(smoothkernel)),'_',hemi,'_sex_age_SF_combat']);
+            qdecfolder = fullfile(datadir, dsName, 'derivatives', 'freesurfer', 'qdec', ...
+                [char(num2str(diag(iFile))), '_', char(site{iFile}), '_', measure, '_smooth', char(num2str(smoothkernel)), '_', hemi, '_sex_age_SF_combat']);
             mkdir(qdecfolder);
-
-            save(fullfile(qdecfolder,[hemi,'.thickness.fwhm',char(num2str(smoothkernel)),'.fsaverage.mat']),'zmapDK','zmapSF100','zmapSF500' ,'zmapSF1000')
-
+            save(fullfile(qdecfolder, [hemi, '.thickness.fwhm', char(num2str(smoothkernel)), '.fsaverage.mat']), ...
+                'zmapDK', 'zmapSF100', 'zmapSF500', 'zmapSF1000');
         end
-        clear zmapDK zmapSF100 zmapSF500 zmapSF1000  vermap
+        clear zmapDK zmapSF100 zmapSF500 zmapSF1000 vermap
     end
     clear site diag
+end
+
+fprintf('=== STEP8A DONE ===\n');
+end
+
+function atlas_root = local_atlas_root(config, repo_root)
+% Atlas annotations live under repo data/ (config data_directories.data)
+if isfield(config.data_directories, 'data') && ~isempty(config.data_directories.data)
+    atlas_root = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+else
+    atlas_root = fullfile(repo_root, 'data');
+end
+end
+
+function aparc_file = local_find_aparc(datadir, datasets, atlas_root, hemi)
+% Prefer first enabled dataset with fsaverage aparc; else atlas tree / repo data.
+fname = [hemi, '.aparc.annot'];
+for i = 1:length(datasets)
+    cand = fullfile(datadir, char(datasets{i}), 'derivatives', 'freesurfer', 'fsaverage', 'label', fname);
+    if exist(cand, 'file')
+        aparc_file = cand;
+        return;
+    end
+end
+cand = fullfile(atlas_root, 'Human_cortical', 'fsaverage', 'label', fname);
+if exist(cand, 'file')
+    aparc_file = cand;
+    return;
+end
+error('Could not find %s under enabled datasets or atlas_root', fname);
 end
