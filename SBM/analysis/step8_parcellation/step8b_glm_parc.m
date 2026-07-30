@@ -41,7 +41,7 @@ else
     atlas_root = fullfile(repo_root, 'data');
 end
 
-schaefer_label_dir = fullfile(atlas_root, 'Human_cortical', 'Schaefer', 'fsaverage', 'label');
+schaefer_label_dir = fullfile(atlas_root);
 
 fprintf('=== STEP8B: GLM PARC ===\n');
 fprintf('datadir: %s\n', datadir);

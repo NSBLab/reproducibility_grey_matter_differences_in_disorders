@@ -65,7 +65,11 @@ for i = 1:length(enabled)
     if exist(cand, 'file'); aparc_file = cand; break; end
 end
 if isempty(aparc_file)
-    error('Could not find %s.aparc.annot under enabled datasets', hemi);
+    cand = fullfile(atlas_root, [hemi, '.aparc.annot']);
+    if exist(cand, 'file'); aparc_file = cand; end
+end
+if isempty(aparc_file)
+    error('Could not find %s.aparc.annot under enabled datasets or %s', hemi, atlas_root);
 end
 
 [~, tempLabel, colortable] = read_annotation(aparc_file);
@@ -73,7 +77,7 @@ map2colortable = [2:4 6:36];
 colorcode = colortable.table(map2colortable, 5);
 [~, labelDK] = ismember(tempLabel, colorcode);
 
-schaefer_label_dir = fullfile(atlas_root, 'Human_cortical', 'Schaefer', 'fsaverage', 'label');
+schaefer_label_dir = atlas_root;
 [~, tempLabel, colortable] = read_annotation(fullfile(schaefer_label_dir, [hemi, '.Schaefer2018_100Parcels_7Networks_order.annot']));
 map2colortable = 2:51;
 colorcode = colortable.table(map2colortable, 5);

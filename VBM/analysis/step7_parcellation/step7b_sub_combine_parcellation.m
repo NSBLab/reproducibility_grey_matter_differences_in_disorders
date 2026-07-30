@@ -30,8 +30,8 @@ else
     atlas_root = fullfile(repo_root, 'data');
 end
 
-cere_file = fullfile(atlas_root, 'Human_cerebellum', 'Buckner-whole_1mm_CAT12MNI.nii.gz');
-sub_file  = fullfile(atlas_root, 'Tian_subcortical', 'CAT12MNI', 'Tian_Subcortex_S1_3T_2009cAsym_CAT12MNI.nii.gz');
+cere_file = fullfile(atlas_root, 'Buckner-whole_1mm_CAT12MNI.nii.gz');
+sub_file  = fullfile(atlas_root, 'Tian_Subcortex_S1_3T_2009cAsym_CAT12MNI.nii.gz');
 if ~exist(cere_file, 'file')
     error('Cerebellum atlas not found: %s\nRun step7a first.', cere_file);
 end
@@ -54,11 +54,11 @@ nParcList = 100:100:1000;
 
 for iParc = 1:length(nParcList)
     nParc = nParcList(iParc);
-    cortex_file = fullfile(atlas_root, 'Human_cortical', 'Schaefer', 'CAT12MNI', ...
+    cortex_file = fullfile(atlas_root, ...
         sprintf('Schaefer2018_%dParcels_7Networks_order_CAT12MNI.nii.gz', nParc));
     if ~exist(cortex_file, 'file')
         % FSL sometimes writes without .gz
-        cortex_file_alt = fullfile(atlas_root, 'Human_cortical', 'Schaefer', 'CAT12MNI', ...
+        cortex_file_alt = fullfile(atlas_root, ...
             sprintf('Schaefer2018_%dParcels_7Networks_order_CAT12MNI.nii', nParc));
         if exist(cortex_file_alt, 'file')
             cortex_file = cortex_file_alt;
