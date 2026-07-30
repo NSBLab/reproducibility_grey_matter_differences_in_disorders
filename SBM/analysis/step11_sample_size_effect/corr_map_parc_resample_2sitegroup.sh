@@ -9,11 +9,15 @@
 # SBATCH --mail-type=BEGIN
 # SBATCH --mail-type=END
 
-export script_DIR=/projects/kg98/trangc/VBM/code/freesurfer/freesurfer_holmesQC/step4_qdec
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -z "$CONFIG_FILE" ]; then
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+fi
 
-module load  matlab/r2023b
+module load matlab/r2023b
 
-matlab -nodisplay -r "cd ('$script_DIR');  corr_map_parc_subdivide_func('$outdir', $iSubdivide, $randomSubdivide)"
+matlab -nodisplay -r "cd ('$SCRIPT_DIR'); corr_map_parc_subdivide_func('$CONFIG_FILE', '$outdir', $iSubdivide, $randomSubdivide); quit"
 
 
 

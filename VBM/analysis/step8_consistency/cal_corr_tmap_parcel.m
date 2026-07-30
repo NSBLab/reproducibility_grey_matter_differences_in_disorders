@@ -1,11 +1,13 @@
-function [cor1 corThres1 rep1 t1All t1Thres siteList] = cal_corr_tmap_parcel(address, metadata, diagnosisString, nParc)
+function [cor1 corThres1 rep1 t1All t1Thres siteList] = cal_corr_tmap_parcel(data_root, address, metadata, diagnosisString, nParc)
 [LaDiag LbDiag] = ismember(metadata.diagnosis_string,diagnosisString);
 [siteString ia ic] = unique(metadata.site_string(LaDiag));
 nSite = length(siteString);
 
 
 for iSite = 1:nSite
-    load(['/projects/kg98/trangc/VBM/data/', address,'/', char(diagnosisString),'/',char(siteString(iSite)),'/',char(num2str(nParc)),'_parcCon.mat']);
+    in_file = fullfile(data_root, address, char(diagnosisString), char(siteString(iSite)), ...
+        [char(num2str(nParc)), '_parcCon.mat']);
+    load(in_file);
     
     t1All(iSite,:) = stat.tMap;
 

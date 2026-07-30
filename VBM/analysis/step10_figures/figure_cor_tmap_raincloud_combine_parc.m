@@ -1,7 +1,20 @@
-clear all
-% close all
-addpath('/home/trangc/kg98/trangc/library/Violinplot-Matlab-master')
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
+function figure_cor_tmap_raincloud_combine_parc(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+if isfield(config.data_directories, 'data') && ~isempty(config.data_directories.data)
+    plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+else
+    plot_data_dir = fullfile(repo_root, 'data');
+end
+output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
 iCOMBAT = 1;
 smoothKernel = 0;
 hemi = 'lh';
@@ -69,8 +82,8 @@ nParcList = [100 500 1000];
 nPara = length(nParcList)*3;
 for iParc = 1:3
 nParc = nParcList(iParc);
-load(['output/corr_tmap_parc_',num2str(nParc),'.mat']);
-load(['output/corr_null_tmap_parc_',num2str(nParc),'.mat']);
+load(fullfile(plot_data_dir, ['corr_tmap_parc_',num2str(nParc),'.mat']));
+load(fullfile(plot_data_dir, ['corr_null_tmap_parc_',num2str(nParc),'.mat']));
 
 makeUvalue = 0;
 for iDiag = 1:nDiag
@@ -204,6 +217,7 @@ a25 = annotation(fig, 'textbox', [0.01, 0.35, 0.02, 0.02], 'string', 'c|', 'edge
     'FontName',font_name,'FontSize',font_size,  'horizontalalignment', 'left');
 
 %%
-savefig(fig,['output/figure_corr_tmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_parc_combine.fig']);
+savefig(fig,fullfile(output_dir,['figure_corr_tmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_parc_combine.fig']));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', ['output/figure_corr_tmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_parc_combine.jpg'])
+print(fig, '-djpeg', '-r1200', fullfile(output_dir,['figure_corr_tmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_parc_combine.jpg']))
+end

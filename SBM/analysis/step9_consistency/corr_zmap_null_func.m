@@ -1,19 +1,24 @@
-function corr_zmap_null_func(iNull, iCOMBAT, hemi, smoothKernel)
+function corr_zmap_null_func(config, iNull, iCOMBAT, hemi, smoothKernel)
+if nargin < 2
+    error('Usage: corr_zmap_null_func(config, iNull, iCOMBAT, hemi, smoothKernel)');
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
 % list of disorders
 diagString = {'HC', 'BD', 'SCA',...
     'SCZ', 'ASD', 'MDD' ,'AD'};
-addpath('/home/trangc/kg98/trangc/MBM/func')
-addpath('/home/trangc/kg98/trangc/VBM/code/utils')
-addpath('/home/trangc/kg98/trangc/library/fdr_bh')
-addpath(genpath('/projects/kg98/trangc/library/BrainSpace'))
-addpath(genpath('/projects/kg98/trangc/library'))
 % load(['eigenStruct_',hemi,'.mat']); %load structure that contains eigentrapping because the mask was changed to fix the 164k mesh error
 
 
-% list of dataset
-dataDir = '/projects/kg98/trangc/VBM/data';
-dataFilePS = readtable(fullfile(dataDir,'dataset_list_SBM.txt'),'ReadVariableNames',false);
-dataList = dataFilePS.Var1;
+dataDir = config.data_directories.dataset_root;
+iCOMBAT = local_default(iCOMBAT, config.analysis_settings.harmonize);
+hemi = char(local_default(hemi, 'lh'));
+smoothKernel = local_default(smoothKernel, config.analysis_settings.sbm_smoothing_kernel);
 
 % iCOMBAT = 1;
 measureShort = 'thick';
@@ -24,7 +29,7 @@ thres=0.05;
 nNull = 1000;
 
 % find all sites
-datadir = '/scratch2/kg98/trangc/VBM/data/eigentrap';
+datadir = fullfile(dataDir, 'derivatives', 'eigentrap');
 datasets = dir(datadir);
 datasets = datasets(~ismember({datasets.name}, {'.', '..'})); % Exclude '.' and '..'
 
@@ -99,7 +104,17 @@ datasets = datasets(~ismember({datasets.name}, {'.', '..'})); % Exclude '.' and 
 % end
 
 %%
-save(['output/zmap_null_COMBAT',char(num2str(iCOMBAT)),'_',hemi,'_smooth',char(num2str(smoothKernel)),'_ver_part_',char(num2str(iNull)),'.mat'],...
+output_dir = fullfile(dataDir, 'results', 'SBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
+save(fullfile(output_dir, ['zmap_null_COMBAT',char(num2str(iCOMBAT)),'_',hemi,'_smooth',char(num2str(smoothKernel)),'_ver_part_',char(num2str(iNull)),'.mat']),...
     'corzmapSurrsVer',  'corsigmapSurrsHC_PVer','corsigmapSurrsP_HCVer','corsigFdrmapSurrsHC_PVer','corsigFdrmapSurrsP_HCVer','corsigClustermapSurrsHC_PVer','corsigClustermapSurrsP_HCVer', ...
     'repsigmapSurrsHC_PVer','repsigmapSurrsP_HCVer','repsigFdrmapSurrsHC_PVer','repsigFdrmapSurrsP_HCVer','repsigClustermapSurrsHC_PVer','repsigClustermapSurrsP_HCVer');
+end
+
+function out = local_default(value, fallback)
+if nargin < 1 || isempty(value)
+    out = fallback;
+else
+    out = value;
+end
 end

@@ -1,9 +1,24 @@
-% Clear workspace and close any open figures
-clear all
+function figure_covariates(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
 close all
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+if isfield(config.data_directories, 'data') && ~isempty(config.data_directories.data)
+    plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+else
+    plot_data_dir = fullfile(repo_root, 'data');
+end
+output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
 
 % Load the confound data that has been pre-processed
-load('/projects/kg98/trangc/VBM/code/analysis/output/confound_combine.mat', 'ptoplot', 'pvals_bonf','contoplot', 'nSiteToPlot');
+load(fullfile(plot_data_dir, 'confound_combine.mat'), 'ptoplot', 'pvals_bonf','contoplot', 'nSiteToPlot');
 
 % Transpose data to match expected format for plotting
 contoplot = contoplot';
@@ -111,6 +126,7 @@ a1 = annotation(fig, 'textbox', [0 0.01 1, 0.02], 'string', 'Correlation', 'edge
 
 %% Save figure
 % Uncomment the following lines to save the figure as a .fig and .jpg file
-savefig(fig, ['output/confoundVBM.fig']);
+savefig(fig, fullfile(output_dir, 'confoundVBM.fig'));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r600', 'output/confoundVBM.jpg');
+print(fig, '-djpeg', '-r600', fullfile(output_dir, 'confoundVBM.jpg'));
+end

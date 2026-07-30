@@ -9,10 +9,16 @@
 # SBATCH --mail-type=BEGIN
 # SBATCH --mail-type=END
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -z "$CONFIG_FILE" ]; then
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+fi
+DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
+
 module load freesurfer/7.1.0
 
-export reconOutDir=/scratch/kg98/Toby/WHOLEMBBP/workspace/derivatives/freesurfer
-datadir=/projects/kg98/trangc/VBM/data
+datadir="$DATA_ROOT"
 
 groupList=(1 2)
 
@@ -66,14 +72,7 @@ do
 			
 			site_value=$(echo "${parts[1]}" | tr -d '[:space:]')
 			#make list input
-        	if [ "${site_value}" = "MBBP" ]
-			then
-        		sub=$(echo "${parts[0]}" | sed 's/sub-0*\([1-9][0-9]*\)/sub-\1/')
-				echo "${reconOutDir}/${sub}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage.mgh" >> $inputfile
-			else
-			
-				echo "$datadir/${parts[1]}/derivatives/freesurfer/${parts[0]}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage.mgh" >> $inputfile
-			fi	
+			echo "$datadir/${parts[1]}/derivatives/freesurfer/${parts[0]}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage.mgh" >> $inputfile
 			
 
 		done
@@ -104,14 +103,7 @@ do
 			
 			site_value=$(echo "${parts[1]}" | tr -d '[:space:]')
 			#make list input
-        	if [ "${site_value}" = "MBBP" ]
-			then
-        		sub=$(echo "${parts[0]}" | sed 's/sub-0*\([1-9][0-9]*\)/sub-\1/')
-				echo "${reconOutDir}/${sub}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage.mgh" >> $inputfile
-			else
-			
-				echo "$datadir/${parts[1]}/derivatives/freesurfer/${parts[0]}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage.mgh" >> $inputfile
-			fi	
+			echo "$datadir/${parts[1]}/derivatives/freesurfer/${parts[0]}/surf/${hemis}.${measure}.fwhm${smoothKernel}.fsaverage.mgh" >> $inputfile
 			
 
 		done

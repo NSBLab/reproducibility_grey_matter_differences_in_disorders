@@ -1,5 +1,15 @@
-clear all
-close all
+function figure_corr_zmap_subdivide_2sitegroup_samesize_combine_sub(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 
 smoothKernel = 10;
 diaglist = 2:7;
@@ -7,7 +17,6 @@ hemis = 'lh';
 diagString = {'Bipolar', 'Schizoaffective',...
     'Schizophrenia', 'Autism', 'Depression','Alzheimer' };
 plotorder = [6 3 2 4 5 1]; % change the order of disorder appear in the plot
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
 
 sampleSizeList = [10    16    25    40    63   100   158   251   398 631];
 colorVec = {[225 232 255], [205 217 255], [185 202 255], [165 186 255], [145 171 255], [0.5 0.5 0.5], [115 148 255], [85 125 255], [55 103 255],[5 65 255],[0 48 200],[0 36 150],[0 24 100] };
@@ -47,57 +56,57 @@ for iPlot = 1:12
     ax1 = axes('Position', [initX+factorX*lengthX*(iCol), initY+factorY*lengthY*(numRow-iRow-1) lengthX lengthY]);
     switch iPlot
         case 1
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorDiagDK','varcorDiagDK','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagDK','varcorDiagDK','sampleSizeListAll');
             medianCor = mediancorDiagDK;
             varCor = varcorDiagDK;
             medianCorDK = medianCor; %dummy value to plot the same length with empty medianCor
 
         case 2
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorDiagSF100','varcorDiagSF100','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF100','varcorDiagSF100','sampleSizeListAll');
             medianCor = mediancorDiagSF100;
             varCor = varcorDiagSF100;
            
         case 3
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorDiagSF500','varcorDiagSF500','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF500','varcorDiagSF500','sampleSizeListAll');
             medianCor = mediancorDiagSF500;
             varCor = varcorDiagSF500;
            case 4
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorDiagSF1000','varcorDiagSF1000','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF1000','varcorDiagSF1000','sampleSizeListAll');
             medianCor = mediancorDiagSF1000;
             varCor = varcorDiagSF1000;  
         case 5
-             load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorSigDK','varcorSigDK','sampleSizeListAll');
+             load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigDK','varcorSigDK','sampleSizeListAll');
             medianCor = mediancorSigDK;
             varCor = varcorSigDK;
         case 6
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorSigSF100','varcorSigSF100','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF100','varcorSigSF100','sampleSizeListAll');
             medianCor = mediancorSigSF100;
             varCor = varcorSigSF100;
 
         case 7
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorSigSF500','varcorSigSF500','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF500','varcorSigSF500','sampleSizeListAll');
             medianCor = mediancorSigSF500;
             varCor = varcorSigSF500;
         case 8
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorSigSF1000','varcorSigSF1000','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF1000','varcorSigSF1000','sampleSizeListAll');
             medianCor = mediancorSigSF1000;
             varCor = varcorSigSF1000;    
         case 9
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'medianrepSigDK','varrepSigDK','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigDK','varrepSigDK','sampleSizeListAll');
             medianCor = medianrepSigDK;
             varCor = varrepSigDK;
         case 10
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'medianrepSigSF100','varrepSigSF100','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF100','varrepSigSF100','sampleSizeListAll');
             medianCor = medianrepSigSF100;
             varCor = varrepSigSF100;
         case 11
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'medianrepSigSF500','varrepSigSF500','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF500','varrepSigSF500','sampleSizeListAll');
             medianCor = medianrepSigSF500;
             varCor = varrepSigSF500;
             
         
         case 12
-            load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'medianrepSigSF1000','varrepSigSF1000','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF1000','varrepSigSF1000','sampleSizeListAll');
             medianCor = medianrepSigSF1000;
             varCor = varrepSigSF1000;
         otherwise
@@ -168,6 +177,7 @@ a25 = annotation(fig, 'textbox', [0.01, 0.5 0.02, 0.02], 'string', 'c|Schaefer-5
 a25 = annotation(fig, 'textbox', [0.01, 0.27 0.02, 0.02], 'string', 'd|Schaefer-1000', 'edgecolor', 'none', ...
         'FontName',font_name,'FontSize',font_size,  'horizontalalignment', 'left');
 %%
-savefig(fig,['output/figure_corr_zmap_subdivide_2sitegroup_samesize_combine_sub.fig']);
+savefig(fig,fullfile(output_dir, 'figure_corr_zmap_subdivide_2sitegroup_samesize_combine_sub.fig'));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', 'output/figure_corr_zmap_subdivide_2sitegroup_samesize_combine_sub.jpg')
+print(fig, '-djpeg', '-r1200', fullfile(output_dir, 'figure_corr_zmap_subdivide_2sitegroup_samesize_combine_sub.jpg'))
+end

@@ -1,10 +1,15 @@
-clear all
-% close all
-addpath('/home/trangc/kg98/trangc/VBM/code/utils')
-
-iCOMBAT = 1;
-smoothKernel = 6;
-thres = 0.05;
+function step9k_corr_tmap_covariate_combine(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
 
 diagnosisString = {'BD', 'SCA',...
     'SCZ', 'ASD', 'MDD','AD' };
@@ -21,7 +26,7 @@ for iDiag = 1:nDiag
 
     iCon = 0;
     iSite = 1;
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_age.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_age.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1:iCon+2) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1:iCon+2) = varTable{iDiag}{2,:};
@@ -30,7 +35,7 @@ for iDiag = 1:nDiag
 iCon = iCon+2;
 iSite = iSite+1;
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_sex.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_sex.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1:iCon+3) = varTable{iDiag}{1,[1,2,4]};
      ptoplot(iDiag,iCon+1:iCon+3) = varTable{iDiag}{2,[1,2,4]};
@@ -40,7 +45,7 @@ iCon = iCon+3;
 iSite = iSite+1;
 
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_nPC.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_nPC.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1:iCon+4) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1:iCon+4) = varTable{iDiag}{2,:};
@@ -49,7 +54,7 @@ iSite = iSite+1;
      iCon = iCon+4;
      iSite = iSite+1;
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_treatment.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_treatment.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1) = varTable{iDiag}{2,:};
@@ -58,7 +63,7 @@ iSite = iSite+1;
     iCon = iCon+1;
     iSite = iSite+1;
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_CAT.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_CAT.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1:iCon+2) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1:iCon+2) = varTable{iDiag}{2,:};
@@ -67,7 +72,7 @@ iSite = iSite+1;
 iCon = iCon+2;
 iSite = iSite+1;
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_ageonset.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_ageonset.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1:iCon+2) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1:iCon+2) = varTable{iDiag}{2,:};
@@ -76,7 +81,7 @@ iSite = iSite+1;
      iCon = iCon+2;
      iSite = iSite+1;
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_illnessDuration.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_illnessDuration.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1:iCon+2) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1:iCon+2) = varTable{iDiag}{2,:};
@@ -85,7 +90,7 @@ iSite = iSite+1;
     iCon = iCon+2;
     iSite = iSite+1;
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_scanner.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_scanner.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1) = varTable{iDiag}{2,:};
@@ -94,7 +99,7 @@ iSite = iSite+1;
     iCon = iCon+1;
     iSite = iSite+1;
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_scannerModel.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_scannerModel.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1) = varTable{iDiag}{2,:};
@@ -103,7 +108,7 @@ iSite = iSite+1;
 iCon = iCon+1;
 iSite = iSite+1;
 
-    load('/projects/kg98/trangc/VBM/code/analysis/output/confound_vol.mat', 'varTable','nSite');
+    load(fullfile(output_dir, 'confound_vol.mat'), 'varTable','nSite');
     if ~isempty(varTable{iDiag})
         contoplot(iDiag,iCon+1) = varTable{iDiag}{1,:};
      ptoplot(iDiag,iCon+1) = varTable{iDiag}{2,:};
@@ -113,4 +118,5 @@ iSite = iSite+1;
 pvals_bonf(iDiag,:) = min(ptoplot(iDiag,:).* size(ptoplot,2), 1);
 
 end
-save('output/confound_combine.mat','ptoplot','pvals_bonf','contoplot','nSiteToPlot');
+save(fullfile(output_dir, 'confound_combine.mat'),'ptoplot','pvals_bonf','contoplot','nSiteToPlot');
+end

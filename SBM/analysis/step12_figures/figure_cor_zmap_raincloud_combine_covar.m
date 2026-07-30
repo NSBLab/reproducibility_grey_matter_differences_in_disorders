@@ -1,7 +1,16 @@
-clear all
-% close all
-addpath('/home/trangc/kg98/trangc/library/Violinplot-Matlab-master')
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
+function figure_cor_zmap_raincloud_combine_covar(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 iCOMBAT = 1;
 smoothKernel = 10;
 hemi = 'lh';
@@ -63,7 +72,7 @@ paralist = {'age,sex','age,sex,Euler number','age,sex,ICV'};
 nPara = length(paralist);
 
 
-    load(['output/corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all.mat'], 'map','corDiag', 'corSig','siteList')
+    load(fullfile(plot_data_dir, ['corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all.mat']), 'map','corDiag', 'corSig','siteList')
     
   
     for iDiag = 1:nDiag
@@ -74,7 +83,7 @@ nPara = length(paralist);
        
     end
 
-load(['output/corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all_euler_number.mat'], 'map','corDiag', 'corSig','siteList')
+load(fullfile(plot_data_dir, ['corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all_euler_number.mat']), 'map','corDiag', 'corSig','siteList')
     
   
     for iDiag = 1:nDiag
@@ -85,7 +94,7 @@ load(['output/corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel)
        
     end
 
-    load(['output/corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all_icv.mat'], 'map','corDiag', 'corSig','siteList')
+    load(fullfile(plot_data_dir, ['corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all_icv.mat']), 'map','corDiag', 'corSig','siteList')
     
   
     for iDiag = 1:nDiag
@@ -124,6 +133,7 @@ legend('boxoff')
 
 
 %%
-savefig(fig,['output/figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_covar.fig']);
+savefig(fig,fullfile(output_dir, ['figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_covar.fig']));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', ['output/figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'covar.jpg'])
+print(fig, '-djpeg', '-r1200', fullfile(output_dir, ['figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'covar.jpg']))
+end

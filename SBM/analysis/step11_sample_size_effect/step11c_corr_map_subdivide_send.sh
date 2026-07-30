@@ -1,4 +1,10 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -z "$CONFIG_FILE" ]; then
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+fi
+export CONFIG_FILE
 
 diagList=(3) #(2 3 4 5 6)
 export smoothKernel=10
@@ -15,7 +21,7 @@ do
 	export groupsize=$groupsize
 	export dividemode=splitsite_samesize_$groupsize
  
-	#sbatch --job-name=corr_${diag}_${groupsize} corr_map_subdivide_batch.sh
-		sh corr_map_subdivide_batch.sh
+	#sbatch --job-name=corr_${diag}_${groupsize} "$SCRIPT_DIR/corr_map_subdivide_batch.sh"
+	sh "$SCRIPT_DIR/corr_map_subdivide_batch.sh"
 	done
 done

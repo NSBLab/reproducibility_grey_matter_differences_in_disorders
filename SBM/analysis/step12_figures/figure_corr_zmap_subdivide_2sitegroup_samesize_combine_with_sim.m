@@ -1,5 +1,15 @@
-clear all
-% close all
+function figure_corr_zmap_subdivide_2sitegroup_samesize_combine_with_sim(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 
 smoothKernel = 10;
 diaglist = 2:7;
@@ -7,7 +17,6 @@ hemis = 'lh';
 diagString = {'Bipolar', 'Schizoaffective',...
     'Schizophrenia', 'Autism', 'Depression','Alzheimer' };
 plotorder = [6 3 2 4 5 1]; % change the order of disorder appear in the plot
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
 
 sampleSizeList = [10    16    25    40    63   100   158   251   398   631];
 colorVec = {[225 232 255], [205 217 255], [185 202 255], [165 186 255], [145 171 255], [115 148 255], [85 125 255], [55 103 255],[5 65 255],[0 48 200],[0 36 150],[0 24 100],[0 16 70] };
@@ -48,7 +57,7 @@ subplotTitle = {'a|','b|','c|','d|','e|','f|'};
     ax1 = axes('Position', [initX+factorX*lengthX*(iCol-1), initY lengthX lengthY]);
     % switch iPlot
     %     case 1
-            load('output/corr_zmap_subdivide_2sitegroup_samesize1.mat', 'medianCor','varCor','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_subdivide_2sitegroup_samesize1.mat'), 'medianCor','varCor','sampleSizeListAll');
             medianCor = medianCor;
             varCor = varCor;
             %  case 2
@@ -139,7 +148,7 @@ subplotTitle = {'a|','b|','c|','d|','e|','f|'};
 iCol = 2;
 ax4 = axes('Position', [initX+factorX*lengthX*(iCol-1), initY lengthX lengthY]);
 hold on
-load(['output/simulation_signal_noise_Niter_5_samplesizerange_10_631_100kVoxel_mean.mat']);
+load(fullfile(output_dir, 'simulation_signal_noise_Niter_5_samplesizerange_10_631_100kVoxel_mean.mat'));
 % Plot
 for iSignal = 1:length(signal_std_list)
     
@@ -217,6 +226,7 @@ a25 = annotation(fig, 'textbox', [0.5, 0.99, 0.1, 0.02], 'string', 'b|Simulation
 % legend('boxoff')
 % title(leg, 'SNR');
 
-savefig(fig,['output/figure_corr_zmap_subdivide_2sitegroup_samesize_combine.fig']);
+savefig(fig,fullfile(output_dir, 'figure_corr_zmap_subdivide_2sitegroup_samesize_combine.fig'));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', 'output/figure_corr_zmap_subdivide_2sitegroup_samesize_combine.jpg')
+print(fig, '-djpeg', '-r1200', fullfile(output_dir, 'figure_corr_zmap_subdivide_2sitegroup_samesize_combine.jpg'))
+end

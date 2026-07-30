@@ -1,11 +1,19 @@
-clear all
-% close all
+function step11d_corr_zmap_subdivide_2sitegroup_samesize(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
 
 smoothKernel = 10;
 diaglist = 2:7;
 hemis = 'lh';
 
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
 
 sampleSizeListAll = {[10    16    25    40    63   100   158   210],...
     [10    16    25    40    63   100   136],...
@@ -38,7 +46,7 @@ for iDiag = 1:length(diaglist)
         sampleSize = sampleSizeList(isampleSize)
 
         dividemode = ['splitsite_samesize_',char(num2str(sampleSize))]
-        dataDir = fullfile('/scratch','kg98','trangc','VBM','data', 'derivatives', 'freesurfer',['s',num2str(smoothKernel),'noCOMBAT'],['diag',num2str(diag)],hemis, ['resample_2sitegroup_',dividemode]);
+        dataDir = fullfile(data_root, 'derivatives', 'freesurfer',['s',num2str(smoothKernel),'noCOMBAT'],['diag',num2str(diag)],hemis, ['resample_2sitegroup_',dividemode]);
 
         subdivideList = dir(dataDir);
         subdivideList = subdivideList([subdivideList.isdir]); % Keep only directories
@@ -89,4 +97,7 @@ end
 
 
 
-save('output/corr_zmap_subdivide_2sitegroup_samesize1.mat')
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
+save(fullfile(output_dir, 'corr_zmap_subdivide_2sitegroup_samesize1.mat'))
+end

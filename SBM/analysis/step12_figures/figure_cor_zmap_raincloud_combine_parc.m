@@ -1,7 +1,16 @@
-clear all
-% close all
-addpath('/home/trangc/kg98/trangc/library/Violinplot-Matlab-master')
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
+function figure_cor_zmap_raincloud_combine_parc(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 iCOMBAT = 1;
 smoothKernel = 0;
 hemi = 'lh';
@@ -60,8 +69,8 @@ fontsize_legend = 10;
 % faces = faces';
 
 
-load(['output/zmap_aparc_COMBAT',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_all.mat']);
-load(['output/zmap_null_COMBAT',num2str(iCOMBAT),'_',hemi,'_smooth',num2str(smoothKernel),'_parc_all.mat']);
+load(fullfile(plot_data_dir, ['zmap_aparc_COMBAT',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_all.mat']));
+load(fullfile(plot_data_dir, ['zmap_null_COMBAT',num2str(iCOMBAT),'_',hemi,'_smooth',num2str(smoothKernel),'_parc_all.mat']));
 
 
 
@@ -247,6 +256,7 @@ a26 = annotation(fig, 'textbox', [0.01, 0.65, 0.03, 0.02], 'string', 'b|', 'edge
 a25 = annotation(fig, 'textbox', [0.01, 0.35, 0.02, 0.02], 'string', 'c|', 'edgecolor', 'none', ...
     'FontName',font_name,'FontSize',font_size,  'horizontalalignment', 'left');
 %%
-savefig(fig,['output/figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_parc_combine.fig']);
+savefig(fig,fullfile(output_dir, ['figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_parc_combine.fig']));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', ['output/figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_parc_combine.jpg'])
+print(fig, '-djpeg', '-r1200', fullfile(output_dir, ['figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_parc_combine.jpg']))
+end

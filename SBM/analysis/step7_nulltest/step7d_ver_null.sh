@@ -1,5 +1,5 @@
 #!/bin/bash
-# Step8d: combine vertex-level SBM null maps (MATLAB).
+# Step7d: combine vertex-level eigentrapping null maps from step7b jobs.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -21,19 +21,23 @@ case "$(echo "$HPC_ENABLED_RAW" | tr '[:upper:]' '[:lower:]')" in
     *) HPC_ENABLED="0" ;;
 esac
 
-hemi="${hemi:-lh}"
+hemis="${hemi:-lh rh}"
 
-echo "=== STEP8D: VER NULL ==="
+echo "=== STEP7D: VER NULL ==="
 echo "CONFIG_FILE: $CONFIG_FILE"
-echo "hemi:        $hemi"
+echo "hemis:       $hemis"
 
 if [ "$HPC_ENABLED" = "1" ]; then
     module load matlab/r2023b
 fi
 
-matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step8d_ver_null('$CONFIG_FILE', '$hemi'); quit;"
-if [ $? -ne 0 ]; then
-    echo "Error: step8d_ver_null failed"
-    exit 1
-fi
-echo "=== STEP8D DONE ==="
+for h in $hemis; do
+    echo "Combining vertex null maps for hemi=$h"
+    matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step7d_ver_null('$CONFIG_FILE', '$h'); quit;"
+    if [ $? -ne 0 ]; then
+        echo "Error: step7d_ver_null failed for hemi=$h"
+        exit 1
+    fi
+done
+
+echo "=== STEP7D DONE ==="

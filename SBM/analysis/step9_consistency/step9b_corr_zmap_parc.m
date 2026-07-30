@@ -1,27 +1,29 @@
+function step9b_corr_zmap_parc(config, hemi, iCOMBAT, smoothkernel)
 % read all the z-maps and correlate them
-
-
-clear all
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
 % list of disorders
 diagString = {'HC', 'BD', 'SCA',...
     'SCZ', 'ASD', 'MDD' ,'AD'};
-addpath('/home/trangc/kg98/trangc/MBM/func')
-addpath('/home/trangc/kg98/trangc/VBM/code/utils')
-addpath('/home/trangc/kg98/trangc/library/fdr_bh')
-
-% list of dataset
-dataDir = '/projects/kg98/trangc/VBM/data';
-dataFilePS = readtable(fullfile(dataDir,'dataset_list_SBM.txt'),'ReadVariableNames',false);
-dataList = dataFilePS.Var1;
+dataDir = config.data_directories.dataset_root;
+dataList = pipeline_get_enabled_datasets(config);
 % dataFileAD = readtable(fullfile(dataDir,'dataset_list_AD.txt'),'ReadVariableNames',false);
 % dataListAD = dataFileAD.Var1;
 % dataList = [dataListPS;dataListAD];
 
-iCOMBAT = 1;
+iCOMBAT = local_default(iCOMBAT, config.analysis_settings.harmonize);
 measureShort = 'thick';
 measure = 'thickness';
-hemi = 'lh';
-smoothkernel = 0;
+hemi = char(local_default(hemi, 'lh'));
+smoothkernel = local_default(smoothkernel, config.analysis_settings.sbm_smoothing_kernel);
 thres=0.05;
 
 % find all sites
@@ -113,4 +115,15 @@ repSigSF1000{iDiag} = replication_mat(map.sigmapSF1000(isDiagSite,:)');
  siteList{iDiag} = map.site(isDiagSite);
 end
 
-save(['output/zmap_aparc_COMBAT',num2str(iCOMBAT),'_smooth',num2str(smoothkernel),'_all.mat'])
+output_dir = fullfile(dataDir, 'results', 'SBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
+save(fullfile(output_dir, ['zmap_aparc_COMBAT',num2str(iCOMBAT),'_smooth',num2str(smoothkernel),'_all.mat']))
+end
+
+function out = local_default(value, fallback)
+if nargin < 1 || isempty(value)
+    out = fallback;
+else
+    out = value;
+end
+end

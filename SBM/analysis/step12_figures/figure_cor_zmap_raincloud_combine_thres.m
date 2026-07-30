@@ -1,7 +1,16 @@
-clear all
-% close all
-addpath('/home/trangc/kg98/trangc/library/Violinplot-Matlab-master')
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
+function figure_cor_zmap_raincloud_combine_thres(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 iCOMBAT = 1;
 smoothKernel = 10;
 hemi = 'lh';
@@ -60,10 +69,10 @@ fontsize_legend = 10;
 % faces = faces';
 
 
-load(['output/corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all.mat'], ...
+load(fullfile(plot_data_dir, ['corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all.mat']), ...
     'map','corDiag','corSigHC_P', 'corSigP_HC','repSigHC_P','repSigP_HC',...
     'corSigClusterHC_P','corSigClusterP_HC','repSigClusterHC_P','repSigClusterP_HC','siteList')
-load(['output/zmap_null_COMBAT',num2str(iCOMBAT),'_',hemi,'_smooth',num2str(smoothKernel),'_ver_all.mat'],...
+load(fullfile(plot_data_dir, ['zmap_null_COMBAT',num2str(iCOMBAT),'_',hemi,'_smooth',num2str(smoothKernel),'_ver_all.mat']),...
     'corsigmapSurrsHC_PVerAll','corsigmapSurrsP_HCVerAll','repsigmapSurrsHC_PVerAll','repsigmapSurrsP_HCVerAll',...
     'corsigClustermapSurrsHC_PVerAll','corsigClustermapSurrsP_HCVerAll','repsigClustermapSurrsHC_PVerAll','repsigClustermapSurrsP_HCVerAll');
 
@@ -209,6 +218,7 @@ a25 = annotation(fig, 'textbox', [0.01, 0.5, 0.02, 0.02], 'string', 'c|Cluster-c
 a26 = annotation(fig, 'textbox', [0.01, 0.27, 0.03, 0.02], 'string', 'd|Cluster-corrected', 'edgecolor', 'none', ...
     'FontName',font_name,'FontSize',font_size,  'horizontalalignment', 'left');
 %%
-savefig(fig,['output/figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_thres_combine.fig']);
+savefig(fig,fullfile(output_dir, ['figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_thres_combine.fig']));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', ['output/figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_thres_combine.jpg'])
+print(fig, '-djpeg', '-r1200', fullfile(output_dir, ['figure_corr_zmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_thres_combine.jpg']))
+end

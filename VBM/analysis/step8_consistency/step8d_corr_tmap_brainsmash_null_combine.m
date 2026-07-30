@@ -1,28 +1,25 @@
+function step8d_corr_tmap_brainsmash_null_combine(config)
 % read all the z-maps and correlate them
-
-
-clear all
-% list of disorders
-diagString = {'HC', 'BD', 'SCA',...
-    'SCZ', 'ASD', 'MDD' ,'AD'};
-addpath('/home/trangc/kg98/trangc/MBM/func')
-addpath('/home/trangc/kg98/trangc/VBM/code/utils')
-addpath('/home/trangc/kg98/trangc/library/fdr_bh')
-addpath(genpath('/projects/kg98/trangc/library/BrainSpace'))
-addpath(genpath('/projects/kg98/trangc/library'))
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+diagString = {'HC', 'BD', 'SCA', 'SCZ', 'ASD', 'MDD' ,'AD'};
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
 % load(['eigenStruct_',hemi,'.mat']); %load structure that contains eigentrapping because the mask was changed to fix the 164k mesh error
 
 
 % list of dataset
-dataDir = '/projects/kg98/trangc/VBM/data';
-dataFilePS = readtable(fullfile(dataDir,'dataset_list_VBM.txt'),'ReadVariableNames',false);
-dataList = dataFilePS.Var1;
+iCOMBAT = config.analysis_settings.harmonize;
+smoothKernel = config.analysis_settings.vbm_smoothing_kernel;
+dataDir = config.data_directories.dataset_root;
+output_dir = fullfile(dataDir, 'results', 'VBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
 
-iCOMBAT = 1;
-measureShort = 'thick';
-measure = 'thickness';
-smoothKernel = 6;
-thres=0.05;
 nNull = 100;
 
 % % find all sites
@@ -50,8 +47,8 @@ for iDiag = 1:length(diagString)-1
     for iNull = 1:nNull
         %load (['output/corr_null_tmap_brainsmash_combat',num2str(iCOMBAT),...
             % '_smooth', char(num2str(smoothKernel)), '_smoothsurro_', char(num2str(iNull)), '.mat'],'corNull');
-        data = load (['output/corr_null_tmap_brainsmash_combat',num2str(iCOMBAT),...
-            '_smooth', char(num2str(smoothKernel)), '_', char(num2str(iNull)), '.mat'],'corNull',...
+        data = load(fullfile(output_dir, ['corr_null_tmap_brainsmash_combat', num2str(iCOMBAT), ...
+            '_smooth', char(num2str(smoothKernel)), '_', char(num2str(iNull)), '.mat']), 'corNull', ...
             'corsigmapSurrs_HC_P','corsigmapSurrs_P_HC','repsigmapSurrs_HC_P','repsigmapSurrs_P_HC',...
     'corsigFwemapSurrs_HC_P','corsigFwemapSurrs_P_HC','repsigFwemapSurrs_HC_P','repsigFwemapSurrs_P_HC');
         
@@ -103,6 +100,7 @@ for iDiag = 1:length(diagString)-1
     end
 end
 %%
-save(['output/tmap_null_brainsmash_COMBAT',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_ver_all.mat'],...
+save(fullfile(output_dir, ['tmap_null_brainsmash_COMBAT', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '_ver_all.mat']), ...
     'cortmapBrainsmashSurrsVerAll','corsigmapSurrsHC_PVerAll','corsigmapSurrsP_HCVerAll','corsigFwemapSurrsHC_PVerAll','corsigFwemapSurrsP_HCVerAll', ...
         'repsigmapSurrsHC_PVerAll','repsigmapSurrsP_HCVerAll','repsigFwemapSurrsHC_PVerAll','repsigFwemapSurrsP_HCVerAll');
+end

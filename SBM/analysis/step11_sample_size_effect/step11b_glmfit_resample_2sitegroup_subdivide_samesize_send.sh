@@ -1,4 +1,10 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -z "$CONFIG_FILE" ]; then
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+fi
+DATA_ROOT=$(jq -r '.data_directories.dataset_root' "$CONFIG_FILE")
 
 export smoothKernel=10
 export measure=thickness
@@ -16,8 +22,6 @@ groupsizelist=(10    16    25) #    40    63   100) #(10    16    25    40    63
 
 groupList=(1 2)
 
-export script_DIR=/projects/kg98/trangc/VBM/code/freesurfer/freesurfer_holmesQC/step4_qdec
-
 for diag in ${diagList[@]}
 do
 	export diag=$diag
@@ -27,7 +31,7 @@ do
 		export groupsize=$groupsize
 		export dividemode=splitsite_samesize_$groupsize
 
-		export  outdir=/scratch/kg98/trangc/VBM/data/derivatives/freesurfer/s10noCOMBAT/diag${diag}/${hemis}/resample_2sitegroup_${dividemode}
+		export outdir=${DATA_ROOT}/derivatives/freesurfer/s10noCOMBAT/diag${diag}/${hemis}/resample_2sitegroup_${dividemode}
 		cd $outdir
 
 		arraySubdivide=($(ls -d iSubdivide_*_seed2group_*))
@@ -44,7 +48,7 @@ do
 			if [ -f $outdir/iSubdivide_${iSubdivide}_seed2group_${randomSubdivide}/iSubdivide_${iSubdivide}_seed2group_${randomSubdivide}_group1.txt ] & [ -f $outdir/iSubdivide_${iSubdivide}_seed2group_${randomSubdivide}/iSubdivide_${iSubdivide}_seed2group_${randomSubdivide}_group2.txt ] & [ ! -f $outdir/iSubdivide_${iSubdivide}_seed2group_${randomSubdivide}/iSubdivide_${iSubdivide}_seed2group_${randomSubdivide}_group1_sm${smoothKernel}/lh-Diff-1-${diag}-Intercept-thickness/perm.th13.abs.sig.cluster.mgh ] & [ ! -f $outdir/iSubdivide_${iSubdivide}_seed2group_${randomSubdivide}/iSubdivide_${iSubdivide}_seed2group_${randomSubdivide}_group2_sm${smoothKernel}/lh-Diff-1-${diag}-Intercept-thickness/perm.th13.abs.sig.cluster.mgh ] 
 			then 
 				echo $iSubdivide
-				sbatch --job-name=GLM_${diag}_${groupsize}_${iSubdivide} ${script_DIR}/make_input_run_mri_glmfit_subdivide_2sitegroup.sh
+				sbatch --job-name=GLM_${diag}_${groupsize}_${iSubdivide} ${SCRIPT_DIR}/make_input_run_mri_glmfit_subdivide_2sitegroup.sh
 
 				#sh ${script_DIR}/make_input_run_mri_glmfit_subdivide_2sitegroup.sh
 			fi

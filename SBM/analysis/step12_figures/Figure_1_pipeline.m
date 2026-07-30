@@ -1,11 +1,19 @@
-% plot pipeline
-close all
-clear all
-
-% Setup working directory and add utility path
-wdir = pwd();
-addpath(fullfile(wdir(1:strfind(wdir,'analysis')-2),'utils'));
-addpath(fullfile(wdir(1:strfind(wdir,'analysis')-2),'data'));
+function Figure_1_pipeline(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir')
+    mkdir(output_dir);
+end
 
 % Define font styles and sizes
 font_name = 'Arial';
@@ -17,10 +25,10 @@ fontsize_tick = 7;
 hemisphere = 'lh';
 
 %%
-load('Figure_1_pipeline.mat');
+load(fullfile(plot_data_dir, 'Figure_1_pipeline.mat'));
 
 % load vtk surface
-filename_vtk = 'fsaverage_164k_midthickness-lh.vtk';
+filename_vtk = fullfile(plot_data_dir, 'fsaverage_164k_midthickness-lh.vtk');
 [vertices,faces] = read_vtk(filename_vtk);
 vertices = vertices';
 faces = faces';
@@ -212,6 +220,7 @@ a11 = annotation(fig, 'textbox', [ax4.Position(1)-0.04 0.97 0.1 0.02], 'string',
 
 
 %% Save figure
-% savefig(fig,['output/figure1_pipeline.fig']);
-% set(fig, 'PaperPositionMode', 'auto')
-% print(fig, '-djpeg', '-r1200', 'output/figure1_pipeline.jpg')
+savefig(fig, fullfile(output_dir, 'figure1_pipeline.fig'));
+set(fig, 'PaperPositionMode', 'auto')
+print(fig, '-djpeg', '-r1200', fullfile(output_dir, 'figure1_pipeline.jpg'))
+end

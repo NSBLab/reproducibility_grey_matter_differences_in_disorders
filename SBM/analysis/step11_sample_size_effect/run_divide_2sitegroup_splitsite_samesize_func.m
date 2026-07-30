@@ -1,6 +1,16 @@
 
-function run_divide_2sitegroup_splitsite_samesize_func(diag,smoothKernel,hemis,groupsize,iSubdivide,randomSubdivide)
+function run_divide_2sitegroup_splitsite_samesize_func(config, diag, smoothKernel, hemis, groupsize, iSubdivide, randomSubdivide)
 % This script to run GLM with a dataset subsampled from the whole dataset
+if nargin < 7
+    error('Usage: run_divide_2sitegroup_splitsite_samesize_func(config, diag, smoothKernel, hemis, groupsize, iSubdivide, randomSubdivide)');
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
 
 rng(randomSubdivide)
 
@@ -12,8 +22,10 @@ rng(randomSubdivide)
 
 
 % Directories
-inDir = '/projects/kg98/trangc/VBM/data';
-outDir = fullfile('/scratch','kg98','trangc','VBM','data', 'derivatives', 'freesurfer',['s',num2str(smoothKernel),'noCOMBAT'],['diag',num2str(diag)],hemis, ['resample_2sitegroup_splitsite_samesize_',char(num2str(groupsize))],['iSubdivide_',num2str(iSubdivide),'_seed2group_',num2str(randomSubdivide)]);
+inDir = data_root;
+outDir = fullfile(data_root, 'derivatives', 'freesurfer', ['s',num2str(smoothKernel),'noCOMBAT'], ...
+    ['diag',num2str(diag)], hemis, ['resample_2sitegroup_splitsite_samesize_',char(num2str(groupsize))], ...
+    ['iSubdivide_',num2str(iSubdivide),'_seed2group_',num2str(randomSubdivide)]);
 if ~exist(outDir, 'dir')
     mkdir(outDir);
 end

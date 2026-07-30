@@ -1,18 +1,27 @@
 % read all the z-maps and correlate them
-function corr_map_subdivide_func(diag,dividemode,smoothKernel)
+function corr_map_subdivide_func(config, diag, dividemode, smoothKernel)
 % arguments
 %     diag (1,1) {mustBeInteger, mustBeLessThanOrEqual(diag,7)}
 %     dividemode (1,1) {mustBeText}
 % end
 
 % sampleSize = [20 40 60 80 100 200 300 400 500];
+if nargin < 4
+    error('Usage: corr_map_subdivide_func(config, diag, dividemode, smoothKernel)');
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
 thres = 0.05;
 %diag = 3;
 hemis = 'lh';
-addpath('/home/trangc/kg98/trangc/MBM/func')
-addpath('/projects/kg98/trangc/VBM/code/utils')
 % dividemode = 'nosplitsite';
-outDir = fullfile('/scratch','kg98','trangc','VBM','data', 'derivatives', 'freesurfer',['s10noCOMBAT'],['diag',num2str(diag)],hemis, ['resample_2sitegroup_',dividemode]);
+outDir = fullfile(data_root, 'derivatives', 'freesurfer', ['s',num2str(smoothKernel),'noCOMBAT'], ['diag',num2str(diag)], hemis, ['resample_2sitegroup_',dividemode]);
 subdivideList = dir(outDir);
 subdivideList = subdivideList([subdivideList.isdir]); % Keep only directories
 subdivideList = subdivideList(~ismember({subdivideList.name}, {'.', '..'})); % Remove . and ..

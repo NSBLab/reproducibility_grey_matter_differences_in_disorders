@@ -9,10 +9,13 @@
 # SBATCH --mail-type=BEGIN
 # SBATCH --mail-type=END
 
-export script_DIR=/projects/kg98/trangc/VBM/code/analysis
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -z "$CONFIG_FILE" ]; then
+    REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+    CONFIG_FILE="$REPO_ROOT/config_hpc.json"
+fi
 
-module load  spm12/matlab2021a.r7771-v1
-
-matlab -nodisplay -r "addpath('$script_DIR');  corr_tmap_brainsmash_null_func(${iNull});quit"
+module load spm12/matlab2021a.r7771-v1
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); corr_tmap_brainsmash_null_func('$CONFIG_FILE', ${iNull}); quit;"
 
 

@@ -1,5 +1,15 @@
-clear all
-% close all
+function figure_corr_zmap_subdivide_2sitegroup_samesize_combine(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 
 smoothKernel = 10;
 diaglist = 2:7;
@@ -7,7 +17,6 @@ hemis = 'lh';
 diagString = {'Bipolar', 'Schizoaffective',...
     'Schizophrenia', 'Autism', 'Depression','Alzheimer' };
 plotorder = [6 3 2 4 5 1]; % change the order of disorder appear in the plot
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
 
 sampleSizeList = [10    16    25    40    63   100   158   251   398   631];
 colorVec = {[225 232 255], [205 217 255], [185 202 255], [165 186 255], [145 171 255], [115 148 255], [85 125 255], [55 103 255],[5 65 255],[0 48 200],[0 36 150],[0 24 100] };
@@ -47,7 +56,7 @@ for iPlot = 1:1%length(subplotTitle)
     ax1 = axes('Position', [initX+factorX*lengthX*(iCol-1), initY lengthX lengthY]);
     switch iPlot
         case 1
-            load('output/corr_zmap_subdivide_2sitegroup_samesize.mat', 'medianCor','varCor','sampleSizeListAll');
+            load(fullfile(output_dir, 'corr_zmap_subdivide_2sitegroup_samesize.mat'), 'medianCor','varCor','sampleSizeListAll');
             medianCor = medianCor;
             varCor = varCor;
             %  case 2
@@ -142,6 +151,7 @@ end
 
 
 %%
-savefig(fig,['output/figure_corr_zmap_subdivide_2sitegroup_samesize_combine4.fig']);
+savefig(fig,fullfile(output_dir, 'figure_corr_zmap_subdivide_2sitegroup_samesize_combine4.fig'));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', 'output/figure_corr_zmap_subdivide_2sitegroup_samesize_combine4.jpg')
+print(fig, '-djpeg', '-r1200', fullfile(output_dir, 'figure_corr_zmap_subdivide_2sitegroup_samesize_combine4.jpg'))
+end

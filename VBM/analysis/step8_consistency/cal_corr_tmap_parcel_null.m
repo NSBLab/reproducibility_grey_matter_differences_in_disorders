@@ -1,10 +1,7 @@
-function [corNull  corBinNull repNull siteList] = cal_corr_tmap_parcel_null( metadata, diagnosisString, nParc,nNull)
+function [corNull  corBinNull repNull siteList] = cal_corr_tmap_parcel_null(nulldir, metadata, diagnosisString, nParc, nNull)
 [LaDiag LbDiag] = ismember(metadata.diagnosis_string,diagnosisString);
 [siteString ia ic] = unique(metadata.site_string(LaDiag));
 nSite = length(siteString);
-smoothKernel = 6;
-nulldir = ['/scratch2/kg98/trangc/VBM/data/nulltest/surrogateVBM/','s',char(num2str(smoothKernel)),'COMBAT'];
-
 for iSite = 1:nSite
     for iNull = 1:nNull
         nullmaps = load(fullfile(nulldir, char(diagnosisString),char(siteString(iSite)),['spmT_0001_surrogate_',char(num2str(iNull)),'_T1w_Buckner-whole_1mm_Tian_Subcortex_S1_3T_2009cAsym_Schaefer2018_',char(num2str(nParc)),'Parcels_7Networks_order_CAT12MNI.mat']),'volParc','binParc');

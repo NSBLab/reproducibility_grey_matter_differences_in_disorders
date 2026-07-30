@@ -1,12 +1,19 @@
 % read all the z-maps and correlate them
-function corr_map_parc_subdivide_func(outdir,iSubdivide, randomSubdivide)
+function corr_map_parc_subdivide_func(config, outdir, iSubdivide, randomSubdivide)
+if nargin < 4
+    error('Usage: corr_map_parc_subdivide_func(config, outdir, iSubdivide, randomSubdivide)');
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
 iCOMBAT = 1;
 smoothkernel = 0;
 thres = 0.05;
 hemi = 'lh';
-addpath('/home/trangc/kg98/trangc/MBM/func')
-addpath('/home/trangc/kg98/trangc/VBM/code/utils')
-addpath('/home/trangc/kg98/trangc/library/fdr_bh')
 
 
 inGroup = [1 2];

@@ -1,37 +1,19 @@
-function glm_parc_func(outdir, iSubdivide, randomSubdivide)
+function glm_parc_func(config, outdir, iSubdivide, randomSubdivide)
+if nargin < 4
+    error('Usage: glm_parc_func(config, outdir, iSubdivide, randomSubdivide)');
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
 iCOMBAT = 1;
 %glm parcelated maps
-currentPath = '/projects/kg98/trangc/MBM';
-addpath(genpath(fullfile(currentPath,'func')))
-addpath(fullfile(currentPath,'utils'))
-addpath(fullfile(currentPath,'utils','modes'))
-addpath(fullfile(currentPath,'utils','fdr_bh'))
-addpath(fullfile(currentPath,'utils','PALM-master'))
-addpath(fullfile(currentPath,'utils','gifti-matlab'))
-addpath(genpath('/projects/kg98/trangc/library/BrainSpace'))
-addpath(genpath('/projects/kg98/trangc/library'))
 
 hemi = 'lh';
 smoothkernel = 0;
-
-% Schaefer atlas
-[tempVertices,tempLabel,colortable]=read_annotation(['/projects/kg98/trangc/atlases/Human_cortical/Schaefer/fsaverage/label/lh.Schaefer2018_100Parcels_7Networks_order.annot']);
-map2colortable = [2:51];
-colorcode = colortable.table(map2colortable,5);
-[lia labelSF100] = ismember(tempLabel, colorcode);
-
-[tempVertices,tempLabel,colortable]=read_annotation(['/projects/kg98/trangc/atlases/Human_cortical/Schaefer/fsaverage/label/lh.Schaefer2018_500Parcels_7Networks_order.annot']);
-map2colortable = [2:251];
-colorcode = colortable.table(map2colortable,5);
-[lia labelSF500] = ismember(tempLabel, colorcode);
-
-[tempVertices,tempLabel,colortable]=read_annotation(['/projects/kg98/trangc/atlases/Human_cortical/Schaefer/fsaverage/label/lh.Schaefer2018_1000Parcels_7Networks_order.annot']);
-map2colortable = [2:501];
-colorcode = colortable.table(map2colortable,5);
-[lia labelSF1000] = ismember(tempLabel, colorcode);
-
-
-datadir = '/projects/kg98/trangc/VBM/data';
 
 
 inGroup = [1 2];

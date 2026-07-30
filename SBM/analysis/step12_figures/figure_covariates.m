@@ -1,8 +1,19 @@
+function figure_covariates(config)
 % plot confound
-clear all
-% close all
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 
-load('/projects/kg98/trangc/VBM/code/freesurfer/freesurfer_holmesQC/step4_qdec/output/confound_combine.mat', 'ptoplot','pvals_bonf','contoplot','nSiteToPlot');
+load(fullfile(plot_data_dir, 'confound_combine.mat'), 'ptoplot','pvals_bonf','contoplot','nSiteToPlot');
 contoplot = contoplot';
 nCovar = height(contoplot);
 ptoplot = ptoplot';
@@ -106,6 +117,7 @@ a1 = annotation(fig, 'textbox', [0 0.01 1, 0.02], 'string', 'Correlation', 'edge
         'FontName',font_name,'FontSize',font_size,  'horizontalalignment', 'center');
 
 %%
-savefig(fig,['output/confoundSVM.fig']);
+savefig(fig,fullfile(output_dir,'confoundSVM.fig'));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r600', 'output/confoundSVM.jpg')
+print(fig, '-djpeg', '-r600', fullfile(output_dir, 'confoundSVM.jpg'))
+end

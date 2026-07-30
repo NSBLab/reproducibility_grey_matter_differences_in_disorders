@@ -1,13 +1,13 @@
-function step8d_ver_null(config, hemi)
-% Combine vertex-level eigentrapping null maps across jobs.
+function step7d_ver_null(config, hemi)
+% Combine vertex-level eigentrapping null maps across step7b jobs.
 %
 % Usage:
-%   step8d_ver_null('config_hpc.json')
-%   step8d_ver_null('config_hpc.json', 'lh')
-%   step8d_ver_null(config, 'rh')
+%   step7d_ver_null('config_hpc.json')
+%   step7d_ver_null('config_hpc.json', 'lh')
+%   step7d_ver_null(config, 'rh')
 
 if nargin < 1 || isempty(config)
-    error('Usage: step8d_ver_null(config [, hemi])');
+    error('Usage: step7d_ver_null(config [, hemi])');
 end
 if nargin < 2 || isempty(hemi)
     hemi = 'lh';
@@ -39,7 +39,7 @@ if ~exist(datadir, 'dir')
     error('eigentrap directory not found: %s\nRun SBM step7b first.', datadir);
 end
 
-fprintf('=== STEP8D: VER NULL ===\n');
+fprintf('=== STEP7D: VER NULL ===\n');
 fprintf('dataDir: %s\neigentrap: %s\nhemi: %s\n', dataDir, datadir, hemi);
 
 datasets = dir(datadir);
@@ -106,5 +106,5 @@ for iSite = 1:length(datasets)
     end
 end
 
-fprintf('=== STEP8D DONE ===\n');
+fprintf('=== STEP7D DONE ===\n');
 end

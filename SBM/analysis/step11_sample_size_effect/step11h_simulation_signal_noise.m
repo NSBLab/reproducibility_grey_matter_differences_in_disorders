@@ -1,5 +1,15 @@
+function step11h_simulation_signal_noise(config)
 % Parameters
-clear all
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
 n_regions = 1000;            % number of brain regions
  %sample_sizes =  [10    16    25    40    63   100   158   251   398   631];   % range of sample sizes
 sample_sizes =  [10  20  100  200 1000 2000 10000];   % range of sample sizes
@@ -54,4 +64,8 @@ signal_std = signal_std_list(iSignal);
     
 end
 %%
-save(['output/simulation_signal_noise_Niter_',char(num2str(n_iter)),'_samplesizerange_10_10000.mat'],'mean_corr','var_corr','sample_sizes','signal_std_list')
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
+save(fullfile(output_dir, ['simulation_signal_noise_Niter_',char(num2str(n_iter)),'_samplesizerange_10_10000.mat']), ...
+    'mean_corr','var_corr','sample_sizes','signal_std_list')
+end

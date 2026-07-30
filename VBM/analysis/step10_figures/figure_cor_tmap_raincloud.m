@@ -1,7 +1,21 @@
-clear all
+function figure_cor_tmap_raincloud(config)
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
 close all
-addpath('/home/trangc/kg98/trangc/library/Violinplot-Matlab-master')
-addpath(genpath('/projects/kg98/trangc/VBM/code'))
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
+data_root = config.data_directories.dataset_root;
+if isfield(config.data_directories, 'data') && ~isempty(config.data_directories.data)
+    plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+else
+    plot_data_dir = fullfile(repo_root, 'data');
+end
+output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
 iCOMBAT = 1;
 smoothKernel = 6;
 thres = 0.05;
@@ -49,8 +63,8 @@ font_name = 'Arial';
 font_size = 12;
 fontsize_legend = 10;
 
-load(['output/corr_tmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'.mat'], 'cor1', 'cor2','siteList','t1All');
-load(['output/tmap_null_brainsmash_COMBAT1_smooth6_ver_all.mat'], 'cortmapBrainsmashSurrsVerAll');
+load(fullfile(plot_data_dir, ['corr_tmap_combat', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '.mat']), 'cor1', 'cor2','siteList','t1All');
+load(fullfile(plot_data_dir, ['tmap_null_brainsmash_COMBAT', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '_ver_all.mat']), 'cortmapBrainsmashSurrsVerAll');
 % load(['output/corr_null_tmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_voxel_all.mat'], 'corNullAll');
 corDiag = cor1;
 corDiagNull = cortmapBrainsmashSurrsVerAll;
@@ -232,6 +246,7 @@ a26 = annotation(fig, 'textbox', [0, 0.27, 0.03, 0.02], 'string', 'b|', 'edgecol
 
 
 %%
-savefig(fig,['output/figure_corr_tmap_combat',char(num2str(iCOMBAT)),'_smooth',char(num2str(smoothKernel)),'.fig']);
+savefig(fig, fullfile(output_dir, ['figure_corr_tmap_combat', char(num2str(iCOMBAT)), '_smooth', char(num2str(smoothKernel)), '.fig']));
 set(fig, 'PaperPositionMode', 'auto')
-print(fig, '-djpeg', '-r1200', ['output/figure_corr_tmap_combat',char(num2str(iCOMBAT)),'_smooth',char(num2str(smoothKernel)),'.jpg'])
+print(fig, '-djpeg', '-r1200', fullfile(output_dir, ['figure_corr_tmap_combat', char(num2str(iCOMBAT)), '_smooth', char(num2str(smoothKernel)), '.jpg']))
+end

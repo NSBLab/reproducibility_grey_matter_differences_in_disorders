@@ -1,27 +1,30 @@
+function step9a_corr_zmap(config, hemi, iCOMBAT, smoothKernel)
 % read all the z-maps and correlate them
-
-
-clear all
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
+end
 % list of disorders
 diagString = {'HC', 'BD', 'SCA',...
     'SCZ', 'ASD', 'MDD' ,'AD'};
-addpath('/projects/kg98/trangc/MBM/func')
-addpath('/projects/kg98/trangc/VBM/code/utils')
-addpath('/projects/kg98/trangc/library/fdr_bh')
 
-% list of dataset
-dataDir = '/projects/kg98/trangc/VBM/data';
-dataFilePS = readtable(fullfile(dataDir,'dataset_list_SBM.txt'),'ReadVariableNames',false);
-dataList = dataFilePS.Var1;
+dataDir = config.data_directories.dataset_root;
+dataList = pipeline_get_enabled_datasets(config);
 % dataFileAD = readtable(fullfile(dataDir,'dataset_list_AD.txt'),'ReadVariableNames',false);
 % dataListAD = dataFileAD.Var1;
 % dataList = [dataListPS;dataListAD];
 
-iCOMBAT = 0;
+iCOMBAT = local_default(iCOMBAT, config.analysis_settings.harmonize);
 measureShort = 'thick';
 measure = 'thickness';
-hemi = 'lh';
-smoothKernel = 0;
+hemi = char(local_default(hemi, 'lh'));
+smoothKernel = local_default(smoothKernel, config.analysis_settings.sbm_smoothing_kernel);
 thres=0.05;
 
 % find all sites
@@ -121,6 +124,17 @@ for iDiag = 1:length(diagString)-1
 
 end
 
-save(['output/corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all.mat'],...
+output_dir = fullfile(dataDir, 'results', 'SBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
+save(fullfile(output_dir, ['corr_zmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_',hemi,'_all.mat']),...
     'map', 'corDiag','corSigHC_P', 'corSigP_HC','corSigFdrHC_P','corSigFdrP_HC', ...
     'repSigHC_P','repSigP_HC','repSigFdrHC_P','repSigFdrP_HC','corSigClusterHC_P','corSigClusterP_HC','repSigClusterHC_P','repSigClusterP_HC','siteList');
+end
+
+function out = local_default(value, fallback)
+if nargin < 1 || isempty(value)
+    out = fallback;
+else
+    out = value;
+end
+end

@@ -1,6 +1,4 @@
 function [cor1, cor2, rep1, rep2, siteList, varargout] = cal_corr_tmap_thres(address, metadata, diagnosisString, mask)
-
-addpath('/projects/kg98/trangc/MBM/func')
 [LaDiag LbDiag] = ismember(metadata.diagnosis_string,diagnosisString);
 [siteString ia ic] = unique(metadata.site_string(LaDiag));
 nSite = length(siteString);
