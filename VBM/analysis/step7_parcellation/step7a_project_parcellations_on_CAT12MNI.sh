@@ -38,13 +38,7 @@ case "$REPO_DATA" in
 esac
 ATLAS_ROOT="$REPO_DATA"
 
-CAT12=$(jq -r '.software_paths.cat12 // empty' "$CONFIG_FILE")
-if [ -n "$CAT12" ] && [ "$CAT12" != "null" ]; then
-    CAT12_TEMPLATE="${CAT12}/templates_MNI152NLin2009cAsym/Template_0_GS.nii"
-elif [ -z "${CAT12_TEMPLATE:-}" ]; then
-    echo "Error: set software_paths.cat12 in $CONFIG_FILE, or export CAT12_TEMPLATE to Template_0_GS.nii"
-    exit 1
-fi
+CAT12_TEMPLATE="${ATLAS_ROOT}/Template_0_GS.nii"
 
 if [ ! -f "$CAT12_TEMPLATE" ]; then
     echo "Error: CAT12 template not found: $CAT12_TEMPLATE"

@@ -28,7 +28,7 @@ if [ "$HPC_ENABLED" = "1" ]; then
     module load matlab/r2023b
 fi
 
-matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step7b_combine_parcellation('$CONFIG_FILE'); quit;"
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step7b_sub_combine_parcellation('$CONFIG_FILE'); quit;"
 if [ $? -ne 0 ]; then
     echo "Error: step7b_combine_parcellation failed"
     exit 1

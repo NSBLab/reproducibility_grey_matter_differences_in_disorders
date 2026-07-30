@@ -2,7 +2,7 @@
 # Dispatcher: parcellate subject GM maps for each enabled dataset.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SUB_SCRIPT="${SCRIPT_DIR}/parcellate_maps.sh"
+SUB_SCRIPT="${SCRIPT_DIR}/step7c_sub_parcellate_maps.sh"
 
 if [ -z "$CONFIG_FILE" ]; then
     REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)

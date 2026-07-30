@@ -31,7 +31,7 @@ if [ "$HPC_ENABLED" = "1" ]; then
     module load matlab/r2023b
 fi
 
-matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step8a_parcelate_maps('$CONFIG_FILE', '$hemi'); quit;"
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step8a_sub_parcelate_maps('$CONFIG_FILE', '$hemi'); quit;"
 if [ $? -ne 0 ]; then
     echo "Error: step8a_parcelate_maps failed"
     exit 1

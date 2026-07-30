@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=2-12:00:00
+#SBATCH --time=1:00:00
 #SBATCH --job-name=parcellate
 #SBATCH --account=kg98
 #SBATCH --cpus-per-task=1
@@ -17,7 +17,7 @@ if [ "${HPC_ENABLED:-0}" = "1" ]; then
 fi
 
 echo "=== PARCELLATE MAPS: $DATASET ==="
-matlab -nodisplay -r "addpath('$SCRIPT_DIR'); parcellate_maps('$CONFIG_FILE', '$DATASET'); quit;"
+matlab -nodisplay -r "addpath('$SCRIPT_DIR'); step7c_sub_parcellate_maps('$CONFIG_FILE', '$DATASET'); quit;"
 
 if [ $? -ne 0 ]; then
     echo "Error: parcellate_maps failed for $DATASET"

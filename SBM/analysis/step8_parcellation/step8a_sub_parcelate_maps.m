@@ -1,4 +1,4 @@
-function step8a_parcelate_maps(config, hemi)
+function step8a_sub_parcelate_maps(config, hemi)
 % Parcellate subject thickness maps (DK + Schaefer) for enabled datasets.
 %
 % Usage:

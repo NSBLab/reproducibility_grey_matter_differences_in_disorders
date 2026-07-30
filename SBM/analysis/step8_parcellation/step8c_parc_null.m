@@ -163,17 +163,17 @@ for iSite = 1:length(datasets)
                 'zmapSurrs', 'sigmapSurrs_HC_P', 'sigmapSurrs_P_HC', 'sigFdrmapSurrs_HC_P', 'sigFdrmapSurrs_P_HC');
             nSur = width(zmapSurrs);
             mapEndIn = mapStartIn + nSur - 1;
-            zmapSurrsFull(:, s.mask == 1) = zmapSurrs;
+            zmapSurrsFull(:, s.mask == 1) = zmapSurrs';
 
             zmapSurrsDK(:, mapStartIn:mapEndIn) = full2parcel(zmapSurrsFull, labelDK');
             zmapSurrsSF100(:, mapStartIn:mapEndIn) = full2parcel(zmapSurrsFull, labelSF100');
             zmapSurrsSF500(:, mapStartIn:mapEndIn) = full2parcel(zmapSurrsFull, labelSF500');
             zmapSurrsSF1000(:, mapStartIn:mapEndIn) = full2parcel(zmapSurrsFull, labelSF1000');
 
-            sigmapSurrsHC_PFull(:, s.mask == 1) = sigmapSurrs_HC_P; %#ok<NASGU>
-            sigmapSurrsP_HCFull(:, s.mask == 1) = sigmapSurrs_P_HC; %#ok<NASGU>
-            sigFdrmapSurrsHC_PFull(:, s.mask == 1) = sigFdrmapSurrs_HC_P; %#ok<NASGU>
-            sigFdrmapSurrsP_HCFull(:, s.mask == 1) = sigFdrmapSurrs_P_HC; %#ok<NASGU>
+            sigmapSurrsHC_PFull(:, s.mask == 1) = sigmapSurrs_HC_P';
+            sigmapSurrsP_HCFull(:, s.mask == 1) = sigmapSurrs_P_HC'; 
+            sigFdrmapSurrsHC_PFull(:, s.mask == 1) = sigFdrmapSurrs_HC_P';
+            sigFdrmapSurrsP_HCFull(:, s.mask == 1) = sigFdrmapSurrs_P_HC';
 
             [~, idx_sorted_DK] = sort(zmapSurrsDK, 'descend');
             top_indices_DK = idx_sorted_DK(1:N_DK, :);
