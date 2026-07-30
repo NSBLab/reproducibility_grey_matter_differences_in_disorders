@@ -7,7 +7,6 @@
 
 # Worker: create permuted demographics and re-run VBM GLM (step5).
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="${CONFIG_FILE:?Set CONFIG_FILE}"
 DATA_ROOT="${DATA_ROOT:?Set DATA_ROOT}"
 DATASET="${DATASET:?Set DATASET}"
@@ -38,7 +37,7 @@ echo "Permutation output directory: $PERM_OUT_DIR"
 
 matlab -nodisplay -r "\
 addpath('$SCRIPT_DIR'); addpath('$TARGET_DIR'); \
-create_permuted_metadata('$DATA_ROOT', '$DATASET', $PERM_ID, $harmonize, $smoothKernel); \
+step6c_sub_create_permuted_metadata('$DATA_ROOT', '$DATASET', $PERM_ID, $harmonize, $smoothKernel); \
 step5_sub_statistical_analysis('$CONFIG_FILE', '$DATASET', $PERM_ID); \
 fprintf('Permutation %d completed for dataset %s\n', $PERM_ID, '$DATASET'); \
 quit;"

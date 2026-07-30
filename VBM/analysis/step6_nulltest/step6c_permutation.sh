@@ -1,8 +1,8 @@
 #!/bin/bash
 # Dispatcher: submit label-shuffle GLM permutations for enabled datasets.
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SUB_SCRIPT="${SCRIPT_DIR}/permutation_job.sh"
+export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SUB_SCRIPT="${SCRIPT_DIR}/step6c_sub_permutation.sh"
 
 if [ -z "$CONFIG_FILE" ]; then
     REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)

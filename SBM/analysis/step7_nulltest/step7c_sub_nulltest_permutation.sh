@@ -43,7 +43,7 @@ permDir=$datadir/$DATASET/derivatives/freesurfer/permutation_nulltest
 sitePermDir=$permDir/${diag}_${site}_${measureShort}_smooth${smoothKernel}_${hemis}_${covariance1}_${covariance2}${combat_suffix}
 mkdir -p "$sitePermDir"
 
-originalSiteFile=$datadir/$DATASET/qdec_table_${diag}_${site}.dat
+originalSiteFile=$datadir/$DATASET/qdec_table_${site}_${diag}.dat
 if [ ! -f "$originalSiteFile" ]; then
     echo "Error: Original site file not found: $originalSiteFile"
     exit 1

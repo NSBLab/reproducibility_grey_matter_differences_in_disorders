@@ -2,7 +2,7 @@
 # Dispatcher: submit SBM label-shuffle permutation nulltest jobs.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SUB_SCRIPT="${SCRIPT_DIR}/nulltest_permutation_job.sh"
+SUB_SCRIPT="${SCRIPT_DIR}/step7c_sub_nulltest_permutation.sh"
 
 if [ -z "$CONFIG_FILE" ]; then
     REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
