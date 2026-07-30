@@ -2,7 +2,7 @@
 
 Despite thousands of magnetic resonance imaging (MRI) studies reporting grey matter alterations in psychiatric disorders, the field has failed to converge on robust neuroanatomical phenotypes for any specific diagnosis. In this project, we examine whether current practices will ever converge on such a phenotype. We evaluated the consistency of brain-wide maps of grey matter volume and cortical thickness alterations obtained for each of the study sites of five psychiatric disorders (schizophrenia, schizoaffective disorder, autism spectrum disorder, major depressive disorder, and bipolar disorder). 
 
-See "[The cross-site reproducibility of MRI morphometric phenotypes in psychiatric disorders](https://www.medrxiv.org/content/10.1101/2025.07.09.25331220v2)" for more details.
+See "[The cross-site reproducibility of MRI morphometric phenotypes in psychiatric disorders](https://www.nature.com/articles/s41593-026-02359-0)" for more details.
 
 ## Repository layout
 
@@ -26,6 +26,8 @@ Root JSON configs (e.g. `config_hpc.json`, `config_windows.json`, `config_linux.
 ## Data (example datasets)
 
 Download two datasets [Myelin](https://openneuro.org/datasets/ds003653/versions/1.0.0) and [RD](https://openneuro.org/datasets/ds002748/versions/1.0.5) from OpenNeuro and place them under your dataset root as `Myelin` and `RD`. See each dataset’s terms of use.
+
+To plot the figures in the paper, you will need to fill the `data/` directories with data that you can download from this [OSF repository](https://osf.io/6bhr3/). The total file size is 2 GB. 
 
 ## Run pipeline
 
