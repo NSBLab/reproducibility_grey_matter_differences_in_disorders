@@ -2,7 +2,7 @@
 
 Despite thousands of magnetic resonance imaging (MRI) studies reporting grey matter alterations in psychiatric disorders, the field has failed to converge on robust neuroanatomical phenotypes for any specific diagnosis. In this project, we examine whether current practices will ever converge on such a phenotype. We evaluated the consistency of brain-wide maps of grey matter volume and cortical thickness alterations obtained for each of the study sites of five psychiatric disorders (schizophrenia, schizoaffective disorder, autism spectrum disorder, major depressive disorder, and bipolar disorder). 
 
-See "[The cross-site reproducibility of MRI morphometric phenotypes in psychiatric disorders](https://www.medrxiv.org/content/10.1101/2025.07.09.25331220v2)" for more details.
+See "[The cross-site reproducibility of MRI morphometric phenotypes in psychiatric disorders](https://www.nature.com/articles/s41593-026-02359-0)" for more details.
 
 ## Repository layout
 
