@@ -1,4 +1,4 @@
-function parcellate_maps(config, dataset)
+function step7c_sub_parcellate_maps(config, dataset)
 % Parcellate subject mwp1 GM maps with combined Buckner+Tian+Schaefer NIfTIs.
 %
 % Usage:

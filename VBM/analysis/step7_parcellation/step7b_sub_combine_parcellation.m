@@ -1,4 +1,4 @@
-function step7b_combine_parcellation(config)
+function step7b_sub_combine_parcellation(config)
 % Combine Buckner cerebellum + Tian subcortex + Schaefer cortex into one NIfTI per scale.
 % Writes to <dataset_root>/derivatives/roi/.
 %
