@@ -2,6 +2,15 @@ function [cor1 corThres1 rep1 t1All t1Thres siteList] = cal_corr_tmap_parcel(dat
 [LaDiag LbDiag] = ismember(metadata.diagnosis_string,diagnosisString);
 [siteString ia ic] = unique(metadata.site_string(LaDiag));
 nSite = length(siteString);
+if nSite < 2
+    cor1 = [];
+    corThres1 = [];
+    rep1 = [];
+    t1All = [];
+    t1Thres = [];
+    siteList = siteString;
+    return;
+end
 
 
 for iSite = 1:nSite

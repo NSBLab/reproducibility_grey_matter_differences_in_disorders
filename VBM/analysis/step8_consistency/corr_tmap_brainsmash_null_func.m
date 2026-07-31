@@ -38,6 +38,14 @@ metadata = readtable(fullfile(data_root, 'metadataVBM.csv'));
 
 
 corNull = cell(nDiag,1);
+corsigmapSurrs_HC_P = cell(nDiag,1);
+corsigmapSurrs_P_HC = cell(nDiag,1);
+repsigmapSurrs_HC_P = cell(nDiag,1);
+repsigmapSurrs_P_HC = cell(nDiag,1);
+corsigFwemapSurrs_HC_P = cell(nDiag,1);
+corsigFwemapSurrs_P_HC = cell(nDiag,1);
+repsigFwemapSurrs_HC_P = cell(nDiag,1);
+repsigFwemapSurrs_P_HC = cell(nDiag,1);
 % Initialize a cell array to store correlation matrices for each diagnosis.
 
 for iDiag = 1:nDiag
@@ -61,9 +69,14 @@ for iDiag = 1:nDiag
     [diagnosisString ia ic] = unique(metadata.diagnosis_string(LaDiag));
     % Identify unique diagnosis strings (stratified by diagnosis).
 
-    nSite = length(siteString)
+    nSite = length(siteString);
 
     % Determine the number of unique sites for the current diagnostic group.
+    if nSite < 2
+        fprintf('Skipping %s (diag=%d): found %d site(s); need >=2 to compute correlation.\n', ...
+            diagString{iDiag + 1}, iDiag + 1, nSite);
+        continue;
+    end
     mapAllNullall = zeros(sum( mask>0,'all'),nSite);
     sigFwemapSurrs_HC_Pall = zeros(sum( mask>0,'all'),nSite);
     sigmapSurrs_P_HCall = zeros(sum( mask>0,'all'),nSite);

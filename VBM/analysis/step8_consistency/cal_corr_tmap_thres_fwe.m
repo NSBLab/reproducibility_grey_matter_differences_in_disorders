@@ -2,6 +2,16 @@ function [cor1, cor2, rep1, rep2,siteList, varargout] = cal_corr_tmap_thres_fwe(
 [LaDiag LbDiag] = ismember(metadata.diagnosis_string,diagnosisString);
 [siteString ia ic] = unique(metadata.site_string(LaDiag));
 nSite = length(siteString);
+if nSite < 2
+    cor1 = [];
+    cor2 = [];
+    rep1 = [];
+    rep2 = [];
+    siteList = siteString;
+    varargout{1} = {};
+    varargout{2} = {};
+    return;
+end
 
 
 

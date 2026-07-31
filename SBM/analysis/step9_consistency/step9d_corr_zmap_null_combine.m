@@ -64,7 +64,6 @@ repsigClustermapSurrsP_HCVerAll = cell(1,6);
 %%
 for iDiag = 1:length(diagString)-1
 
-
     for iNull = 1:nNull
         iNull
         % if iCOMBAT == 1 & strcmp(hemi,'lh') & smoothKernel == 10
@@ -77,6 +76,11 @@ for iDiag = 1:length(diagString)-1
         %         'corzmapSurrsVer', 'corsigmapSurrsHC_PVer','corsigmapSurrsP_HCVer','corsigFdrmapSurrsHC_PVer','corsigFdrmapSurrsP_HCVer', ...
         %         'repsigmapSurrsHC_PVer','repsigmapSurrsP_HCVer','repsigFdrmapSurrsHC_PVer','repsigFdrmapSurrsP_HCVer');
         % end
+        if iDiag > numel(data.corzmapSurrsVer) || isempty(data.corzmapSurrsVer{iDiag})
+            fprintf('Skipping %s (diag=%d): no null correlation matrices to combine.\n', ...
+                diagString{iDiag + 1}, iDiag + 1);
+            break;
+        end
         ids=find(triu(ones(size(data.corzmapSurrsVer{iDiag})),1));
         temp = median(data.corzmapSurrsVer{iDiag}(ids));
         corzmapSurrsVerAll{iDiag} = [corzmapSurrsVerAll{iDiag}; temp];

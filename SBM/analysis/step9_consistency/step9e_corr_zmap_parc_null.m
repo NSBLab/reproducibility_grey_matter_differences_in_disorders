@@ -126,10 +126,30 @@ end
 %     end
 %     clear zmapSurrsVerAll sigmapSurrsVerAll
 % end
-%% correlation between sites
-for iDiag = 1:length(diagString)-1
+%% correlation between sites (need >=2 sites/datasets per disorder)
+nDiag = length(diagString) - 1;
+corzmapSurrsSF100 = cell(nDiag, nNull);
+corzmapSurrsSF500 = cell(nDiag, nNull);
+corzmapSurrsSF1000 = cell(nDiag, nNull);
+corzmapSurrsDK = cell(nDiag, nNull);
+corsigmapSurrsSF100 = cell(nDiag, nNull);
+corsigmapSurrsSF500 = cell(nDiag, nNull);
+corsigmapSurrsSF1000 = cell(nDiag, nNull);
+corsigmapSurrsDK = cell(nDiag, nNull);
+repsigmapSurrsSF100 = cell(nDiag, nNull);
+repsigmapSurrsSF500 = cell(nDiag, nNull);
+repsigmapSurrsSF1000 = cell(nDiag, nNull);
+repsigmapSurrsDK = cell(nDiag, nNull);
+siteList = cell(1, nDiag);
 
-    isDiagSite = strcmp(map.diag, num2str((iDiag+1)));
+for iDiag = 1:nDiag
+    isDiagSite = strcmp(map.diag, num2str(iDiag + 1));
+    nDiagSites = sum(isDiagSite);
+    if nDiagSites < 2
+        fprintf('Skipping %s (diag=%d): found %d site(s); need >=2 to compute correlation.\n', ...
+            diagString{iDiag + 1}, iDiag + 1, nDiagSites);
+        continue;
+    end
     for iNull = 1:nNull
         corzmapSurrsSF100{iDiag,iNull} = corr(squeeze(zmapSurrsSF100All(:,iNull,isDiagSite)));
         corzmapSurrsSF500{iDiag,iNull} = corr(squeeze(zmapSurrsSF500All(:,iNull,isDiagSite)));
@@ -147,8 +167,6 @@ for iDiag = 1:length(diagString)-1
         repsigmapSurrsDK{iDiag,iNull} = replication_mat(squeeze(sigmapSurrsDKAll(:,iNull,isDiagSite)));
     end
     siteList{iDiag} = map.site(isDiagSite);
-
-
 end
 
 
@@ -172,7 +190,11 @@ repsigmapSurrsDKAll = cell(1,6);
 repsigmapSurrsVerAll = cell(1,6);
 %%
 for iDiag = 1:length(diagString)-1
-
+    if isempty(corzmapSurrsSF100{iDiag,1})
+        fprintf('Skipping %s (diag=%d): no parcel-null correlations to combine.\n', ...
+            diagString{iDiag + 1}, iDiag + 1);
+        continue;
+    end
 
     for iNull = 1:nNull
         ids=find(triu(ones(size(corzmapSurrsSF100{iDiag,iNull})),1));

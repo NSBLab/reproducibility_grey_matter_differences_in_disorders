@@ -94,25 +94,46 @@ for iSite = 1:nSite
       map.sigmapSF500(iSite,:) = double(pValueSF500 <=thres);
       map.sigmapSF1000(iSite,:) = double(pValueSF1000 <=thres);
 end
-% correlation between sites
-for iDiag = 1:length(diagString)-1
+% correlation between sites (need >=2 sites/datasets per disorder)
+nDiag = length(diagString) - 1;
+corDiagDK = cell(1, nDiag);
+corDiagSF100 = cell(1, nDiag);
+corDiagSF500 = cell(1, nDiag);
+corDiagSF1000 = cell(1, nDiag);
+corSigDK = cell(1, nDiag);
+corSigSF100 = cell(1, nDiag);
+corSigSF500 = cell(1, nDiag);
+corSigSF1000 = cell(1, nDiag);
+repSigDK = cell(1, nDiag);
+repSigSF100 = cell(1, nDiag);
+repSigSF500 = cell(1, nDiag);
+repSigSF1000 = cell(1, nDiag);
+siteList = cell(1, nDiag);
 
- isDiagSite = strcmp(map.diag, num2str((iDiag+1)));
- corDiagDK{iDiag} = corr(map.zmapDK(isDiagSite,:)');
- corDiagSF100{iDiag} = corr(map.zmapSF100(isDiagSite,:)');
- corDiagSF500{iDiag} = corr(map.zmapSF500(isDiagSite,:)');
- corDiagSF1000{iDiag} = corr(map.zmapSF1000(isDiagSite,:)');
-corSigDK{iDiag} = bin_corr_mat_account_zero(map.sigmapDK(isDiagSite,:)');
-corSigSF100{iDiag} = bin_corr_mat_account_zero(map.sigmapSF100(isDiagSite,:)');
-corSigSF500{iDiag} = bin_corr_mat_account_zero(map.sigmapSF500(isDiagSite,:)');
-corSigSF1000{iDiag} = bin_corr_mat_account_zero(map.sigmapSF1000(isDiagSite,:)');
-repSigDK{iDiag} = replication_mat(map.sigmapDK(isDiagSite,:)');
-repSigSF100{iDiag} = replication_mat(map.sigmapSF100(isDiagSite,:)');
-repSigSF500{iDiag} = replication_mat(map.sigmapSF500(isDiagSite,:)');
-repSigSF1000{iDiag} = replication_mat(map.sigmapSF1000(isDiagSite,:)');
+for iDiag = 1:nDiag
+    isDiagSite = strcmp(map.diag, num2str(iDiag + 1));
+    nDiagSites = sum(isDiagSite);
+    if nDiagSites < 2
+        fprintf('Skipping %s (diag=%d): found %d site(s); need >=2 to compute correlation.\n', ...
+            diagString{iDiag + 1}, iDiag + 1, nDiagSites);
+        continue;
+    end
+    fprintf('Computing correlations for %s (diag=%d): %d sites.\n', ...
+        diagString{iDiag + 1}, iDiag + 1, nDiagSites);
 
-
- siteList{iDiag} = map.site(isDiagSite);
+    corDiagDK{iDiag} = corr(map.zmapDK(isDiagSite,:)');
+    corDiagSF100{iDiag} = corr(map.zmapSF100(isDiagSite,:)');
+    corDiagSF500{iDiag} = corr(map.zmapSF500(isDiagSite,:)');
+    corDiagSF1000{iDiag} = corr(map.zmapSF1000(isDiagSite,:)');
+    corSigDK{iDiag} = bin_corr_mat_account_zero(map.sigmapDK(isDiagSite,:)');
+    corSigSF100{iDiag} = bin_corr_mat_account_zero(map.sigmapSF100(isDiagSite,:)');
+    corSigSF500{iDiag} = bin_corr_mat_account_zero(map.sigmapSF500(isDiagSite,:)');
+    corSigSF1000{iDiag} = bin_corr_mat_account_zero(map.sigmapSF1000(isDiagSite,:)');
+    repSigDK{iDiag} = replication_mat(map.sigmapDK(isDiagSite,:)');
+    repSigSF100{iDiag} = replication_mat(map.sigmapSF100(isDiagSite,:)');
+    repSigSF500{iDiag} = replication_mat(map.sigmapSF500(isDiagSite,:)');
+    repSigSF1000{iDiag} = replication_mat(map.sigmapSF1000(isDiagSite,:)');
+    siteList{iDiag} = map.site(isDiagSite);
 end
 
 output_dir = fullfile(dataDir, 'results', 'SBM', 'analysis', 'output');

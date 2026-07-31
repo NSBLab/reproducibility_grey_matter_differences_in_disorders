@@ -60,11 +60,14 @@ for iDiag = 1:nDiag
     [diagnosisString ia ic] = unique(metadata.diagnosis_string(LaDiag));
     % Identify unique diagnosis strings (stratified by diagnosis).
 
-    nSite = length(siteString)
-
-
+    nSite = length(siteString);
 
     % Determine the number of unique sites for the current diagnostic group.
+    if nSite < 2
+        fprintf('Skipping %s (diag=%d): found %d site(s); need >=2 to compute correlation.\n', ...
+            diagString{iDiag + 1}, iDiag + 1, nSite);
+        continue;
+    end
 
     for iSite = 1:nSite
             % Initialize sigsurr as zeros

@@ -52,6 +52,11 @@ for iDiag = 1:length(diagString)-1
             'corsigmapSurrs_HC_P','corsigmapSurrs_P_HC','repsigmapSurrs_HC_P','repsigmapSurrs_P_HC',...
     'corsigFwemapSurrs_HC_P','corsigFwemapSurrs_P_HC','repsigFwemapSurrs_HC_P','repsigFwemapSurrs_P_HC');
         
+        if iDiag > numel(data.corNull) || isempty(data.corNull{iDiag})
+            fprintf('Skipping %s (diag=%d): no null correlation matrices to combine.\n', ...
+                diagString{iDiag + 1}, iDiag + 1);
+            break;
+        end
         ids=find(triu(ones(size(data.corNull{iDiag})),1));
         temp = median(data.corNull{iDiag}(ids));
         cortmapBrainsmashSurrsVerAll{iDiag} = [cortmapBrainsmashSurrsVerAll{iDiag}; temp];

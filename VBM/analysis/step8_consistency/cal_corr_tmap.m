@@ -2,6 +2,13 @@ function [cor1, cor2, t1Map, t2Map, siteString] = cal_corr_tmap(address, metadat
 [LaDiag LbDiag] = ismember(metadata.diagnosis_string,diagnosisString);
 [siteString ia ic] = unique(metadata.site_string(LaDiag));
 nSite = length(siteString);
+if nSite < 2
+    cor1 = [];
+    cor2 = [];
+    t1Map = {};
+    t2Map = {};
+    return;
+end
 
 
 

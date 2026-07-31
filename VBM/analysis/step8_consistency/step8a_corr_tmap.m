@@ -29,19 +29,46 @@ if ~exist(output_dir, 'dir'); mkdir(output_dir); end
 
 
 
-for iSite = 1:length(diagString)-1
+nDiag = length(diagString) - 1;
+cor1 = cell(1, nDiag);
+cor2 = cell(1, nDiag);
+corThres1 = cell(1, nDiag);
+corThres2 = cell(1, nDiag);
+repThres1 = cell(1, nDiag);
+repThres2 = cell(1, nDiag);
+corThresFWE1 = cell(1, nDiag);
+corThresFWE2 = cell(1, nDiag);
+repThresFWE1 = cell(1, nDiag);
+repThresFWE2 = cell(1, nDiag);
+siteList = cell(1, nDiag);
+siteThresList = cell(1, nDiag);
+siteThresFWEList = cell(1, nDiag);
+t1All = cell(1, nDiag);
+t2All = cell(1, nDiag);
+thresmap1 = cell(1, nDiag);
+thresmap2 = cell(1, nDiag);
+thresmapFWE1 = cell(1, nDiag);
+thresmapFWE2 = cell(1, nDiag);
 
-    if iSite==6
-        [cor1{iSite}, cor2{iSite}, t1All{iSite}, t2All{iSite}, siteList{iSite}] = cal_corr_tmap(address, metadataAD, diagString(iSite+1), maskAD);
-    [corThres1{iSite}, corThres2{iSite}, repThres1{iSite}, repThres2{iSite},siteThresList{iSite},thresmap1{iSite},thresmap2{iSite}] = cal_corr_tmap_thres(address, metadataAD, diagString(iSite+1), maskAD);
-[corThresFWE1{iSite}, corThresFWE2{iSite},repThresFWE1{iSite}, repThresFWE2{iSite}, siteThresFWEList{iSite},thresmapFWE1{iSite},thresmapFWE2{iSite}] = cal_corr_tmap_thres_fwe(address, metadataAD, diagString(iSite+1), maskAD);
-
+for iSite = 1:nDiag
+    diagName = diagString{iSite + 1};
+    if iSite == 6
+        meta_use = metadataAD;
+        mask_use = maskAD;
     else
-        [cor1{iSite}, cor2{iSite}, t1All{iSite}, t2All{iSite}, siteList{iSite}] = cal_corr_tmap(address, metadata, diagString(iSite+1), mask);
-    [corThres1{iSite}, corThres2{iSite}, repThres1{iSite}, repThres2{iSite}, siteThresList{iSite},thresmap1{iSite},thresmap2{iSite}] = cal_corr_tmap_thres(address, metadata, diagString(iSite+1), mask);
-[corThresFWE1{iSite}, corThresFWE2{iSite},repThresFWE1{iSite}, repThresFWE2{iSite}, siteThresFWEList{iSite},thresmapFWE1{iSite},thresmapFWE2{iSite}] = cal_corr_tmap_thres_fwe(address, metadata, diagString(iSite+1), mask);
- 
+        meta_use = metadata;
+        mask_use = mask;
     end
+    nDiagSites = numel(unique(meta_use.site_string(ismember(meta_use.diagnosis_string, diagName))));
+    if nDiagSites < 2
+        fprintf('Skipping %s: found %d site(s); need >=2 to compute correlation.\n', diagName, nDiagSites);
+        continue;
+    end
+    fprintf('Computing correlations for %s: %d sites.\n', diagName, nDiagSites);
+
+    [cor1{iSite}, cor2{iSite}, t1All{iSite}, t2All{iSite}, siteList{iSite}] = cal_corr_tmap(address, meta_use, diagName, mask_use);
+    [corThres1{iSite}, corThres2{iSite}, repThres1{iSite}, repThres2{iSite}, siteThresList{iSite}, thresmap1{iSite}, thresmap2{iSite}] = cal_corr_tmap_thres(address, meta_use, diagName, mask_use);
+    [corThresFWE1{iSite}, corThresFWE2{iSite}, repThresFWE1{iSite}, repThresFWE2{iSite}, siteThresFWEList{iSite}, thresmapFWE1{iSite}, thresmapFWE2{iSite}] = cal_corr_tmap_thres_fwe(address, meta_use, diagName, mask_use);
 end
 
 save(fullfile(output_dir, ['corr_tmap_combat', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '.mat']), ...

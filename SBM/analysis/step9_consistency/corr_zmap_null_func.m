@@ -80,9 +80,30 @@ datasets = datasets(~ismember({datasets.name}, {'.', '..'})); % Exclude '.' and 
         end
 
     end
-    for iDiag = 1:length(diagString)-1
+    nDiag = length(diagString) - 1;
+    corzmapSurrsVer = cell(1, nDiag);
+    corsigmapSurrsHC_PVer = cell(1, nDiag);
+    corsigmapSurrsP_HCVer = cell(1, nDiag);
+    corsigFdrmapSurrsHC_PVer = cell(1, nDiag);
+    corsigFdrmapSurrsP_HCVer = cell(1, nDiag);
+    corsigClustermapSurrsHC_PVer = cell(1, nDiag);
+    corsigClustermapSurrsP_HCVer = cell(1, nDiag);
+    repsigmapSurrsHC_PVer = cell(1, nDiag);
+    repsigmapSurrsP_HCVer = cell(1, nDiag);
+    repsigFdrmapSurrsHC_PVer = cell(1, nDiag);
+    repsigFdrmapSurrsP_HCVer = cell(1, nDiag);
+    repsigClustermapSurrsHC_PVer = cell(1, nDiag);
+    repsigClustermapSurrsP_HCVer = cell(1, nDiag);
 
-        isDiagSite = strcmp(map.diag, num2str((iDiag+1)));
+    for iDiag = 1:nDiag
+        isDiagSite = strcmp(map.diag, num2str(iDiag + 1));
+        nDiagSites = sum(isDiagSite);
+        if nDiagSites < 2
+            fprintf('Skipping %s (diag=%d): found %d site(s); need >=2 to compute correlation.\n', ...
+                diagString{iDiag + 1}, iDiag + 1, nDiagSites);
+            continue;
+        end
+
         corzmapSurrsVer{iDiag} = corr(squeeze(zmapSurrsVerAll(:,isDiagSite)));
         corsigmapSurrsHC_PVer{iDiag} = bin_corr_mat_account_zero(squeeze(sigmapSurrsHC_PVerAll(:,isDiagSite)));
         corsigmapSurrsP_HCVer{iDiag} = bin_corr_mat_account_zero(squeeze(sigmapSurrsP_HCVerAll(:,isDiagSite)));
@@ -97,8 +118,6 @@ datasets = datasets(~ismember({datasets.name}, {'.', '..'})); % Exclude '.' and 
         repsigFdrmapSurrsP_HCVer{iDiag} = replication_mat(squeeze(sigFdrmapSurrsP_HCVerAll(:,isDiagSite)));
         repsigClustermapSurrsHC_PVer{iDiag} = replication_mat(squeeze(sigClustermapSurrsHC_PVerAll(:,isDiagSite)));
         repsigClustermapSurrsP_HCVer{iDiag} = replication_mat(squeeze(sigClustermapSurrsP_HCVerAll(:,isDiagSite)));
-
-
     end
     clear zmapSurrsVerAll sigmapSurrsHC_PVerAll sigmapSurrsP_HCVerAll sigFdrmapSurrsHC_PVerAll sigFdrmapSurrsP_HCVerAll sigClustermapSurrsHC_PVerAll sigClustermapSurrsP_HCVerAll
 % end

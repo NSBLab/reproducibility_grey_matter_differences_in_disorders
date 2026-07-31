@@ -24,12 +24,19 @@ if ~exist(output_dir, 'dir'); mkdir(output_dir); end
 nParc = [100 500 1000];
 nNull = 100;
 
-corNull = cell(1,length(diagString)-1);
-
 for iParc = 1:length(nParc)
-
+    corNull = cell(1,length(diagString)-1);
+    corThresNull = cell(1,length(diagString)-1);
+    repThresNull = cell(1,length(diagString)-1);
+    siteList = cell(1,length(diagString)-1);
 
     for iDiag = 1:length(diagString)-1
+        nDiagSites = numel(unique(metadata.site_string(ismember(metadata.diagnosis_string, diagString{iDiag + 1}))));
+        if nDiagSites < 2
+            fprintf('Skipping %s (parc=%d): found %d site(s); need >=2 to compute correlation.\n', ...
+                diagString{iDiag + 1}, nParc(iParc), nDiagSites);
+            continue;
+        end
 
         [corNull{iDiag} corThresNull{iDiag} repThresNull{iDiag} siteList{iDiag}] = ...
             cal_corr_tmap_parcel_null(nulldir, metadata, diagString(iDiag+1), nParc(iParc), nNull);
