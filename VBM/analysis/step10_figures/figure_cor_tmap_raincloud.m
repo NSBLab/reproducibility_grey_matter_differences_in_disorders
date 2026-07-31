@@ -4,10 +4,22 @@ if nargin < 1 || isempty(config)
 end
 close all
 this_dir = fileparts(mfilename('fullpath'));
-repo_root = fullfile(this_dir, '..', '..', '..');
+% Resolve repo root without leaving '..' segments (addpath mishandles those)
+repo_root = fileparts(fileparts(fileparts(this_dir)));
+addpath(this_dir);
 addpath(genpath(fullfile(repo_root, 'utils')));
+pipeline_ensure_paths();
+repo_root = pipeline_get_repo_root();
 if ischar(config) || isstring(config)
-    config = pipeline_load_config(char(config));
+    cfg = char(config);
+    if exist(cfg, 'file') ~= 2
+        cfg = fullfile(repo_root, cfg);
+    end
+    config = pipeline_load_config(cfg);
+end
+if isfield(config.data_directories, 'utils') && ~isempty(config.data_directories.utils)
+    utils_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.utils);
+    addpath(genpath(utils_dir));
 end
 data_root = config.data_directories.dataset_root;
 if isfield(config.data_directories, 'data') && ~isempty(config.data_directories.data)
