@@ -74,14 +74,14 @@ for iSite = 1:length(datasets)
                 'sigClustermapSurrs_HC_P', 'sigClustermapSurrs_P_HC');
             nSur = width(zmapSurrs);
             mapEndIn = mapStartIn + nSur - 1;
-            zmapSurrsFull(:, s.mask == 1) = zmapSurrs;
+            zmapSurrsFull(:, s.mask == 1) = zmapSurrs';
 
-            sigmapSurrsHC_PFull(:, s.mask == 1) = sigmapSurrs_HC_P;
-            sigmapSurrsP_HCFull(:, s.mask == 1) = sigmapSurrs_P_HC;
-            sigFdrmapSurrsHC_PFull(:, s.mask == 1) = sigFdrmapSurrs_HC_P;
-            sigFdrmapSurrsP_HCFull(:, s.mask == 1) = sigFdrmapSurrs_P_HC;
-            sigClustermapSurrsHC_PFull(:, s.mask == 1) = sigClustermapSurrs_HC_P;
-            sigClustermapSurrsP_HCFull(:, s.mask == 1) = sigClustermapSurrs_P_HC;
+            sigmapSurrsHC_PFull(:, s.mask == 1) = sigmapSurrs_HC_P';
+            sigmapSurrsP_HCFull(:, s.mask == 1) = sigmapSurrs_P_HC';
+            sigFdrmapSurrsHC_PFull(:, s.mask == 1) = sigFdrmapSurrs_HC_P';
+            sigFdrmapSurrsP_HCFull(:, s.mask == 1) = sigFdrmapSurrs_P_HC';
+            sigClustermapSurrsHC_PFull(:, s.mask == 1) = sigClustermapSurrs_HC_P';
+            sigClustermapSurrsP_HCFull(:, s.mask == 1) = sigClustermapSurrs_P_HC';
 
             zmapSurrsVer(:, mapStartIn:mapEndIn) = round(zmapSurrsFull', 5);
             sigmapSurrsHC_PVer(:, mapStartIn:mapEndIn) = sigmapSurrsHC_PFull';
