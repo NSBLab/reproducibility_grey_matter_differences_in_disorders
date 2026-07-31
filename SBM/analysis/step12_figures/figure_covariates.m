@@ -25,7 +25,7 @@ data_root = config.data_directories.dataset_root;
 plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
 output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 
-load(fullfile(plot_data_dir, 'confound_combine.mat'), 'ptoplot','pvals_bonf','contoplot','nSiteToPlot');
+load(fullfile(plot_data_dir, 'SBM_covariates_combine.mat'), 'ptoplot','pvals_bonf','contoplot','nSiteToPlot');
 contoplot = contoplot';
 nCovar = height(contoplot);
 ptoplot = ptoplot';

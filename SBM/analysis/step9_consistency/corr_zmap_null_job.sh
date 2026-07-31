@@ -9,7 +9,7 @@
 # SBATCH --mail-type=BEGIN
 # SBATCH --mail-type=END
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+#SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -z "$CONFIG_FILE" ]; then
     REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
     CONFIG_FILE="$REPO_ROOT/config_hpc.json"

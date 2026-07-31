@@ -25,7 +25,7 @@ plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directorie
 output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 iCOMBAT = 1;
 smoothKernel = 10;
-hemi = 'rh';
+hemi = 'lh';
 thres = 0.05;
 
 

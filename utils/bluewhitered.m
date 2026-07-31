@@ -1,4 +1,4 @@
-function newmap = bluewhitered(m)
+function newmap = bluewhitered(ax,m)
 %BLUEWHITERED   Blue, white, and red color map.
 %   BLUEWHITERED(M) returns an M-by-3 matrix containing a blue to white
 %   to red colormap, with white corresponding to the CAXIS value closest
@@ -27,8 +27,8 @@ function newmap = bluewhitered(m)
 %
 %   See also HSV, HOT, COOL, BONE, COPPER, PINK, FLAG, 
 %   COLORMAP, RGBPLOT.
-if nargin < 1
-   m = size(get(gca,'colormap'),1);
+if nargin < 2
+   m = size(get(ax,'colormap'),1);
 end
 bottom = [0 0 0.5];%[0.25 0.25 0.75]; %
 botmiddle = [0 0.5 1];%[0.25 0.5 0.75]; %
@@ -36,7 +36,7 @@ middle = [1 1 1];
 topmiddle =  [1 0 0];%[0.75 0.5 0.25];
 top = [0.5 0 0];%[0.75 0.25 0.25]; %
 % Find middle
-lims = get(gca, 'CLim');
+lims = get(ax, 'CLim');
 % Find ratio of negative to positive
 if (lims(1) < 0) & (lims(2) > 0)
     % It has both negative and positive
