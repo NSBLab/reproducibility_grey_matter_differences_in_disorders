@@ -90,11 +90,33 @@ for iSite = 1:nSite
 map.sigClustermapHC_P(iSite,:) = double((temp>0));
     map.sigClustermapP_HC(iSite,:) = double(temp<0);
 end
-% correlation between sites
+% correlation between sites (need >=2 sites/datasets per disorder)
+nDiag = length(diagString) - 1; % exclude HC
+corDiag = cell(1, nDiag);
+siteList = cell(1, nDiag);
+corSigHC_P = cell(1, nDiag);
+corSigP_HC = cell(1, nDiag);
+repSigHC_P = cell(1, nDiag);
+repSigP_HC = cell(1, nDiag);
+corSigFdrHC_P = cell(1, nDiag);
+corSigFdrP_HC = cell(1, nDiag);
+repSigFdrHC_P = cell(1, nDiag);
+repSigFdrP_HC = cell(1, nDiag);
+corSigClusterHC_P = cell(1, nDiag);
+corSigClusterP_HC = cell(1, nDiag);
+repSigClusterHC_P = cell(1, nDiag);
+repSigClusterP_HC = cell(1, nDiag);
 
-for iDiag = 1:length(diagString)-1
-
-    isDiagSite = strcmp(map.diag, num2str((iDiag+1)));
+for iDiag = 1:nDiag
+    isDiagSite = strcmp(map.diag, num2str(iDiag + 1));
+    nDiagSites = sum(isDiagSite);
+    if nDiagSites < 2
+        fprintf('Skipping %s (diag=%d): found %d site(s); need >=2 to compute correlation.\n', ...
+            diagString{iDiag + 1}, iDiag + 1, nDiagSites);
+        continue;
+    end
+    fprintf('Computing correlations for %s (diag=%d): %d sites.\n', ...
+        diagString{iDiag + 1}, iDiag + 1, nDiagSites);
 
     corDiag{iDiag} = corr(map.zmap(isDiagSite,:)');
     siteList{iDiag} = map.site(isDiagSite);
@@ -105,7 +127,6 @@ for iDiag = 1:length(diagString)-1
     corSigP_HC{iDiag} = bin_corr_mat_account_zero(sigMapP_HC');
     repSigHC_P{iDiag} = replication_mat(sigMapHC_P');
     repSigP_HC{iDiag} = replication_mat(sigMapP_HC');
-
 
     sigFdrMapHC_P = map.sigFdrmapHC_P(isDiagSite,:);
     sigFdrMapP_HC = map.sigFdrmapP_HC(isDiagSite,:);
@@ -120,8 +141,6 @@ for iDiag = 1:length(diagString)-1
     corSigClusterP_HC{iDiag} = bin_corr_mat_account_zero(sigClusterMapP_HC');
     repSigClusterHC_P{iDiag} = replication_mat(sigClusterMapHC_P');
     repSigClusterP_HC{iDiag} = replication_mat(sigClusterMapP_HC');
-
-
 end
 
 output_dir = fullfile(dataDir, 'results', 'SBM', 'analysis', 'output');

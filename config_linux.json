@@ -17,7 +17,8 @@
        "sbm_extract_script": "extract_sub_surface_Myelin.m",
       "enabled": true,
       "longitudinal": true,
-      "combat_group": "psy"
+      "combat_group": "psy",
+      "diagnoses": ["MDD"]
     },
     "RD": {
       "path": "${dataset_root}/RD",
@@ -26,7 +27,8 @@
       "sbm_extract_script": "extract_sub_surface_RD.m",
       "enabled": true,
       "longitudinal": false,
-      "combat_group": "psy"
+      "combat_group": "psy",
+      "diagnoses": ["MDD"]
     },
     "OASIS3": {
       "path": "${dataset_root}/OASIS3",

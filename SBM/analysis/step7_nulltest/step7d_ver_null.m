@@ -46,26 +46,46 @@ datasets = dir(datadir);
 datasets = datasets(~ismember({datasets.name}, {'.', '..'}));
 
 for iSite = 1:length(datasets)
-    fprintf('Site folder: %s\n', datasets(iSite).name);
+    if ~datasets(iSite).isdir
+        continue;
+    end
+    siteName = datasets(iSite).name;
+    fprintf('Site folder: %s\n', siteName);
 
-    files = dir(fullfile(datadir, datasets(iSite).name, 'qdec*'));
-    files = files(~ismember({files.name}, {'.', '..'}));
-    for iFile = 1:length(files)
-        parts = strsplit(files(iFile).name, '_');
+    % Only consider mat null chunks for this hemi/smooth/combat (not all qdec*).
+    filesHemi = dir(fullfile(datadir, siteName, ...
+        ['qdec_table_*_combat', iCOMBAT, '_', hemi, '_smooth', char(num2str(smoothKernel)), '*.mat']));
+    filesHemi = filesHemi(~ismember({filesHemi.name}, {'.', '..'}));
+    if isempty(filesHemi)
+        fprintf('  No null mat files for hemi=%s smooth=%s combat=%s; skipping site.\n', ...
+            hemi, char(num2str(smoothKernel)), iCOMBAT);
+        continue;
+    end
+
+    diagList = nan(1, length(filesHemi));
+    for iFile = 1:length(filesHemi)
+        parts = strsplit(filesHemi(iFile).name, '_');
         if numel(parts) > 8
-            diag(iFile) = str2double(parts{5});
+            diagList(iFile) = str2double(parts{5});
         else
-            diag(iFile) = str2double(parts{4});
+            diagList(iFile) = str2double(parts{4});
         end
     end
-    uniqueDiag = unique(diag);
+    uniqueDiag = unique(diagList(~isnan(diagList)));
     nDiag = length(uniqueDiag);
-    clear diag
+    if nDiag == 0
+        fprintf('  Could not parse diagnosis from filenames; skipping site.\n');
+        continue;
+    end
 
     for iDiag = 1:nDiag
-        filesDiag = dir(fullfile(datadir, datasets(iSite).name, ...
+        filesDiag = dir(fullfile(datadir, siteName, ...
             ['qdec_table_*_', char(num2str(uniqueDiag(iDiag))), '_combat', iCOMBAT, '_', hemi, '_smooth', char(num2str(smoothKernel)), '*.mat']));
         filesDiag = filesDiag(~ismember({filesDiag.name}, {'.', '..'}));
+        if isempty(filesDiag)
+            fprintf('  No files for diag=%d hemi=%s; skipping.\n', uniqueDiag(iDiag), hemi);
+            continue;
+        end
         mapStartIn = 1;
 
         for iFile = 1:length(filesDiag)
@@ -74,14 +94,14 @@ for iSite = 1:length(datasets)
                 'sigClustermapSurrs_HC_P', 'sigClustermapSurrs_P_HC');
             nSur = width(zmapSurrs);
             mapEndIn = mapStartIn + nSur - 1;
-            zmapSurrsFull(:, s.mask == 1) = zmapSurrs;
+            zmapSurrsFull(:, s.mask == 1) = zmapSurrs';
 
-            sigmapSurrsHC_PFull(:, s.mask == 1) = sigmapSurrs_HC_P;
-            sigmapSurrsP_HCFull(:, s.mask == 1) = sigmapSurrs_P_HC;
-            sigFdrmapSurrsHC_PFull(:, s.mask == 1) = sigFdrmapSurrs_HC_P;
-            sigFdrmapSurrsP_HCFull(:, s.mask == 1) = sigFdrmapSurrs_P_HC;
-            sigClustermapSurrsHC_PFull(:, s.mask == 1) = sigClustermapSurrs_HC_P;
-            sigClustermapSurrsP_HCFull(:, s.mask == 1) = sigClustermapSurrs_P_HC;
+            sigmapSurrsHC_PFull(:, s.mask == 1) = sigmapSurrs_HC_P';
+            sigmapSurrsP_HCFull(:, s.mask == 1) = sigmapSurrs_P_HC';
+            sigFdrmapSurrsHC_PFull(:, s.mask == 1) = sigFdrmapSurrs_HC_P';
+            sigFdrmapSurrsP_HCFull(:, s.mask == 1) = sigFdrmapSurrs_P_HC';
+            sigClustermapSurrsHC_PFull(:, s.mask == 1) = sigClustermapSurrs_HC_P';
+            sigClustermapSurrsP_HCFull(:, s.mask == 1) = sigClustermapSurrs_P_HC';
 
             zmapSurrsVer(:, mapStartIn:mapEndIn) = round(zmapSurrsFull', 5);
             sigmapSurrsHC_PVer(:, mapStartIn:mapEndIn) = sigmapSurrsHC_PFull';
@@ -94,8 +114,8 @@ for iSite = 1:length(datasets)
         end
 
         namepart = filesDiag(1).name;
-        save(fullfile(datadir, datasets(iSite).name, ['verMap_', namepart(1:end-6), '.mat']), 'zmapSurrsVer');
-        save(fullfile(datadir, datasets(iSite).name, ['verThresMap_', namepart(1:end-6), '.mat']), ...
+        save(fullfile(datadir, siteName, ['verMap_', namepart(1:end-6), '.mat']), 'zmapSurrsVer');
+        save(fullfile(datadir, siteName, ['verThresMap_', namepart(1:end-6), '.mat']), ...
             'sigmapSurrsHC_PVer', 'sigmapSurrsP_HCVer', 'sigFdrmapSurrsHC_PVer', 'sigFdrmapSurrsP_HCVer', ...
             'sigClustermapSurrsHC_PVer', 'sigClustermapSurrsP_HCVer');
 

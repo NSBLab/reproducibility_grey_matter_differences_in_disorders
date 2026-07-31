@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=1:00:00
+#SBATCH --time=20:00:00
 #SBATCH --job-name=parcellate
 #SBATCH --account=kg98
 #SBATCH --cpus-per-task=1

@@ -16,7 +16,8 @@
       "vbm_extract_script": "extract_sub_Myelin.m",
       "enabled": true,
       "longitudinal": true,
-      "combat_group": "psy"
+      "combat_group": "psy",
+      "diagnoses": ["MDD"]
     },
     "RD": {
       "path": "${dataset_root}\\RD",
@@ -24,7 +25,8 @@
       "vbm_extract_script": "extract_sub_RD.m",
       "enabled": true,
       "longitudinal": false,
-      "combat_group": "psy"
+      "combat_group": "psy",
+      "diagnoses": ["MDD"]
     }
   },
 
