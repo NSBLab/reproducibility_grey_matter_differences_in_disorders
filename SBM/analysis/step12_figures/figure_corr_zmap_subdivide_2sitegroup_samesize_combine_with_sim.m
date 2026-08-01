@@ -21,7 +21,11 @@ if isfield(config.data_directories, 'utils') && ~isempty(config.data_directories
     addpath(genpath(utils_dir));
 end
 data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
 output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir')
+    mkdir(output_dir);
+end
 
 smoothKernel = 10;
 diaglist = 2:7;
@@ -54,49 +58,16 @@ font_size = 12;
 fontsize_legend = 10;
 
 
-%load vtk surface
-filename_vtk = 'fsaverage_164k_midthickness-lh.vtk';
-[vertices,faces] = read_vtk(filename_vtk);
-vertices = vertices';
-faces = faces';
 subplotTitle = {'a|','b|','c|','d|','e|','f|'};
-% subplotTitle = {'a|Vertice-wise','b|Schaefer-1000','c|Schaefer-1000','d|Schaefer-1000'};
 
-% for iPlot = 1:1%length(subplotTitle)
-%     iCol = iPlot; %mod(iPlot-1,numCol);
     iCol = 1;
 
     ax1 = axes('Position', [initX+factorX*lengthX*(iCol-1), initY lengthX lengthY]);
-    % switch iPlot
-    %     case 1
-            load(fullfile(output_dir, 'corr_zmap_subdivide_2sitegroup_samesize1.mat'), 'medianCor','varCor','sampleSizeListAll');
+
+            load(fullfile(plot_data_dir, 'corr_zmap_subdivide_2sitegroup_samesize.mat'), 'medianCor','varCor','sampleSizeListAll');
             medianCor = medianCor;
             varCor = varCor;
-            %  case 2
-            % load('output/corr_zmap_subdivide_2sitegroup_samesize.mat', 'medianCorThres','varCorThres','sampleSizeListAll');
-            % medianCor = medianCorThres;
-            % varCor = varCorThres;
-            %  case 3
-            % load('output/corr_zmap_subdivide_2sitegroup_samesize.mat', 'medianRepThres','varCorThres','sampleSizeListAll');
-            % medianCor = medianRepThres;
-            % varCor = varCorThres;
-            %
-            % case 2
-            %     load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorDiagSF1000','varcorDiagSF1000','sampleSizeListAll');
-            %     medianCor = mediancorDiagSF1000;
-            %     varCor = varcorDiagSF1000;
-            % case 5
-            %     load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'mediancorSigSF1000','varcorSigSF1000','sampleSizeListAll');
-            %     medianCor = mediancorSigSF1000;
-            %     varCor = varcorSigSF1000;
-            % case 6
-            %     load('output/corr_zmap_parc_subdivide_2sitegroup_samesize.mat', 'medianrepSigSF1000','varrepSigSF1000','sampleSizeListAll');
-            %     medianCor = medianrepSigSF1000;
-            %     varCor = varrepSigSF1000;
-
-    %     otherwise
-    %         error('no suitable data')
-    % end
+ 
 
     for iDiag = 1:length(diaglist)
         iData = plotorder(iDiag); % the order in the data
@@ -160,7 +131,7 @@ subplotTitle = {'a|','b|','c|','d|','e|','f|'};
 iCol = 2;
 ax4 = axes('Position', [initX+factorX*lengthX*(iCol-1), initY lengthX lengthY]);
 hold on
-load(fullfile(output_dir, 'simulation_signal_noise_Niter_5_samplesizerange_10_631_100kVoxel_mean.mat'));
+load(fullfile(plot_data_dir, 'simulation_signal_noise_Niter_5_samplesizerange_10_631_100kVoxel_mean.mat'));
 % Plot
 for iSignal = 1:length(signal_std_list)
     

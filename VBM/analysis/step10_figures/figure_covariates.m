@@ -30,7 +30,7 @@ end
 output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
 
 % Load the confound data that has been pre-processed
-load(fullfile(plot_data_dir, 'confound_combine.mat'), 'ptoplot', 'pvals_bonf','contoplot', 'nSiteToPlot');
+load(fullfile(plot_data_dir, 'VBM_covariates_combine.mat'), 'ptoplot', 'pvals_bonf','contoplot', 'nSiteToPlot');
 
 % Transpose data to match expected format for plotting
 contoplot = contoplot';

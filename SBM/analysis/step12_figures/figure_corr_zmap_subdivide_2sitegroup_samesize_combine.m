@@ -20,9 +20,10 @@ if isfield(config.data_directories, 'utils') && ~isempty(config.data_directories
     utils_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.utils);
     addpath(genpath(utils_dir));
 end
-data_root = config.data_directories.dataset_root;
-output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 
+data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 smoothKernel = 10;
 diaglist = 2:7;
 hemis = 'lh';
@@ -54,11 +55,6 @@ font_size = 20;
 fontsize_legend = 16;
 
 
-%load vtk surface
-filename_vtk = 'fsaverage_164k_midthickness-lh.vtk';
-[vertices,faces] = read_vtk(filename_vtk);
-vertices = vertices';
-faces = faces';
 subplotTitle = {'a|','b|','c|','d|','e|','f|'};
 % subplotTitle = {'a|Vertice-wise','b|Schaefer-1000','c|Schaefer-1000','d|Schaefer-1000'};
 
@@ -68,7 +64,7 @@ for iPlot = 1:1%length(subplotTitle)
     ax1 = axes('Position', [initX+factorX*lengthX*(iCol-1), initY lengthX lengthY]);
     switch iPlot
         case 1
-            load(fullfile(output_dir, 'corr_zmap_subdivide_2sitegroup_samesize.mat'), 'medianCor','varCor','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_subdivide_2sitegroup_samesize.mat'), 'medianCor','varCor','sampleSizeListAll');
             medianCor = medianCor;
             varCor = varCor;
             %  case 2

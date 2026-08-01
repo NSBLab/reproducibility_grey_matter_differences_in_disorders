@@ -50,6 +50,7 @@ darkblue = [10/255 52/255 204/255];
 gray = [0.5 0.5 0.5];
 lightorange =  [124/255 125/255 117/255];%[255/255 211/255 147/255];%[0.75 0.5 0.25];
 darkorange = [242/255 144/255 0];%[0.75 0.25 0.25]; %
+midblue = [4/255 116/255 252/255];
 
 fig = figure('Position', [200 200 1000 350]);
 set(fig,'color','w');
@@ -89,34 +90,38 @@ for iPara = 1:nPara
     
 iCOMBAT = paralist(iPara);
     load(fullfile(plot_data_dir, ['corr_tmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'.mat']), 'map','cor1','siteList')
-    load(fullfile(plot_data_dir, ['tmap_null_brainsmash_COMBAT', num2str(iCOMBAT), '_smooth', num2str(config.analysis_settings.vbm_smoothing_kernel), '_ver_all.mat']),...
+    load(fullfile(plot_data_dir, ['tmap_null_brainsmash_COMBAT1_smooth', num2str(config.analysis_settings.vbm_smoothing_kernel), '_ver_all.mat']),...
         'cortmapBrainsmashSurrsVerAll');
+load(fullfile(plot_data_dir, ['corr_null_permut_tmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'.mat']), 'corNullToPlot');
 
     makeUvalue = 0;
     for iDiag = 1:nDiag
 
         iData = plotorder(iDiag); % the order in the data
         ids{iDiag}=find(tril(ones(size(cor1{iData})),-1));
-        corToPlot{1+(iPara-1)*2*(iPara<3)+3*(iPara>=3),iDiag} = cor1{iData}(ids{iDiag});
-        corToPlot{2,iDiag} = cortmapBrainsmashSurrsVerAll{iData};
+         corToPlot{1,iDiag} = cor1{iData}(ids{iDiag});
+           corToPlot{2,iDiag} = corNullToPlot{iData};
+        corToPlot{3,iDiag} = cortmapBrainsmashSurrsVerAll{iData};
 
 
 
         % Extract empirical median
-        empiricalMedian = median(corToPlot{1+(iPara-1)*2*(iPara<3)+3*(iPara>=3), iDiag});
+        empiricalMedian = median(corToPlot{1, iDiag});
 nullMedian = median(corToPlot{2, iDiag});
         % Calculate percentile (i.e., proportion of null values less than or equal to empirical median)
-        p_value(iPara,iDiag) = mean(abs(empiricalMedian - nullMedian  ) <= abs(corToPlot{2, iDiag}-nullMedian));
+        p_permut_value(iDiag) = mean(abs(empiricalMedian - nullMedian  ) <= abs(corToPlot{2, iDiag}-nullMedian));
 
+nullMedian = median(corToPlot{3, iDiag});
+        % Calculate percentile (i.e., proportion of null values less than or equal to empirical median)
+        p_brainsmash_value(iDiag) = mean(abs(empiricalMedian - nullMedian  ) <= abs(corToPlot{3, iDiag}-nullMedian));
     end
 
 
-end
 
 % fprintf('%.5f, ', prs);
 % fprintf('%.5f, ', hrs);
 % make colormap
-    C = repmat([darkblue; lightblue; darkblue; darkblue],nPara,1);
+    C = [darkblue; midblue; lightblue];
 
 ViolinColor = {repmat(C,ceil(size(corToPlot,2)/length(C)),1)};
 
@@ -129,46 +134,29 @@ set(ax2,'box','off')
 tempXlim = xlim;
 tempYlim = [-0.5 1];
 dummyplot1 = scatter(ax2,[-1],[-1],'marker','o','MarkerEdgeColor',darkblue,'MarkerFaceColor',darkblue);
-dummyplot2 = scatter(ax2,[-1],[-1],'marker','o','MarkerEdgeColor',lightblue,'MarkerFaceColor',lightblue);
+dummyplot2 = scatter(ax2,[-1],[-1],'marker','o','MarkerEdgeColor',lightblue,'MarkerFaceColor',midblue);
+dummyplot3 = scatter(ax2,[-1],[-1],'marker','o','MarkerEdgeColor',lightblue,'MarkerFaceColor',lightblue);
 
-legend([dummyplot1,dummyplot2],{'Observed','Null'},'Location','southeast')
+legend([dummyplot1,dummyplot2,dummyplot3],{'Observed','Permutation null','BrainSMASH null'},'Location','northeast')
 xlim([0 tempXlim(2)])
 ylim(tempYlim)
 
 legend('boxoff')
-for iPara = 1:nPara-1
+
 for iDiag = 1:nDiag
-    if p_value(iPara,iDiag) <= thres
-        a17 = annotation(fig, 'textbox', [ax2.Position(1)+ax2.Position(3)*(0.03+(iPara-1)*0.065+(iDiag-1)*0.159), ax2.Position(2)+ax2.Position(4)*0.9, 0.09, 0.02], 'string', '*', 'edgecolor', 'none', ...
+    if p_permut_value(iDiag) <= thres
+        a17 = annotation(fig, 'textbox', [ax2.Position(1)+ax2.Position(3)*(0.07+(iDiag-1)*0.16), ax2.Position(2)+ax2.Position(4)*0.7, 0.09, 0.02], 'string', '*', 'edgecolor', 'none', ...
             'FontName',font_name,'FontSize',font_size,  'horizontalalignment', 'left','Interpreter','none');
     end
 end
+
+
+for iDiag = 1:nDiag
+    if p_brainsmash_value(iDiag) <= thres
+        a17 = annotation(fig, 'textbox', [ax2.Position(1)+ax2.Position(3)*(0.105+(iDiag-1)*0.16), ax2.Position(2)+ax2.Position(4)*0.7, 0.09, 0.02], 'string', '*', 'edgecolor', 'none', ...
+            'FontName',font_name,'FontSize',font_size,  'horizontalalignment', 'left','Interpreter','none');
+    end
 end
-
-
-
-% Convert data coordinates to normalized figure units
-x = [ax2.Position(1)+ax2.Position(3)*0.04, ax2.Position(1)+ax2.Position(3)*0.08];  % normalized horizontal range (0 to 1)
-y = ax2.Position(2)+ax2.Position(4)*0.23;        % normalized vertical location
-
-% Draw three lines to make the bracket
-annotation('line', [x(1) x(1)], [y y+0.03], 'Color', 'k', 'LineWidth', 1);
-ax3= annotation('line', [x(1) x(2)], [y y], 'Color', 'k', 'LineWidth', 1);
-annotation('line', [x(2) x(2)], [y+0.03 y], 'Color', 'k', 'LineWidth', 1);
-a17 = annotation(fig, 'textbox', [ax3.Position(1)-0.01, ax3.Position(2), 0.1, ax3.Position(4)], 'string', 'ComBat', 'edgecolor', 'none', ...
-            'FontName',font_name,'FontSize',fontsize_legend,  'horizontalalignment', 'left');
-
-
-% Convert data coordinates to normalized figure units
-x = [ax2.Position(1)+ax2.Position(3)*(0.11), ax2.Position(1)+ax2.Position(3)*(0.13)];  % normalized horizontal range (0 to 1)
-y = ax2.Position(2)+ax2.Position(4)*0.9;        % normalized vertical location
-
-% Draw three lines to make the bracket
-annotation('line', [x(1) x(1)], [y y+0.03], 'Color', 'k', 'LineWidth', 1);
-ax4 = annotation('line', [x(1) x(2)], [y+0.03 y+0.03], 'Color', 'k', 'LineWidth', 1);
-annotation('line', [x(2) x(2)], [y+0.03 y], 'Color', 'k', 'LineWidth', 1);
-a17 = annotation(fig, 'textbox', [ax4.Position(1)-0.02, ax4.Position(2)+0.07, 0.1, ax4.Position(4)], 'string', 'non-ComBat', 'edgecolor', 'none', ...
-            'FontName',font_name,'FontSize',fontsize_legend,  'horizontalalignment', 'left');
 
 %%
 savefig(fig,fullfile(output_dir,['figure_corr_tmap_combat',char(num2str(iCOMBAT)),'_smooth',num2str(smoothKernel),'_combat_noncomnbat.fig']));

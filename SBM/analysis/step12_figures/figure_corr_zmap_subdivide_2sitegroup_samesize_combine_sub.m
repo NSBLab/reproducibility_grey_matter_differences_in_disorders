@@ -21,6 +21,7 @@ if isfield(config.data_directories, 'utils') && ~isempty(config.data_directories
     addpath(genpath(utils_dir));
 end
 data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
 output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 
 smoothKernel = 10;
@@ -54,12 +55,6 @@ font_size = 12;
 fontsize_legend = 10;
 
 
-%load vtk surface
-filename_vtk = 'fsaverage_164k_midthickness-lh.vtk';
-[vertices,faces] = read_vtk(filename_vtk);
-vertices = vertices';
-faces = faces';
-
 subplotTitle = {'a|','b|','c|','d|','e|','f|','g|','h|','i|'};
 
 for iPlot = 1:12
@@ -68,57 +63,57 @@ for iPlot = 1:12
     ax1 = axes('Position', [initX+factorX*lengthX*(iCol), initY+factorY*lengthY*(numRow-iRow-1) lengthX lengthY]);
     switch iPlot
         case 1
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagDK','varcorDiagDK','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagDK','varcorDiagDK','sampleSizeListAll');
             medianCor = mediancorDiagDK;
             varCor = varcorDiagDK;
             medianCorDK = medianCor; %dummy value to plot the same length with empty medianCor
 
         case 2
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF100','varcorDiagSF100','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF100','varcorDiagSF100','sampleSizeListAll');
             medianCor = mediancorDiagSF100;
             varCor = varcorDiagSF100;
            
         case 3
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF500','varcorDiagSF500','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF500','varcorDiagSF500','sampleSizeListAll');
             medianCor = mediancorDiagSF500;
             varCor = varcorDiagSF500;
            case 4
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF1000','varcorDiagSF1000','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorDiagSF1000','varcorDiagSF1000','sampleSizeListAll');
             medianCor = mediancorDiagSF1000;
             varCor = varcorDiagSF1000;  
         case 5
-             load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigDK','varcorSigDK','sampleSizeListAll');
+             load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigDK','varcorSigDK','sampleSizeListAll');
             medianCor = mediancorSigDK;
             varCor = varcorSigDK;
         case 6
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF100','varcorSigSF100','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF100','varcorSigSF100','sampleSizeListAll');
             medianCor = mediancorSigSF100;
             varCor = varcorSigSF100;
 
         case 7
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF500','varcorSigSF500','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF500','varcorSigSF500','sampleSizeListAll');
             medianCor = mediancorSigSF500;
             varCor = varcorSigSF500;
         case 8
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF1000','varcorSigSF1000','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'mediancorSigSF1000','varcorSigSF1000','sampleSizeListAll');
             medianCor = mediancorSigSF1000;
             varCor = varcorSigSF1000;    
         case 9
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigDK','varrepSigDK','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigDK','varrepSigDK','sampleSizeListAll');
             medianCor = medianrepSigDK;
             varCor = varrepSigDK;
         case 10
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF100','varrepSigSF100','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF100','varrepSigSF100','sampleSizeListAll');
             medianCor = medianrepSigSF100;
             varCor = varrepSigSF100;
         case 11
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF500','varrepSigSF500','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF500','varrepSigSF500','sampleSizeListAll');
             medianCor = medianrepSigSF500;
             varCor = varrepSigSF500;
             
         
         case 12
-            load(fullfile(output_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF1000','varrepSigSF1000','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_parc_subdivide_2sitegroup_samesize.mat'), 'medianrepSigSF1000','varrepSigSF1000','sampleSizeListAll');
             medianCor = medianrepSigSF1000;
             varCor = varrepSigSF1000;
         otherwise

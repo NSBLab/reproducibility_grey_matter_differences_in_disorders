@@ -21,6 +21,7 @@ if isfield(config.data_directories, 'utils') && ~isempty(config.data_directories
     addpath(genpath(utils_dir));
 end
 data_root = config.data_directories.dataset_root;
+plot_data_dir = pipeline_resolve_relative_path(repo_root, config.data_directories.data);
 output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
 
 smoothKernel = 10;
@@ -54,11 +55,6 @@ font_size = 12;
 fontsize_legend = 10;
 
 
-%load vtk surface
-filename_vtk = 'fsaverage_164k_midthickness-lh.vtk';
-[vertices,faces] = read_vtk(filename_vtk);
-vertices = vertices';
-faces = faces';
 subplotTitle = {'a|','b|','c|','d|','e|','f|'};
 % subplotTitle = {'a|Vertice-wise','b|Schaefer-1000','c|Schaefer-1000','d|Schaefer-1000'};
 
@@ -72,11 +68,11 @@ for iPlot = 1:2%length(subplotTitle)
         %     medianCor = medianCor;
         %     varCor = varCor;
              case 1
-            load(fullfile(output_dir, 'corr_zmap_subdivide_2sitegroup_samesize.mat'), 'medianCorThres','varCorThres','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_subdivide_2sitegroup_samesize.mat'), 'medianCorThres','varCorThres','sampleSizeListAll');
             medianCor = medianCorThres;
             varCor = varCorThres;
              case 2
-            load(fullfile(output_dir, 'corr_zmap_subdivide_2sitegroup_samesize.mat'), 'medianRepThres','varCorThres','sampleSizeListAll');
+            load(fullfile(plot_data_dir, 'corr_zmap_subdivide_2sitegroup_samesize.mat'), 'medianRepThres','varCorThres','sampleSizeListAll');
             medianCor = medianRepThres;
             varCor = varCorThres;
 

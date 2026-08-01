@@ -27,7 +27,9 @@ else
     plot_data_dir = fullfile(repo_root, 'data');
 end
 output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
-
+if ~exist(output_dir, 'dir')
+    mkdir(output_dir);
+end
 smoothKernel = 6;
 
 thres = 0.05;
@@ -89,7 +91,7 @@ for iPara = 1:nPara
     
 iCOMBAT = paralist(iPara);
     load(fullfile(plot_data_dir, ['corr_tmap_combat',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'.mat']), 'map','cor1','siteList')
-    load(fullfile(plot_data_dir, ['tmap_null_brainsmash_COMBAT', num2str(iCOMBAT), '_smooth', num2str(config.analysis_settings.vbm_smoothing_kernel), '_ver_all.mat']),...
+    load(fullfile(plot_data_dir, ['tmap_null_brainsmash_COMBAT1_smooth', num2str(config.analysis_settings.vbm_smoothing_kernel), '_ver_all.mat']),...
         'cortmapBrainsmashSurrsVerAll');
 
     makeUvalue = 0;

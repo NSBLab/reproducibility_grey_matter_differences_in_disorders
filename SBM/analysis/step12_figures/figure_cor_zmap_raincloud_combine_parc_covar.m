@@ -82,7 +82,7 @@ fontsize_legend = 10;
 
 
 load(fullfile(plot_data_dir, ['zmap_aparc_COMBAT',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_all.mat']));
-parCov = load(fullfile(plot_data_dir, ['zmap_aparc_COMBAT',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_all_revise.mat']));
+parCov = load(fullfile(plot_data_dir, ['zmap_aparc_COMBAT',num2str(iCOMBAT),'_smooth',num2str(smoothKernel),'_all.mat']));
 
 
 
