@@ -1,53 +1,57 @@
-%% 
-% Consider the confound of scanner model.
-% 
-% scanner: similarity of scanner model between sites
-% 
-% 
-
-% Clear all variables and close all figures
-clear all % Remove all variables from the workspace to ensure a clean start
-close all % Close all open figure windows
-
-% Initialize parameters
-iCOMBAT = 1; % Flag to determine if COMBAT harmonization is applied (1 = applied, 0 = not applied)
-smoothKernel = 6; % Smoothing kernel size for preprocessing
-iter = 5000; % Number of iterations for permutation testing
-type = 'spearman'; % Type of correlation to compute (Spearman rank correlation)
-diagnosisString = {'BD', 'SCA', 'SCZ', 'ASD', 'MDD', 'AD'}; % List of diagnoses to analyze
-
-nDiag = length(diagnosisString); % Calculate the total number of diagnoses
-
-% Set the directory path based on whether COMBAT harmonization is applied
-if iCOMBAT == 1
-    address = ['derivatives/s', num2str(smoothKernel), 'COMBAT/']; % Path for COMBAT harmonized data
-else
-    address = ['derivatives/s', num2str(smoothKernel), '/']; % Path for non-COMBAT harmonized data
+function step9i_corr_tmap_var_scannermodel(config, iter, type)
+% STEP9I: Scanner model similarity between sites vs t-map correlation.
+% Usage: step9i_corr_tmap_var_scannermodel(config [, iter, type])
+% Reads scanner_site_detailed.csv on dataset_root. Writes: confound_scannerModel.mat.
+% --- Load config and set paths ---
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
 end
 
-% Load metadata about scanner model and site information
-metadata = readtable('/projects/kg98/trangc/VBM/data/scanner_site_detailed.csv', 'VariableNamingRule', 'preserve');
+% --- Paths from config ---
+iCOMBAT = config.analysis_settings.harmonize;
+smoothKernel = config.analysis_settings.vbm_smoothing_kernel;
+data_root = config.data_directories.dataset_root;
+output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
 
-% Load precomputed correlation matrices and site lists
-load(['output/corr_tmap_combat', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '.mat'], ...
-     'cor1', 'cor2', 'siteList');
+% --- Analysis parameters ---
+iter = local_default(iter, 5000);
+type = char(local_default(type, 'spearman'));
+diagnosisString = {'BD', 'SCA', 'SCZ', 'ASD', 'MDD', 'AD'};
+nDiag = length(diagnosisString);
 
-% Loop through each diagnosis
+% --- Load metadata and cross-site correlation matrices ---
+metadata = readtable(fullfile(data_root, 'scanner_site_detailed.csv'), 'VariableNamingRule', 'preserve');
+corrMat = fullfile(output_dir, ['corr_tmap_combat', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '.mat']);
+load(corrMat, 'cor1', 'cor2', 'siteList');
+
+% --- Mantel test per diagnosis ---
+varTable = cell(nDiag, 1);
+nSite = cell(nDiag, 1);
 for iDiag = 1:nDiag
-    
-    % Compute variance related to scanner model similarity between sites
-    [varTable{iDiag}, nSite{iDiag}] = cor_var_scannermodel(metadata, ...
-        diagnosisString(iDiag), cor1{iDiag}, cor2{iDiag},siteList{iDiag}, iter, type);
-    
-    % Display results if the variance table is not empty
-    if size(varTable{iDiag}, 1) ~= 0
-        disp(char(diagnosisString(iDiag))); % Display diagnosis name
-        disp(varTable{iDiag}); % Display variance table
-        disp(' '); % Add spacing
+    [varTable{iDiag}, nSite{iDiag}] = cor_var_scannermodel(metadata, diagnosisString(iDiag), cor1{iDiag}, cor2{iDiag}, siteList{iDiag}, iter, type);
+    if ~isempty(varTable{iDiag})
+        disp(char(diagnosisString(iDiag)));
+        disp(varTable{iDiag});
         disp(' ');
     end
 end
-
-% Suppress specific warnings and save the results
+% --- Save confound results ---
 warning('off', 'last');
-save('output/confound_scannerModel.mat', 'varTable', 'nSite');
+save(fullfile(output_dir, 'confound_scannerModel.mat'), 'varTable', 'nSite');
+end
+
+function out = local_default(value, fallback)
+if nargin < 1 || isempty(value)
+    out = fallback;
+else
+    out = value;
+end
+end

@@ -1,49 +1,57 @@
-% Consider the confound of age-onset when analyzing brain t-map correlations.
-% The script calculates the mean and variance ratios of age-onset between sites
-% and uses these as confounds in analyzing correlation matrices for various diagnoses.
-
-clear all
-close all
-
-% Set parameters for analysis
-iCOMBAT = 1;            % Flag for using COMBAT harmonization
-smoothKernel = 6;       % Smoothing kernel size
-iter = 5000;            % Number of iterations for Mantel test
-type = 'spearman';      % Type of correlation to use ('spearman')
-diagnosisString = {'BD', 'SCA', 'SCZ', 'ASD', 'MDD', 'AD'}; % List of disorders to analyze
-
-nDiag = length(diagnosisString); % Number of disorders
-
-% Define data directory based on COMBAT flag
-if iCOMBAT == 1
-    address = ['derivatives/s', num2str(smoothKernel), 'COMBAT/'];
-else
-    address = ['derivatives/s', num2str(smoothKernel), '/'];
+function step9f_corr_tmap_var_ageonset(config, iter, type)
+% STEP9F: Age of onset mean/variance between sites vs t-map correlation.
+% Usage: step9f_corr_tmap_var_ageonset(config [, iter, type]). Prereq: step8a.
+% Writes: confound_ageonset.mat under results/VBM/analysis/output/.
+% --- Load config and set paths ---
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
 end
 
-% Load metadata
-metadata = readtable(['/projects/kg98/trangc/VBM/data/metadataVBM_extended.csv']);
+% --- Paths from config ---
+iCOMBAT = config.analysis_settings.harmonize;
+smoothKernel = config.analysis_settings.vbm_smoothing_kernel;
+data_root = config.data_directories.dataset_root;
+output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
 
-% Load pre-computed correlation matrices and site lists
-load(['output/corr_tmap_combat', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '.mat'], ...
-     'cor1', 'cor2', 'siteList');
+% --- Analysis parameters ---
+iter = local_default(iter, 5000);
+type = char(local_default(type, 'spearman'));
+diagnosisString = {'BD', 'SCA', 'SCZ', 'ASD', 'MDD', 'AD'};
+nDiag = length(diagnosisString);
 
-% Iterate over each diagnosis
+% --- Load metadata and cross-site correlation matrices ---
+metadata = readtable(fullfile(data_root, 'metadataVBM_extended.csv'));
+corrMat = fullfile(output_dir, ['corr_tmap_combat', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '.mat']);
+load(corrMat, 'cor1', 'cor2', 'siteList');
+
+% --- Mantel test per diagnosis ---
+varTable = cell(nDiag, 1);
+nSite = cell(nDiag, 1);
 for iDiag = 1:nDiag
-    % Compute mean and variance ratios of age-onset and perform Mantel test
-    [varTable{iDiag}, nSite{iDiag}] = cor_var_ageonset(metadata, diagnosisString(iDiag), cor1{iDiag}, cor2{iDiag}, siteList{iDiag},iter, type);
-
-    % Display results if the output table is not empty
-    if size(varTable{iDiag}, 1) ~= 0
-        disp(char(diagnosisString(iDiag))); % Print the current diagnosis name
-        disp(varTable{iDiag});             % Display the results table
-        disp(' ');
+    [varTable{iDiag}, nSite{iDiag}] = cor_var_ageonset(metadata, diagnosisString(iDiag), cor1{iDiag}, cor2{iDiag}, siteList{iDiag}, iter, type);
+    if ~isempty(varTable{iDiag})
+        disp(char(diagnosisString(iDiag)));
+        disp(varTable{iDiag});
         disp(' ');
     end
 end
-
-% Turn off warnings for 'last' to avoid repetitive warning messages
+% --- Save confound results ---
 warning('off', 'last');
+save(fullfile(output_dir, 'confound_ageonset.mat'), 'varTable', 'nSite');
+end
 
-% Save results to a .mat file
-save('output/confound_ageonset.mat', 'varTable', 'nSite');
+function out = local_default(value, fallback)
+if nargin < 1 || isempty(value)
+    out = fallback;
+else
+    out = value;
+end
+end

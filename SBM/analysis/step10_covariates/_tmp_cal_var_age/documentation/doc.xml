@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?><documentation release="21a"><function><title>cal_var_age</title><syntaxes><syntax>[varTable, DifVar1, DifVar2] = cal_var_age(nPC, corTmap1, iter, type)</syntax></syntaxes><purpose>cal_var_age: Analyzes the relationship between variability in two features (mean and variance)</purpose><description>&lt;span&gt;&lt;p&gt;of a parameter (e.g., illness duration) and the correlation matrix of z-maps across sites.&lt;br/&gt;&lt;br/&gt;Inputs:&lt;br/&gt;- nPC: Matrix containing feature values for each site.&lt;br/&gt;Column 1: Feature 1 (e.g., mean illness duration).&lt;br/&gt;Column 2: Feature 2 (e.g., variance of illness duration).&lt;br/&gt;- corTmap1: Correlation matrix of z-maps (HC &gt; P).&lt;br/&gt;- iter: Number of iterations for permutation testing.&lt;br/&gt;- type: Correlation type (e.g., 'spearman' or 'pearson').&lt;br/&gt;&lt;br/&gt;Outputs:&lt;br/&gt;- varTable: Table summarizing the correlation results for Feature 1 (mean) and Feature 2 (variance),&lt;br/&gt;including correlation values and p-values.&lt;/p&gt;&lt;/span&gt;</description><descriptionText>of a parameter (e.g., illness duration) and the correlation matrix of z-maps across sites.
+
+Inputs:
+- nPC: Matrix containing feature values for each site.
+Column 1: Feature 1 (e.g., mean illness duration).
+Column 2: Feature 2 (e.g., variance of illness duration).
+- corTmap1: Correlation matrix of z-maps (HC &gt; P).
+- iter: Number of iterations for permutation testing.
+- type: Correlation type (e.g., 'spearman' or 'pearson').
+
+Outputs:
+- varTable: Table summarizing the correlation results for Feature 1 (mean) and Feature 2 (variance),
+including correlation values and p-values.</descriptionText></function></documentation>

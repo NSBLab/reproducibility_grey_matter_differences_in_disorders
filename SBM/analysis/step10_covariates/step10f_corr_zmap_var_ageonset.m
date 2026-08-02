@@ -1,58 +1,59 @@
-%% 
-% Consider the confound of age onset.
-% 
-% Mean: ratio of age-onset mean between sites
-% 
-% Variance: ratio of age-onset variance between sites
-% 
-% 
-
-% Clear workspace and close all figures
-clear all
-close all
-
-% Define parameters
-iCOMBAT = 1; % Flag for applying COMBAT harmonization
-smoothKernel = 10; % Smoothing kernel size
-iter = 5000; % Number of iterations for Mantel test
-hemi = 'lh'; % Hemisphere (e.g., left hemisphere)
-type = 'spearman'; % Type of correlation (Spearman rank correlation)
-diagnosisString = {'BD', 'SCA', 'SCZ', 'ASD', 'MDD', 'AD'}; % List of diagnoses
-
-nDiag = length(diagnosisString); % Number of diagnoses
-
-% Set the address path based on whether COMBAT is applied
-if iCOMBAT == 1
-    address = ['derivatives/s', num2str(smoothKernel), 'COMBAT/'];
-else
-    address = ['derivatives/s', num2str(smoothKernel), '/'];
+function step10f_corr_zmap_var_ageonset(config, hemi, iter, type)
+% STEP10F: Age of onset mean/variance between sites vs z-map correlation.
+% Usage: step10f_corr_zmap_var_ageonset(config [, hemi, iter, type])
+% Prereq: step9a. Writes: confound_ageonset.mat under results/SBM/analysis/output/.
+% --- Load config and set paths ---
+if nargin < 1 || isempty(config)
+    config = 'config_hpc.json';
+end
+this_dir = fileparts(mfilename('fullpath'));
+repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
+addpath(genpath(fullfile(repo_root, 'utils')));
+if ischar(config) || isstring(config)
+    config = pipeline_load_config(char(config));
 end
 
-% Load metadata (scanner information)
-metadata = readtable(['/projects/kg98/trangc/VBM/data/metadataSBM_extended.csv'], 'VariableNamingRule', 'preserve');
+% --- Paths from config ---
+iCOMBAT = config.analysis_settings.harmonize;
+smoothKernel = config.analysis_settings.sbm_smoothing_kernel;
+data_root = config.data_directories.dataset_root;
+output_dir = fullfile(data_root, 'results', 'SBM', 'analysis', 'output');
+if ~exist(output_dir, 'dir'); mkdir(output_dir); end
 
-% Load precomputed correlation matrices and site information
-load(['output/corr_zmap_combat', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '_', hemi, '_all.mat'], ...
-    'map', 'corDiag', 'corSig', 'siteList');
+% --- Analysis parameters ---
+hemi = char(local_default(hemi, 'lh'));
+iter = local_default(iter, 5000);
+type = char(local_default(type, 'spearman'));
+diagnosisString = {'BD', 'SCA', 'SCZ', 'ASD', 'MDD', 'AD'};
+nDiag = length(diagnosisString);
 
-% Initialize variables for results
+% --- Load metadata and cross-site correlation matrices ---
+metadata = readtable(fullfile(data_root, 'metadataSBM_extended.csv'), 'VariableNamingRule', 'preserve');
+corrMat = fullfile(output_dir, ['corr_zmap_combat', num2str(iCOMBAT), '_smooth', num2str(smoothKernel), '_', hemi, '_all.mat']);
+load(corrMat, 'map', 'corDiag', 'corSig', 'siteList');
+
+% --- Mantel test per diagnosis ---
 varTable = cell(nDiag, 1);
 nSite = cell(nDiag, 1);
-
-% Loop through each diagnosis
 for iDiag = 1:nDiag
-    % Compute variance related to age onset similarity between sites
- [varTable{iDiag},  meanAgeOnset{iDiag}, stdAgeOnset{iDiag}, nSite{iDiag}]= cor_var_ageonset(metadata, diagnosisString(iDiag), corDiag{iDiag}, siteList{iDiag},iter, type);
-% Display results for the current diagnosis
- if size(varTable{iDiag},1)~=0
-   disp(char(diagnosisString(iDiag)))
-disp(varTable{iDiag})
-disp(' ')
-disp(' ')
+    [varTable{iDiag}, meanAgeOnset{iDiag}, stdAgeOnset{iDiag}, nSite{iDiag}] = ...
+        cor_var_ageonset(metadata, diagnosisString(iDiag), corDiag{iDiag}, siteList{iDiag}, iter, type);
+    if ~isempty(varTable{iDiag})
+        disp(char(diagnosisString(iDiag)));
+        disp(varTable{iDiag});
+        disp(' ');
+    end
 end
-end
-% Suppress warnings related to the last operation
+% --- Save confound results ---
 warning('off', 'last');
+save(fullfile(output_dir, 'confound_ageonset.mat'), 'varTable', 'meanAgeOnset', 'stdAgeOnset', 'nSite');
+end
 
-% Save results to a .mat file
-save('output/confound_ageonset.mat','varTable', 'meanAgeOnset', 'stdAgeOnset','nSite')
+function out = local_default(value, fallback)
+if nargin < 1 || isempty(value)
+    out = fallback;
+else
+    out = value;
+end
+end

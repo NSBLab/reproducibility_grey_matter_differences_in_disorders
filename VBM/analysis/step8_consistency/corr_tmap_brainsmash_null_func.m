@@ -10,6 +10,7 @@ if nargin < 2 || isempty(config) || isempty(iNull)
 end
 this_dir = fileparts(mfilename('fullpath'));
 repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
 addpath(genpath(fullfile(repo_root, 'utils')));
 if ischar(config) || isstring(config)
     config = pipeline_load_config(char(config));
@@ -20,9 +21,20 @@ diagString = {'HC', 'BD', 'SCA',...
 % Define diagnostic labels for analysis. First one ('HC') is excluded from `nDiag`.
 iCOMBAT = config.analysis_settings.harmonize;
 smoothKernel = config.analysis_settings.vbm_smoothing_kernel;
+maskDiagGroup = config.analysis_settings.mask_diagnostic_group;
 data_root = config.data_directories.dataset_root;
 nNull = 100;
-nDiag = length(diagString)-1;
+nDiag = length(diagString) - 1;
+if iCOMBAT == 1
+    derivDir = fullfile(data_root, 'derivatives', ['s', num2str(smoothKernel), 'COMBAT']);
+else
+    derivDir = fullfile(data_root, 'derivatives', ['s', num2str(smoothKernel)]);
+end
+maskFile = fullfile(derivDir, ['mask_', char(maskDiagGroup)], 'mask.nii');
+if ~isfile(maskFile)
+    error('VBM mask not found: %s', maskFile);
+end
+mask = logical(niftiread(maskFile));
 % Number of diagnostic groups to process, excluding 'HC'.
 
 if iCOMBAT == 1
@@ -51,14 +63,6 @@ repsigFwemapSurrs_P_HC = cell(nDiag,1);
 for iDiag = 1:nDiag
     iDiag
     % Display the current diagnostic group index (for debugging/monitoring).
-
-    if iDiag ~= nDiag
-        mask = logical(niftiread(fullfile(data_root, 'derivatives', ['s', char(num2str(smoothKernel)), 'COMBAT'], 'mask_psy', 'mask.nii')));
-    else
-        mask = logical(niftiread(fullfile(data_root, 'derivatives', ['s', char(num2str(smoothKernel)), 'COMBAT'], 'mask_AD', 'mask.nii')));
-    end
-    % % Load binary masks for region selection.
-
 
     [LaDiag LbDiag] = ismember(metadata.diagnosis,(iDiag+1));
     % Logical index for matching the current diagnosis in metadata.

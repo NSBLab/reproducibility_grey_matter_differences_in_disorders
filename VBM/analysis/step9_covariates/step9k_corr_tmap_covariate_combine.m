@@ -1,13 +1,20 @@
 function step9k_corr_tmap_covariate_combine(config)
+% STEP9K: Stack confound_*.mat from step9a-j into confound_combine.mat for figures.
+% Usage: step9k_corr_tmap_covariate_combine('config_hpc.json')
+% Prereq: run step9a through step9j first.
+% --- Load config and set paths ---
 if nargin < 1 || isempty(config)
     config = 'config_hpc.json';
 end
 this_dir = fileparts(mfilename('fullpath'));
 repo_root = fullfile(this_dir, '..', '..', '..');
+addpath(this_dir);
 addpath(genpath(fullfile(repo_root, 'utils')));
 if ischar(config) || isstring(config)
     config = pipeline_load_config(char(config));
 end
+
+% --- Paths from config ---
 data_root = config.data_directories.dataset_root;
 output_dir = fullfile(data_root, 'results', 'VBM', 'analysis', 'output');
 
@@ -17,10 +24,7 @@ conName = {'mean age','var age','male','female','sex ratio','patients','controls
 nCon = length(conName);
 nDiag = length(diagnosisString);
 
-
-
-
-           
+% --- Load confound_*.mat and build combined tables ---
 % contoplot = table;
 for iDiag = 1:nDiag
 
@@ -118,5 +122,6 @@ iSite = iSite+1;
 pvals_bonf(iDiag,:) = min(ptoplot(iDiag,:).* size(ptoplot,2), 1);
 
 end
+% --- Save confound_combine.mat ---
 save(fullfile(output_dir, 'confound_combine.mat'),'ptoplot','pvals_bonf','contoplot','nSiteToPlot');
 end
