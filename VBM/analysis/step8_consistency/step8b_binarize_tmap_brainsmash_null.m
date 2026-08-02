@@ -20,7 +20,7 @@ diagString = {'HC', 'BD', 'SCA',...
 iCOMBAT = config.analysis_settings.harmonize;
 smoothKernel = config.analysis_settings.vbm_smoothing_kernel;
 data_root = config.data_directories.dataset_root;
-nNull = 100;
+nNull = 10;
 nDiag = length(diagString)-1;
 % Number of diagnostic groups to process, excluding 'HC'.
 

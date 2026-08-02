@@ -3,8 +3,8 @@ export iCOMBAT=1
 export hemi=lh
 export smoothKernel=10
 
-nNull=1000
-for iNull in $(seq 1000 $nNull); do
+nNull=10
+for iNull in $(seq 1 $nNull); do
 export iNull=$iNull
 echo $iNull
 	
